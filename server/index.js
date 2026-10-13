@@ -61,9 +61,9 @@ io.on('connection', (socket) => {
     socket.emit('state', { ...room.publicState(), you: res.seat });
   }
 
-  socket.on('create', ({ name, turnSeconds, mode } = {}, cb) => {
+  socket.on('create', ({ name, turnSeconds, mode, board, players } = {}, cb) => {
     const code = makeCode();
-    const room = new Room(code, Number(turnSeconds), broadcast, mode);
+    const room = new Room(code, Number(turnSeconds), broadcast, mode, board, players);
     rooms.set(code, room);
     enter(room, crypto.randomUUID(), name, cb);
   });

@@ -1,6 +1,7 @@
 (() => {
   const $ = (sel) => document.querySelector(sel);
   const socket = io();
+  const { SYMBOLS, BOARDS, MODES } = window.Rules;
 
   // ── локальне сховище (може бути недоступне в приватному режимі)
   const store = {
@@ -15,11 +16,16 @@
   let clockOffset = 0; // serverNow - Date.now()
   let players = [];
   let usedIds = new Set();
-  let selectedTimer = Number(store.get('g9:timer') ?? 20);
-  const MODE_LABEL = { easy: '🟢 Легкий', normal: '🟡 Звичайний', hard: '🔴 Складний' };
-  let selectedMode = MODE_LABEL[store.get('g9:mode')] ? store.get('g9:mode') : 'normal';
   let lastEventKey = null;
   let resultDismissed = false;
+
+  // налаштування нової гри
+  const setup = {
+    board: BOARDS[store.get('g9:board')] ? store.get('g9:board') : 'classic',
+    players: Number(store.get('g9:players')) || 2,
+    mode: MODES[store.get('g9:mode')] ? store.get('g9:mode') : 'normal',
+    timer: Number(store.get('g9:timer') ?? 20),
+  };
 
   // ── пошук: нормалізація як на сервері
   function normalize(s) {
@@ -61,13 +67,25 @@
     return scored.slice(0, 8).map((s) => s.p);
   }
 
-  // ── екрани
+  // ── дрібниці
+  const escapeHtml = (s) =>
+    String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const initials = (name) => {
+    const parts = name.split(/\s+/).filter(Boolean);
+    return (parts.length > 1 ? parts[0][0] + parts[parts.length - 1][0] : name.slice(0, 2)).toUpperCase();
+  };
+  const plural = (n, one, few, many) => {
+    const m10 = n % 10, m100 = n % 100;
+    if (m10 === 1 && m100 !== 11) return one;
+    if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
+    return many;
+  };
+  const roomLink = (code) => `${location.origin}${location.pathname}?room=${code}`;
+  const seatName = (i) => (i === mySeat ? 'Ти' : state?.seats[i]?.name || 'Гравець');
+  const symHtml = (i) => `<span class="sym seat-${i}">${SYMBOLS[i]}</span>`;
+
   function showScreen(name) {
     for (const id of ['home', 'lobby', 'game']) $(`#screen-${id}`).classList.toggle('hidden', id !== name);
-  }
-
-  function roomLink(code) {
-    return `${location.origin}${location.pathname}?room=${code}`;
   }
 
   function toast(text, kind = '', ms = 2600) {
@@ -83,56 +101,91 @@
       await navigator.clipboard.writeText(text);
       toast('Посилання скопійовано ✓', 'good');
     } catch {
-      prompt('Скопіюй посилання:', text);
+      window.prompt('Скопіюй посилання:', text);
     }
   }
 
-  function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // Своє вікно підтвердження (замість браузерного confirm)
+  let confirmResolve = null;
+  function askConfirm(text, yes = 'Так') {
+    $('#confirm-text').textContent = text;
+    $('#confirm-yes').textContent = yes;
+    $('#confirm').classList.remove('hidden');
+    return new Promise((resolve) => (confirmResolve = resolve));
+  }
+  function closeConfirm(answer) {
+    $('#confirm').classList.add('hidden');
+    confirmResolve?.(answer);
+    confirmResolve = null;
   }
 
-  function initials(name) {
-    const parts = name.split(/\s+/).filter(Boolean);
-    return (parts.length > 1 ? parts[0][0] + parts[parts.length - 1][0] : name.slice(0, 2)).toUpperCase();
+  function configChips(cfg) {
+    const b = BOARDS[cfg.board];
+    const m = MODES[cfg.mode];
+    return [
+      `<span>▦ ${b.title} · ${b.sub}</span>`,
+      `<span>👥 ${cfg.capacity} ${plural(cfg.capacity, 'гравець', 'гравці', 'гравців')}</span>`,
+      `<span><i class="dot ${m.dot}"></i>${m.label}</span>`,
+      `<span>⏱ ${cfg.turnSeconds ? `${cfg.turnSeconds} с` : 'без ліміту'}</span>`,
+    ].join('');
+  }
+  const roomCfg = () => ({ board: state.board.key, mode: state.mode, capacity: state.capacity, turnSeconds: state.turnSeconds });
+
+  function openRules(cfg) {
+    $('#rules-modal-body').innerHTML = window.Rules.forRoom(cfg);
+    $('#rules-modal').classList.remove('hidden');
   }
 
-  const opponentName = () => state?.seats[1 - mySeat]?.name || 'Суперник';
-
-  // ── головний екран
+  // ── головний екран: налаштування гри
   const nameInput = $('#name-input');
   nameInput.value = store.get('g9:name') || '';
+  $('#rules-home').innerHTML = window.Rules.overview();
 
-  function renderTimerChips() {
+  function miniBoard(b) {
+    const cells = Array.from({ length: b.size * b.size }, (_, i) => `<i class="${b.sample.includes(i) ? 'on' : ''}"></i>`).join('');
+    return `<span class="mini" style="grid-template-columns:repeat(${b.size},1fr)">${cells}</span>`;
+  }
+
+  function renderSetup() {
+    $('#board-cards').innerHTML = Object.entries(BOARDS)
+      .map(([key, b]) => `<button type="button" class="board-opt ${key === setup.board ? 'active' : ''}" data-board="${key}" role="radio" aria-checked="${key === setup.board}">
+          ${miniBoard(b)}<b>${b.title}</b><span class="sub">${b.sub}</span><small>${b.short}</small>
+        </button>`)
+      .join('');
+    const max = BOARDS[setup.board].maxPlayers;
+    if (setup.players > max) setup.players = max;
+    document.querySelectorAll('#players-chips button').forEach((btn) => {
+      const n = Number(btn.dataset.players);
+      btn.disabled = n > max;
+      btn.classList.toggle('active', n === setup.players);
+      btn.setAttribute('aria-checked', n === setup.players);
+    });
+    $('#players-hint').textContent = max === 2
+      ? 'Класика — лише вдвох. Утрьох і вчотирьох — на великих полях.'
+      : `Можна грати вдвох, утрьох або вчотирьох. ${SYMBOLS.join(' ')} — у кожного свій колір.`;
+    $('#mode-chips').innerHTML = Object.entries(MODES)
+      .map(([key, m]) => `<button type="button" class="mode ${key === setup.mode ? 'active' : ''}" data-mode="${key}" role="radio" aria-checked="${key === setup.mode}">
+          <b><i class="dot ${m.dot}"></i>${m.label}</b><small>${m.short}</small>
+        </button>`)
+      .join('');
     document.querySelectorAll('#timer-chips .chip').forEach((chip) => {
-      const active = Number(chip.dataset.sec) === selectedTimer;
+      const active = Number(chip.dataset.sec) === setup.timer;
       chip.classList.toggle('active', active);
       chip.setAttribute('aria-checked', active);
     });
   }
-  renderTimerChips();
+  renderSetup();
 
-  function renderModeChips() {
-    document.querySelectorAll('#mode-chips .mode').forEach((el) => {
-      const active = el.dataset.mode === selectedMode;
-      el.classList.toggle('active', active);
-      el.setAttribute('aria-checked', active);
-    });
-  }
-  renderModeChips();
-  $('#mode-chips').addEventListener('click', (e) => {
-    const el = e.target.closest('.mode');
-    if (!el) return;
-    selectedMode = el.dataset.mode;
-    store.set('g9:mode', selectedMode);
-    renderModeChips();
-  });
-
-  $('#timer-chips').addEventListener('click', (e) => {
-    const chip = e.target.closest('.chip');
-    if (!chip) return;
-    selectedTimer = Number(chip.dataset.sec);
-    store.set('g9:timer', selectedTimer);
-    renderTimerChips();
+  $('#screen-home').addEventListener('click', (e) => {
+    const board = e.target.closest('[data-board]')?.dataset.board;
+    const pl = e.target.closest('[data-players]')?.dataset.players;
+    const mode = e.target.closest('[data-mode]')?.dataset.mode;
+    const sec = e.target.closest('[data-sec]')?.dataset.sec;
+    if (board) { setup.board = board; store.set('g9:board', board); }
+    if (pl) { setup.players = Number(pl); store.set('g9:players', pl); }
+    if (mode) { setup.mode = mode; store.set('g9:mode', mode); }
+    if (sec !== undefined) { setup.timer = Number(sec); store.set('g9:timer', sec); }
+    if (board || pl || mode || sec !== undefined) renderSetup();
   });
 
   // «Продовжити гру» — якщо закрив вкладку посеред гри
@@ -159,7 +212,7 @@
   $('#create-btn').addEventListener('click', () => {
     const name = requireName();
     if (!name) return;
-    socket.emit('create', { name, turnSeconds: selectedTimer, mode: selectedMode }, onEntered);
+    socket.emit('create', { name, turnSeconds: setup.timer, mode: setup.mode, board: setup.board, players: setup.players }, onEntered);
   });
 
   function joinRoom(code) {
@@ -190,6 +243,7 @@
       return;
     }
     $('#home-error').textContent = '';
+    $('#invite-note').classList.add('hidden');
     Object.assign(session, { code: res.code, token: res.token });
     store.set(`g9:token:${res.code}`, res.token);
     store.set('g9:last-room', res.code);
@@ -204,6 +258,7 @@
     resultDismissed = false;
     closePicker();
     $('#result').classList.add('hidden');
+    document.title = 'Сітка 9 — футбольні хрестики-нулики';
     history.replaceState(null, '', location.pathname);
     showScreen('home');
     renderResume();
@@ -238,6 +293,10 @@
     render();
   });
 
+  const activeSeats = () => state.seats.map((x, i) => (x && !state.out.includes(i) ? i : -1)).filter((i) => i >= 0);
+  const amActive = () => activeSeats().includes(mySeat);
+  const isMyTurn = () => state.status === 'playing' && state.turn === mySeat;
+
   // ── звуки на зміни стану
   function playStateSounds(prev, s) {
     const wasPlaying = prev?.status === 'playing';
@@ -246,15 +305,18 @@
       return;
     }
     if (s.status === 'finished' && prev?.status !== 'finished') {
-      Sound.play(s.winner === 'draw' ? 'draw' : s.winner === s.you ? 'win' : 'lose');
+      Sound.play(!s.winners.length ? 'draw' : s.winners.includes(s.you) ? 'win' : 'lose');
       return;
     }
     if (s.status === 'playing' && s.turn === s.you && prev?.turn !== s.you) {
-      // невелика пауза, щоб «дзинь» не накладався на звук влучання/помилки суперника
+      // невелика пауза, щоб «дзинь» не накладався на звук ходу попереднього гравця
       setTimeout(() => Sound.play('myTurn'), 450);
+      try { navigator.vibrate?.(60); } catch { /* ignore */ }
     }
-    if (s.status === 'playing' && s.drawOffer === 1 - s.you && prev?.drawOffer !== 1 - s.you) Sound.play('pop');
-    if (s.status === 'finished' && s.rematchVotes.includes(1 - s.you) && !prev?.rematchVotes.includes(1 - s.you)) Sound.play('pop');
+    const offered = (st) => st?.drawVotes?.some((v) => v !== st.you);
+    if (s.status === 'playing' && offered(s) && !offered(prev)) Sound.play('pop');
+    const othersVoted = (st) => st?.rematchVotes?.some((v) => v !== st.you);
+    if (s.status === 'finished' && othersVoted(s) && !othersVoted(prev)) Sound.play('pop');
   }
 
   function render() {
@@ -264,9 +326,10 @@
       return;
     }
     showScreen('game');
+    $('#screen-game').classList.toggle('wide', state.board.size > 3);
     $('#game-code').textContent = state.code;
-    $('#mode-badge').textContent = MODE_LABEL[state.mode];
-    $('#mode-badge').className = `mode-badge ${state.mode}`;
+    $('#game-config').innerHTML = configChips(roomCfg());
+    renderTurn();
     renderPlayers();
     renderBoard();
     renderActions();
@@ -280,40 +343,88 @@
     closePicker();
     $('#result').classList.add('hidden');
     showScreen('lobby');
+    document.title = 'Сітка 9 — чекаємо гравців';
     $('#lobby-code').textContent = state.code;
     $('#share-link').value = roomLink(state.code);
-    const timerText = state.turnSeconds ? `час на хід ${state.turnSeconds} с` : 'час на хід без обмеження';
-    $('#lobby-timer').textContent = `Режим ${MODE_LABEL[state.mode]} · ${timerText}`;
+    $('#lobby-config').innerHTML = configChips(roomCfg());
+    const joined = state.seats.filter(Boolean).length;
+    const need = state.capacity - joined;
+    $('#lobby-slots').innerHTML = state.seats
+      .map((s, i) => s
+        ? `<li class="seat-${i}">${symHtml(i)}<span>${escapeHtml(s.name)}${i === mySeat ? ' (ти)' : ''}</span></li>`
+        : `<li class="empty">${symHtml(i)}<span>Чекаємо гравця…</span></li>`)
+      .join('');
+    const wait = `Чекаємо ще ${need} ${plural(need, 'гравця', 'гравців', 'гравців')} — гра почнеться автоматично.`;
     if (state.notice?.type === 'left') {
-      $('#lobby-title').textContent = `${state.notice.name || 'Суперник'} вийшов з гри`;
-      $('#lobby-sub').textContent = 'Кімната лишилась за тобою. Надішли посилання іншому другу — або скасуй кімнату.';
+      $('#lobby-title').textContent = `${state.notice.name || 'Гравець'} вийшов з гри`;
+      $('#lobby-sub').textContent = `Кімната лишилась за вами. Надішли посилання іншому другу. ${wait}`;
     } else {
       $('#lobby-title').textContent = 'Кімната створена';
-      $('#lobby-sub').textContent = 'Надішли посилання другу — гра почнеться, щойно він зайде.';
+      $('#lobby-sub').textContent = `Надішли посилання друзям. ${wait}`;
+    }
+  }
+
+  // Плашка «чий хід» — головний акцент
+  function renderTurn() {
+    const stage = $('#turn-stage');
+    const playing = state.status === 'playing';
+    const t = state.turn;
+    const color = playing ? `var(--p${t})` : 'var(--muted)';
+    stage.style.setProperty('--tc', color);
+    $('#board-wrap').style.setProperty('--tc', color);
+    $('#board-wrap').classList.toggle('idle', !playing);
+    stage.classList.toggle('mine', isMyTurn());
+    stage.classList.toggle('over', !playing);
+    $('#turn-symbol').textContent = playing ? SYMBOLS[t] : '🏁';
+    if (!playing) {
+      $('#turn-title').textContent = 'Гру завершено';
+      $('#turn-sub').textContent = 'Реванш або нова гра — у вікні результату';
+      document.title = 'Сітка 9';
+      return;
+    }
+    if (isMyTurn()) {
+      $('#turn-title').textContent = 'Твій хід!';
+      $('#turn-sub').textContent = 'Обери клітинку й назви футболіста';
+      document.title = '🟢 Твій хід · Сітка 9';
+    } else {
+      $('#turn-title').textContent = `Ходить ${state.seats[t]?.name || 'гравець'}`;
+      const active = activeSeats();
+      let sub = amActive() ? 'Чекай свого ходу' : 'Ти вибув з цієї партії — можна спостерігати';
+      if (amActive() && active.length > 2) {
+        // скільки ходів до мене
+        let k = 0;
+        for (let step = 1; step <= state.capacity; step++) {
+          const i = (t + step) % state.capacity;
+          if (!active.includes(i)) continue;
+          k++;
+          if (i === mySeat) break;
+        }
+        sub = k === 1 ? 'Ти ходиш наступним' : `Твій хід через ${k} ${plural(k, 'хід', 'ходи', 'ходів')}`;
+      }
+      $('#turn-sub').textContent = sub;
+      document.title = `Хід: ${state.seats[t]?.name || ''} · Сітка 9`;
     }
   }
 
   function renderPlayers() {
-    [0, 1].forEach((seat) => {
-      const el = $(`#seat-${seat}`);
-      const info = state.seats[seat];
-      const me = seat === mySeat;
-      el.querySelector('.pname').textContent = (info?.name || '—') + (me ? ' (ти)' : '');
-      const status = el.querySelector('.pstatus');
-      status.textContent = info?.connected ? 'онлайн' : 'офлайн';
-      status.classList.toggle('off', !info?.connected);
-      el.querySelector('.pscore').textContent = state.scores[seat];
-      el.classList.toggle('active', state.status === 'playing' && state.turn === seat);
-    });
-    const label = $('#turn-label');
-    if (state.status === 'playing') {
-      const mine = state.turn === mySeat;
-      label.textContent = mine ? 'Твій хід' : `Хід: ${state.seats[state.turn]?.name || 'суперник'}`;
-      label.classList.toggle('mine', mine);
-    } else {
-      label.textContent = 'Гру завершено';
-      label.classList.remove('mine');
-    }
+    const pointsMode = state.board.scoring === 'points';
+    $('#players').innerHTML = state.seats
+      .map((s, i) => {
+        const out = !s || state.out.includes(i);
+        const active = state.status === 'playing' && state.turn === i;
+        const status = !s ? 'вийшов' : state.out.includes(i) ? 'вибув' : s.connected ? 'онлайн' : 'офлайн';
+        const series = state.scores[i] ? ` · серія ${state.scores[i]}` : '';
+        const score = pointsMode
+          ? `<div class="pscore" title="Очки в цій партії">${state.points[i]}<small>${plural(state.points[i], 'очко', 'очки', 'очок')}</small></div>`
+          : `<div class="pscore" title="Перемоги в серії">${state.scores[i]}<small>${plural(state.scores[i], 'перемога', 'перемоги', 'перемог')}</small></div>`;
+        return `<div class="pcard seat-${i} ${active ? 'active' : ''} ${out ? 'is-out' : ''}" id="pcard-${i}">
+          <span class="sym">${SYMBOLS[i]}</span>
+          <div class="pinfo"><div class="pname">${escapeHtml(s?.name || '—')}${i === mySeat ? ' (ти)' : ''}</div>
+            <div class="pstatus ${s && !s.connected ? 'off' : ''}">${status}${pointsMode ? series : ''}</div></div>
+          ${score}
+        </div>`;
+      })
+      .join('');
   }
 
   function categoryHtml(cat) {
@@ -328,9 +439,9 @@
         : `linear-gradient(135deg, ${c1} 0 50%, ${c2} 50% 100%)`;
       crest = `<div class="crest ${cat.type}" style="background:${bg}">${cat.icon || ''}</div>`;
     }
-    return `<div class="cat cat-${cat.type}">
+    return `<div class="cat cat-${cat.type}" title="${escapeHtml(cat.label)}" data-label="${escapeHtml(cat.label)}">
       ${crest}
-      <div class="cat-label">${escapeHtml(cat.label)}</div>
+      <div class="cat-label">${escapeHtml(state.board.size > 3 && cat.short ? cat.short : cat.label)}</div>
       <div class="cat-type">${typeLabel}</div>
     </div>`;
   }
@@ -342,82 +453,97 @@
   }
 
   function renderBoard() {
-    const { grid, board } = state;
-    const myTurn = state.status === 'playing' && state.turn === mySeat;
-    let html = `<div class="corner">✕ ◯</div>`;
+    const { grid, cells } = state;
+    const n = grid.size;
+    const myTurn = isMyTurn();
+    const board = $('#board');
+    board.style.setProperty('--n', n);
+    board.style.setProperty('--cols', n + 1);
+    board.classList.toggle('big', n > 3);
+    board.classList.toggle('waiting', state.status === 'playing' && !myTurn);
+    const scored = new Set(state.scoredLines.flatMap((l) => l.cells));
+    const justCell = state.status === 'playing' && state.lastEvent?.type === 'hit' ? state.lastEvent.cell : -1;
+
+    let html = `<div class="corner">${SYMBOLS.slice(0, state.capacity).join(' ')}</div>`;
     html += grid.cols.map(categoryHtml).join('');
-    for (let r = 0; r < 3; r++) {
+    for (let r = 0; r < n; r++) {
       html += categoryHtml(grid.rows[r]);
-      for (let c = 0; c < 3; c++) {
-        const i = r * 3 + c;
-        const b = board[i];
+      for (let c = 0; c < n; c++) {
+        const i = r * n + c;
+        const b = cells[i];
         if (b) {
-          const win = state.winLine?.includes(i) ? ' win' : '';
-          html += `<div class="cell filled seat-${b.seat}${win}" data-cell="${i}" title="${escapeHtml(b.player.uk)}">
+          const cls = [
+            state.winLine?.includes(i) ? 'win' : '',
+            scored.has(i) ? 'scored' : '',
+            i === justCell ? 'just' : '',
+          ].join(' ');
+          html += `<div class="cell filled seat-${b.seat} ${cls}" data-cell="${i}" title="${escapeHtml(b.player.uk)}">
             ${playerVisual(b.player)}
-            <div class="seat-badge">${b.seat === 0 ? '✕' : '◯'}</div>
+            <div class="seat-badge">${SYMBOLS[b.seat]}</div>
             <div class="pname-tag">${escapeHtml(b.player.uk)}</div>
           </div>`;
-        } else if (state.status === 'finished' && state.reveal?.[i]) {
-          const names = state.reveal[i].map((p) => escapeHtml(p.uk)).join('<br>');
-          html += `<div class="cell"><div class="reveal"><b>Можна було</b>${names || 'нікого не лишилось'}</div></div>`;
         } else {
-          const n = grid.answerCounts[i];
+          const cnt = grid.answerCounts[i];
           // у складному режимі кількість варіантів не показуємо
-          const count = state.mode === 'hard' ? '' : `<span class="count">${n} ${plural(n, 'варіант', 'варіанти', 'варіантів')}</span>`;
-          html += `<button class="cell ${myTurn ? 'playable' : ''}" data-cell="${i}" ${myTurn ? '' : 'disabled'} aria-label="Клітинка ${i + 1}">
-            <span class="plus">+</span>
-            ${count}
+          const count = state.mode === 'hard' ? '' : `<span class="count">${cnt} ${plural(cnt, 'варіант', 'варіанти', 'варіантів')}</span>`;
+          html += `<button class="cell ${myTurn ? 'playable' : ''}" data-cell="${i}" ${myTurn ? '' : 'disabled'} aria-label="Клітинка ${r + 1}×${c + 1}">
+            <span class="plus">+</span>${count}
           </button>`;
         }
       }
     }
-    $('#board').innerHTML = html;
-  }
-
-  function plural(n, one, few, many) {
-    const m10 = n % 10, m100 = n % 100;
-    if (m10 === 1 && m100 !== 11) return one;
-    if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
-    return many;
+    board.innerHTML = html;
   }
 
   function renderActions() {
     const playing = state.status === 'playing';
-    const myTurn = playing && state.turn === mySeat;
-    document.querySelector('[data-action="skip"]').disabled = !myTurn;
-    document.querySelector('[data-action="surrender"]').disabled = !playing;
+    const active = amActive();
+    document.querySelector('[data-action="skip"]').disabled = !isMyTurn();
+    const surrender = $('#surrender-btn');
+    surrender.disabled = !playing || !active;
+    surrender.textContent = state.capacity > 2 ? 'Вийти з партії' : 'Здатися';
     const drawBtn = $('#draw-btn');
-    const iOffered = state.drawOffer === mySeat;
-    drawBtn.disabled = !playing || iOffered;
-    drawBtn.textContent = iOffered ? 'Нічию запропоновано…' : 'Запропонувати нічию';
-    $('#reactions').classList.toggle('hidden', !state.seats.every(Boolean));
-    if (!myTurn) closePicker();
+    const iOffered = state.drawVotes.includes(mySeat);
+    drawBtn.disabled = !playing || !active || iOffered;
+    const pointsMode = state.board.scoring === 'points';
+    drawBtn.textContent = iOffered
+      ? (pointsMode ? 'Чекаємо згоди…' : 'Нічию запропоновано…')
+      : (pointsMode ? 'Завершити гру' : 'Запропонувати нічию');
+    $('#reactions').classList.toggle('hidden', state.seats.filter(Boolean).length < 2);
+    if (!isMyTurn()) closePicker();
   }
 
-  // Банер над полем: пропозиція нічиєї, суперник офлайн, гра завершена.
+  // Банер над полем: нічия, хтось зник, гра завершена.
   function renderBanner() {
     const el = $('#banner');
-    const opp = state.seats[1 - mySeat];
     let html = '';
-    if (state.status === 'playing' && state.drawOffer === 1 - mySeat) {
-      html = `<span>🤝 <b>${escapeHtml(opponentName())}</b> пропонує нічию</span>
-        <span class="banner-actions">
-          <button class="btn btn-primary" data-action="draw">Прийняти</button>
-          <button class="btn btn-secondary" data-action="decline-draw">Відхилити</button>
-        </span>`;
-    } else if (state.status === 'playing' && opp && !opp.connected) {
-      const waited = Date.now() + clockOffset - (opp.offlineSince || Date.now());
-      const left = Math.ceil((state.claimWinAfterMs - waited) / 1000);
+    const playing = state.status === 'playing';
+    const voters = state.drawVotes;
+    const totalActive = activeSeats().length;
+    const absent = activeSeats().filter((i) => i !== mySeat && !state.seats[i].connected);
+    if (playing && voters.length && amActive()) {
+      const names = voters.map((i) => escapeHtml(seatName(i))).join(', ');
+      const progress = totalActive > 2 ? ` (${voters.length}/${totalActive})` : '';
+      const what = state.board.scoring === 'points' ? 'завершити гру й порахувати очки' : 'нічию';
+      html = voters.includes(mySeat)
+        ? `<span>🤝 Ти запропонував ${what} — чекаємо інших${progress}</span>`
+        : `<span>🤝 <b>${names}</b> ${voters.length > 1 ? 'пропонують' : 'пропонує'} ${what}${progress}</span>
+           <span class="banner-actions">
+             <button class="btn btn-primary" data-action="draw">Прийняти</button>
+             <button class="btn btn-secondary" data-action="decline-draw">Відхилити</button>
+           </span>`;
+    } else if (playing && absent.length && amActive()) {
+      const now = Date.now() + clockOffset;
+      const left = Math.ceil(Math.min(...absent.map((i) => state.claimWinAfterMs - (now - (state.seats[i].offlineSince || now)))) / 1000);
+      const names = absent.map((i) => `<b>${escapeHtml(state.seats[i].name)}</b>`).join(', ');
+      const label = totalActive - absent.length <= 1 ? 'Забрати перемогу' : 'Виключити з партії';
       html = left > 0
-        ? `<span>📡 <b>${escapeHtml(opponentName())}</b> втратив з'єднання. Чекаємо… ${left} с</span>`
-        : `<span>📡 <b>${escapeHtml(opponentName())}</b> не повертається</span>
-           <span class="banner-actions"><button class="btn btn-primary" data-action="claim-win">Забрати перемогу</button></span>`;
+        ? `<span>📡 ${names} ${absent.length > 1 ? 'втратили' : 'втратив'} з'єднання. Чекаємо… ${left} с</span>`
+        : `<span>📡 ${names} не ${absent.length > 1 ? 'повертаються' : 'повертається'}</span>
+           <span class="banner-actions"><button class="btn btn-primary" data-action="claim-win">${label}</button></span>`;
     } else if (state.status === 'finished' && resultDismissed) {
-      html = `<span>Гру завершено · рахунок ${state.scores[0]} : ${state.scores[1]}</span>
-        <span class="banner-actions">
-          <button class="btn btn-primary" data-action="show-result">Реванш / вихід</button>
-        </span>`;
+      html = `<span>Гру завершено</span>
+        <span class="banner-actions"><button class="btn btn-primary" data-action="show-result">Реванш / вихід</button></span>`;
     }
     el.innerHTML = html;
     el.classList.toggle('hidden', !html);
@@ -430,22 +556,40 @@
     if (key === lastEventKey) return;
     lastEventKey = key;
     const mine = ev.seat === mySeat;
-    const who = mine ? 'Ти' : state.seats[ev.seat]?.name || 'Суперник';
-    if (ev.type === 'miss') {
-      const why = ev.failed?.length ? ` — не «${ev.failed.join('» і не «')}»` : ' не підходить';
-      toast(`✗ ${who}: ${ev.player.uk}${why}`, 'bad', 4500);
-      Sound.play('miss');
-      document.querySelector(`[data-cell="${ev.cell}"]`)?.classList.add('flash-miss');
-    } else if (ev.type === 'timeout') {
-      toast(`⏱ ${who}: час вийшов — хід переходить`, 'bad');
-      Sound.play('miss');
-    } else if (ev.type === 'skip') {
-      toast(`${who}: пропуск ходу`);
-    } else if (ev.type === 'hit' && state.status === 'playing') {
-      Sound.play('hit');
-      if (!mine) toast(`✓ ${who}: ${ev.player.uk}`, 'good');
-    } else if (ev.type === 'drawDeclined' && !mine) {
-      toast(`${who} відхилив нічию — граємо далі`);
+    const who = seatName(ev.seat);
+    switch (ev.type) {
+      case 'miss': {
+        const why = ev.failed?.length ? ` — не «${ev.failed.join('» і не «')}»` : ' не підходить';
+        toast(`✗ ${who}: ${ev.player.uk}${why}`, 'bad', 4500);
+        Sound.play('miss');
+        document.querySelector(`[data-cell="${ev.cell}"]`)?.classList.add('flash-miss');
+        break;
+      }
+      case 'timeout':
+        toast(`⏱ ${who}: час вийшов — хід переходить`, 'bad');
+        Sound.play('miss');
+        break;
+      case 'skip':
+        toast(`${who}: пропуск ходу`);
+        break;
+      case 'hit':
+        if (state.status !== 'playing') break;
+        Sound.play('hit');
+        if (ev.gained) toast(`${mine ? '🎯 Ти' : `🎯 ${who}`}: +${ev.gained} ${plural(ev.gained, 'очко', 'очки', 'очок')}!`, 'good');
+        else if (!mine) toast(`✓ ${who}: ${ev.player.uk}`, 'good');
+        break;
+      case 'drawDeclined':
+        if (!mine) toast(`${who} відхилив пропозицію — граємо далі`);
+        break;
+      case 'surrender':
+        toast(`🏳 ${who} ${mine ? 'вибув' : 'вибуває'} з партії`);
+        break;
+      case 'left':
+        toast(`🚪 ${ev.name || 'Гравець'} вийшов з кімнати — граємо далі`);
+        break;
+      case 'kicked':
+        toast(`📡 ${ev.seats.map(seatName).join(', ')} — виключено з партії`);
+        break;
     }
   }
 
@@ -456,50 +600,87 @@
       resultDismissed = false;
       return;
     }
-    const iWon = state.winner === mySeat;
-    const draw = state.winner === 'draw';
+    const { winners } = state;
+    const pointsMode = state.board.scoring === 'points';
+    const iWon = winners.includes(mySeat);
+    const draw = !winners.length;
+    const names = winners.map((i) => state.seats[i]?.name || 'Гравець').join(' і ');
     const reasons = {
-      line: draw ? '' : iWon ? 'Три в ряд!' : 'Суперник зібрав три в ряд.',
-      surrender: iWon ? 'Суперник здався.' : 'Ти здався.',
-      abandoned: iWon ? 'Суперник не повернувся.' : 'Ти надовго зник — перемогу віддано супернику.',
-      agreed: 'Нічия за згодою.',
-      full: 'Поле заповнене.',
-      stuck: 'Більше нема кого ставити у вільні клітинки.',
+      line: `${state.board.win} в ряд!`,
+      surrender: iWon
+        ? (state.capacity > 2 ? 'Інші гравці вибули.' : 'Суперник здався.')
+        : state.out.includes(mySeat) ? 'Ти здався.' : 'Гравці вибули.',
+      abandoned: iWon
+        ? (state.capacity > 2 ? 'Інші гравці вийшли або зникли.' : 'Суперник вийшов або зник.')
+        : 'Ти надовго зник — перемогу віддано іншим.',
+      agreed: pointsMode ? 'Гру завершено за згодою — рахуємо очки.' : 'Усі погодились на нічию.',
+      full: pointsMode ? 'Поле заповнене — рахуємо очки.' : 'Поле заповнене.',
+      stuck: pointsMode ? 'Більше нема кого ставити — рахуємо очки.' : 'Більше нема кого ставити у вільні клітинки.',
     };
     $('#result-emoji').textContent = draw ? '🤝' : iWon ? '🏆' : '😔';
-    $('#result-title').textContent = draw ? 'Нічия' : iWon ? 'Перемога!' : 'Поразка';
-    $('#result-sub').textContent = `${reasons[state.endReason] || ''} Рахунок ${state.scores[0]} : ${state.scores[1]}`;
+    $('#result-title').textContent = draw ? 'Нічия' : iWon ? (winners.length > 1 ? 'Ділиш перемогу!' : 'Перемога!') : `Переміг ${names}`;
+    $('#result-sub').textContent = reasons[state.endReason] || '';
 
-    const voted = state.rematchVotes.includes(mySeat);
-    const opponentVoted = state.rematchVotes.includes(1 - mySeat);
+    // таблиця місць
+    const seats = state.seats.map((s, i) => i).filter((i) => state.seats[i] || state.points[i] || winners.includes(i));
+    seats.sort((a, b) =>
+      (pointsMode ? state.points[b] - state.points[a] : 0) ||
+      (winners.includes(b) - winners.includes(a)) ||
+      (state.out.includes(a) - state.out.includes(b)) || a - b);
+    $('#standings').innerHTML = seats
+      .map((i, k) => {
+        const val = pointsMode
+          ? `${state.points[i]} ${plural(state.points[i], 'очко', 'очки', 'очок')} · серія ${state.scores[i]}`
+          : `серія ${state.scores[i]}`;
+        return `<li class="seat-${i} ${winners.includes(i) ? 'win' : ''}">
+          <span class="place">${k + 1}</span><span class="sym">${SYMBOLS[i]}</span>
+          <span class="nm">${escapeHtml(state.seats[i]?.name || 'вийшов')}${i === mySeat ? ' (ти)' : ''}</span>
+          <span class="val">${val}</span></li>`;
+      })
+      .join('');
+
+    const present = state.seats.map((s, i) => (s ? i : -1)).filter((i) => i >= 0);
+    const full = present.length === state.capacity;
+    const votes = state.rematchVotes;
+    const voted = votes.includes(mySeat);
     const note = $('#result-rematch');
-    note.classList.toggle('hidden', !opponentVoted && !voted);
-    note.textContent = opponentVoted
-      ? `🔁 ${opponentName()} хоче реванш`
-      : `Чекаємо, що відповість ${opponentName()}…`;
     const btn = $('#rematch-btn');
-    btn.disabled = voted;
-    btn.textContent = voted ? 'Чекаємо суперника…' : opponentVoted ? 'Прийняти реванш' : 'Реванш';
+    if (!full) {
+      note.textContent = 'Хтось вийшов з кімнати — для реваншу дочекайтесь нового гравця або почніть нову гру.';
+      note.classList.remove('hidden');
+      btn.disabled = true;
+      btn.textContent = 'Реванш';
+    } else {
+      const others = votes.filter((v) => v !== mySeat).map((v) => state.seats[v]?.name).filter(Boolean);
+      note.classList.toggle('hidden', !votes.length);
+      note.textContent = others.length
+        ? `🔁 ${others.join(', ')} ${others.length > 1 ? 'хочуть' : 'хоче'} реванш (${votes.length}/${state.capacity})`
+        : `Чекаємо відповіді інших… (${votes.length}/${state.capacity})`;
+      btn.disabled = voted;
+      btn.textContent = voted ? 'Чекаємо інших…' : others.length ? 'Прийняти реванш' : 'Реванш';
+    }
     el.classList.toggle('hidden', resultDismissed);
     closePicker();
   }
 
-  // ── таймер (і відлік у банері «суперник офлайн»)
+  // ── таймер: кільце навколо символу того, хто ходить
+  const RING = 125.66;
   function tick() {
-    const timer = $('#timer');
-    if (state && state.status === 'playing' && state.seats.some((s) => s && !s.connected)) renderBanner();
-    if (!state || state.status !== 'playing' || !state.deadline) {
-      timer.classList.remove('low');
-      $('#timer-bar').style.width = '0%';
-      $('#timer-text').textContent = state?.status === 'playing' ? '∞' : '';
+    if (!state || state.status === 'waiting') return;
+    const stage = $('#turn-stage');
+    if (state.status === 'playing' && state.seats.some((s) => s && !s.connected)) renderBanner();
+    if (state.status !== 'playing' || !state.deadline) {
+      stage.classList.remove('low');
+      $('#ring-fg').style.strokeDashoffset = state.status === 'playing' ? 0 : RING;
+      $('#turn-time').textContent = state.status === 'playing' ? '∞' : '';
       return;
     }
     const left = Math.max(0, state.deadline - (Date.now() + clockOffset));
     const total = state.turnSeconds * 1000;
-    $('#timer-bar').style.width = `${(left / total) * 100}%`;
-    $('#timer-text').textContent = `${Math.ceil(left / 1000)} с`;
-    timer.classList.toggle('low', left < 5000);
+    $('#ring-fg').style.strokeDashoffset = RING * (1 - left / total);
     const sec = Math.ceil(left / 1000);
+    $('#turn-time').textContent = `${sec}`;
+    stage.classList.toggle('low', left < 5000);
     if (state.turn === mySeat && sec <= 5 && sec > 0 && sec !== tick.lastSec) Sound.play('tick');
     tick.lastSec = sec;
   }
@@ -511,7 +692,7 @@
     if (emoji) socket.emit('react', emoji);
   });
   socket.on('reaction', ({ seat, emoji }) => {
-    const card = $(`#seat-${seat}`);
+    const card = $(`#pcard-${seat}`);
     if (!card) return;
     const bubble = document.createElement('div');
     bubble.className = 'reaction-bubble';
@@ -528,9 +709,10 @@
   const pickerInput = $('#picker-input');
 
   function openPicker(cell) {
+    const n = state.grid.size;
     pickerCell = cell;
-    const row = state.grid.rows[Math.floor(cell / 3)];
-    const col = state.grid.cols[cell % 3];
+    const row = state.grid.rows[Math.floor(cell / n)];
+    const col = state.grid.cols[cell % n];
     $('#picker-title').innerHTML = `<span class="tag">${escapeHtml(row.label)}</span><span class="x">×</span><span class="tag">${escapeHtml(col.label)}</span>`;
     pickerInput.value = '';
     renderSuggestions();
@@ -591,7 +773,7 @@
         return;
       }
       closePicker();
-      if (res.correct) toast(`✓ ${p.uk} — є!`, 'good');
+      if (res.correct && state.board.scoring !== 'points') toast(`✓ ${p.uk} — є!`, 'good');
     });
   }
 
@@ -619,10 +801,13 @@
   // ── дії
   $('#board').addEventListener('click', (e) => {
     const cell = e.target.closest('.cell.playable');
-    if (cell) openPicker(Number(cell.dataset.cell));
+    if (cell) return openPicker(Number(cell.dataset.cell));
+    // на великому полі назви категорій обрізані — по тапу показуємо повністю
+    const cat = e.target.closest('.cat');
+    if (cat && state?.board.size > 3) toast(cat.dataset.label);
   });
 
-  document.addEventListener('click', (e) => {
+  document.addEventListener('click', async (e) => {
     const target = e.target.closest('[data-action]');
     if (!target) return;
     const action = target.dataset.action;
@@ -630,13 +815,20 @@
     const ack = (res) => res?.error && toast(res.error, 'bad');
     switch (action) {
       case 'close-picker': closePicker(); break;
+      case 'close-rules': $('#rules-modal').classList.add('hidden'); break;
+      case 'rules': if (state) openRules(roomCfg()); break;
+      case 'confirm-yes': closeConfirm(true); break;
+      case 'confirm-no': closeConfirm(false); break;
       case 'skip': socket.emit('skip', null, ack); break;
       case 'draw': socket.emit('offerDraw', null, ack); break;
       case 'decline-draw': socket.emit('declineDraw', null, ack); break;
       case 'claim-win': socket.emit('claimWin', null, ack); break;
-      case 'surrender':
-        if (confirm('Точно здатися? Перемогу отримає суперник.')) socket.emit('surrender', null, ack);
+      case 'surrender': {
+        const multi = state.capacity > 2 && activeSeats().length > 2;
+        const text = multi ? 'Вийти з цієї партії? Гра триватиме без тебе.' : 'Здатися? Перемогу отримає суперник.';
+        if (await askConfirm(text, multi ? 'Вийти з партії' : 'Здатися')) socket.emit('surrender', null, ack);
         break;
+      }
       case 'rematch': socket.emit('rematch', null, ack); break;
       case 'view-board':
         resultDismissed = true;
@@ -649,7 +841,7 @@
         renderBanner();
         break;
       case 'leave-confirm':
-        if (state?.status === 'playing' && !confirm('Вийти з кімнати? Поточна гра завершиться.')) break;
+        if (state?.status === 'playing' && !(await askConfirm('Вийти з кімнати? Ти покинеш поточну гру.', 'Вийти'))) break;
         leaveRoom();
         break;
       case 'leave':
@@ -659,10 +851,13 @@
   });
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closePicker();
+    if (e.key !== 'Escape') return;
+    closePicker();
+    $('#rules-modal').classList.add('hidden');
+    if (!$('#confirm').classList.contains('hidden')) closeConfirm(false);
   });
 
-  // ── налаштування звуку: повзунок гучності + вимкнення
+  // ── звук: повзунок гучності + вимкнення
   const muteBtn = $('#mute-btn');
   const soundPanel = $('#sound-panel');
   const volumeInput = $('#volume');

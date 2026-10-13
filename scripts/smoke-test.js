@@ -1,4 +1,5 @@
-// Прогін гри двома ботами через справжній сервер: створення, вхід, хід, помилка, повтор, таймаут, перемога, реванш.
+// Прогін гри ботами через справжній сервер: класика вдвох (хід, помилка, повтор, таймаут, перемога, реванш, вихід),
+// режими складності, великі поля, гра утрьох і вчотирьох.
 // Запуск: npm test (сервер піднімається сам на випадковому порту).
 
 const { spawn } = require('child_process');
@@ -23,13 +24,15 @@ const nextState = (s, pred = () => true) =>
   });
 
 function answerFor(state, cell, exclude = []) {
-  const r = state.grid.rows[Math.floor(cell / 3)].id;
-  const c = state.grid.cols[cell % 3].id;
+  const n = state.grid.size;
+  const r = state.grid.rows[Math.floor(cell / n)].id;
+  const c = state.grid.cols[cell % n].id;
   return players.find((p) => matches(p, r) && matches(p, c) && !state.usedIds.includes(p.id) && !exclude.includes(p.id));
 }
 function wrongFor(state, cell) {
-  const r = state.grid.rows[Math.floor(cell / 3)].id;
-  const c = state.grid.cols[cell % 3].id;
+  const n = state.grid.size;
+  const r = state.grid.rows[Math.floor(cell / n)].id;
+  const c = state.grid.cols[cell % n].id;
   return players.find((p) => !(matches(p, r) && matches(p, c)));
 }
 
@@ -60,13 +63,13 @@ async function main() {
 
   // правильний хід А в клітинку 0
   const p0 = answerFor(st, 0);
-  let wait = nextState(b, (s) => s.board[0]);
+  let wait = nextState(b, (s) => s.cells[0]);
   const r1 = await emit(a, 'move', { cell: 0, playerId: p0.id });
   assert.ok(r1.correct, 'правильна відповідь');
   st = await wait;
   assert.strictEqual(st.turn, 1);
-  assert.ok('photo' in st.board[0].player, 'клітинка містить поле фото');
-  console.log('✓ А поставив', st.board[0].player.uk);
+  assert.ok('photo' in st.cells[0].player, 'клітинка містить поле фото');
+  console.log('✓ А поставив', st.cells[0].player.uk);
 
   // Б пробує того ж гравця в іншу клітинку — заборонено, хід не втрачається
   const r2 = await emit(b, 'move', { cell: 4, playerId: p0.id });
@@ -83,7 +86,7 @@ async function main() {
   console.log('✓ помилка → хід до суперника (не «' + st.lastEvent.failed.join('», не «') + '»)');
 
   // А займає 1, Б пропускає, А займає 2 → перемога в ряду
-  wait = nextState(b, (s) => s.board[1]);
+  wait = nextState(b, (s) => s.cells[1]);
   await emit(a, 'move', { cell: 1, playerId: answerFor(st, 1).id });
   st = await wait;
   wait = nextState(a, (s) => s.turn === 0 && s.lastEvent?.type === 'skip');
@@ -92,10 +95,10 @@ async function main() {
   const fin = nextState(b, (s) => s.status === 'finished');
   await emit(a, 'move', { cell: 2, playerId: answerFor(st, 2).id });
   st = await fin;
-  assert.strictEqual(st.winner, 0);
+  assert.deepStrictEqual(st.winners, [0]);
   assert.deepStrictEqual(st.winLine, [0, 1, 2]);
   assert.deepStrictEqual(st.scores, [1, 0]);
-  assert.ok(st.reveal.some(Boolean), 'після гри показані можливі відповіді');
+  assert.ok(!('reveal' in st), 'після гри відповіді не розкриваються');
   console.log('✓ перемога А, рахунок', st.scores.join(':'));
 
   // реванш — починає Б
@@ -133,13 +136,13 @@ async function main() {
   await emit(d, 'declineDraw');
   let sd = await w;
   assert.strictEqual(sd.status, 'playing');
-  assert.strictEqual(sd.drawOffer, null);
+  assert.strictEqual(sd.drawVotes.length, 0);
   console.log('✓ нічию відхилено — граємо далі');
   // нічия за згодою
   await emit(c, 'offerDraw');
   const dr = nextState(c, (s) => s.status === 'finished');
   await emit(d, 'offerDraw');
-  assert.strictEqual((await dr).winner, 'draw');
+  assert.deepStrictEqual((await dr).winners, []);
   console.log('✓ без ліміту часу + нічия за згодою');
 
   // третій гравець не може зайти
@@ -174,7 +177,7 @@ async function main() {
   w = nextState(c, (s) => s.status === 'finished');
   assert.ok((await emit(c, 'claimWin')).ok);
   sd = await w;
-  assert.strictEqual(sd.winner, 0);
+  assert.deepStrictEqual(sd.winners, [0]);
   assert.strictEqual(sd.endReason, 'abandoned');
   console.log('✓ суперник офлайн → перемогу забрано');
 
@@ -214,6 +217,83 @@ async function main() {
   console.log('✓ легкий режим:', [...sd.grid.rows, ...sd.grid.cols].map((c) => c.label).join(', '), '| мін', Math.min(...sd.grid.answerCounts));
   e1.close();
   e2.close();
+
+  // ── утрьох: «збір ліній» 6×6
+  const t = [io(URL), io(URL), io(URL)];
+  const tr = await emit(t[0], 'create', { name: 'Перший', turnSeconds: 0, mode: 'easy', board: 'lines', players: 3 });
+  await emit(t[1], 'join', { code: tr.code, name: 'Другий' });
+  w = nextState(t[0], (s) => s.status === 'playing');
+  await emit(t[2], 'join', { code: tr.code, name: 'Третій' });
+  sd = await w;
+  assert.strictEqual(sd.capacity, 3);
+  assert.strictEqual(sd.grid.size, 6);
+  assert.strictEqual(sd.cells.length, 36);
+  assert.strictEqual(sd.board.scoring, 'points');
+  console.log('✓ утрьох, 6×6 «збір ліній»:', sd.grid.rows.length + sd.grid.cols.length, 'категорій');
+  // ходи по колу: 0 → 1 → 2 → 0
+  w = nextState(t[0], (s) => s.turn === 1);
+  assert.ok((await emit(t[0], 'move', { cell: 0, playerId: answerFor(sd, 0).id })).correct);
+  sd = await w;
+  w = nextState(t[0], (s) => s.turn === 2);
+  await emit(t[1], 'skip');
+  sd = await w;
+  // третій здається → вибуває, гра триває, хід до першого
+  w = nextState(t[0], (s) => s.out.includes(2));
+  await emit(t[2], 'surrender');
+  sd = await w;
+  assert.strictEqual(sd.status, 'playing');
+  assert.strictEqual(sd.turn, 0);
+  console.log('✓ хід по колу; третій здався — гра триває без нього');
+  // нічия: двоє активних погоджуються → кінець
+  w = nextState(t[0], (s) => s.status === 'finished');
+  await emit(t[0], 'offerDraw');
+  await emit(t[1], 'offerDraw');
+  sd = await w;
+  assert.strictEqual(sd.endReason, 'agreed');
+  console.log('✓ нічия — коли погодились усі активні');
+  // реванш утрьох — починає наступний
+  w = nextState(t[0], (s) => s.status === 'playing');
+  for (const sock of t) await emit(sock, 'rematch');
+  sd = await w;
+  assert.strictEqual(sd.turn, 1, 'у реванші починає наступний гравець');
+  assert.strictEqual(sd.out.length, 0);
+  // другий виходить посеред гри → гра триває вдвох, новий гравець зайти не може
+  w = nextState(t[0], (s) => s.seats[1] === null);
+  await emit(t[1], 'leave');
+  sd = await w;
+  assert.strictEqual(sd.status, 'playing');
+  assert.notStrictEqual(sd.turn, 1);
+  const late = io(URL);
+  assert.ok((await emit(late, 'join', { code: tr.code, name: 'Запізнився' })).error, 'посеред гри зайти не можна');
+  late.close();
+  // перший здається → лишився один → він переміг
+  w = nextState(t[0], (s) => s.status === 'finished');
+  await emit(t[0], 'surrender');
+  sd = await w;
+  assert.deepStrictEqual(sd.winners, [2]);
+  console.log('✓ вихід посеред гри утрьох; останній активний перемагає');
+  t.forEach((x) => x.close());
+
+  // ── вчотирьох на 5×5, і класика завжди вдвох
+  const q = [io(URL), io(URL), io(URL), io(URL)];
+  const qr = await emit(q[0], 'create', { name: 'А', turnSeconds: 20, mode: 'hard', board: 'five', players: 4 });
+  for (let i = 1; i < 3; i++) await emit(q[i], 'join', { code: qr.code, name: 'Гравець' + i });
+  w = nextState(q[0], (s) => s.status === 'playing');
+  await emit(q[3], 'join', { code: qr.code, name: 'Гравець3' });
+  sd = await w;
+  assert.strictEqual(sd.capacity, 4);
+  assert.strictEqual(sd.grid.size, 5);
+  assert.strictEqual(sd.board.win, 4);
+  console.log('✓ вчотирьох, 5×5 · 4 в ряд, складний:', sd.grid.rows.map((x) => x.label).join(', '));
+  q.forEach((x) => x.close());
+  const k = io(URL);
+  const kstate = new Promise((res) => k.once('state', res));
+  const kr = await emit(k, 'create', { name: 'Класик', board: 'classic', players: 4 });
+  const ks = await kstate;
+  assert.strictEqual(kr.ok, true);
+  assert.strictEqual(ks.capacity, 2, 'класика — лише вдвох');
+  k.close();
+  console.log('✓ класика 3×3 завжди вдвох');
 
   console.log('\nУСІ ПЕРЕВІРКИ ПРОЙШЛИ');
   [a2, b, c, d, e, f].forEach((s) => s.close());

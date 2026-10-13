@@ -1,18 +1,14 @@
 const { playerById, categoryById, matches } = require('./data');
 const { generateGrid, cellCandidates } = require('./grid');
+const { BOARDS, segments } = require('./boards');
 
-const LINES = [
-  [0, 1, 2], [3, 4, 5], [6, 7, 8],
-  [0, 3, 6], [1, 4, 7], [2, 5, 8],
-  [0, 4, 8], [2, 4, 6],
-];
 const ALLOWED_TIMERS = [0, 15, 20, 30, 45, 60]; // 0 — без обмеження
 const MODES = ['easy', 'normal', 'hard'];
-const CLAIM_WIN_AFTER_MS = Number(process.env.CLAIM_WIN_MS) || 30 * 1000; // суперник офлайн стільки — можна забрати перемогу
+const CLAIM_WIN_AFTER_MS = Number(process.env.CLAIM_WIN_MS) || 30 * 1000; // гравець офлайн стільки — можна виключити
 
 function publicCategory(id) {
   const c = categoryById.get(id);
-  return { id: c.id, type: c.type, label: c.label, colors: c.colors, icon: c.icon || null, img: c.img || null };
+  return { id: c.id, type: c.type, label: c.label, short: c.short || null, colors: c.colors, icon: c.icon || null, img: c.img || null };
 }
 
 function publicPlayer(p) {
@@ -20,33 +16,41 @@ function publicPlayer(p) {
 }
 
 class Room {
-  constructor(code, turnSeconds, onChange, mode = 'normal') {
+  constructor(code, turnSeconds, onChange, mode = 'normal', boardKey = 'classic', capacity = 2) {
     this.code = code;
     this.turnSeconds = ALLOWED_TIMERS.includes(turnSeconds) ? turnSeconds : 20;
     this.mode = MODES.includes(mode) ? mode : 'normal';
+    this.boardKey = BOARDS[boardKey] ? boardKey : 'classic';
+    this.cfg = BOARDS[this.boardKey];
+    const cap = Number(capacity);
+    this.capacity = Number.isInteger(cap) && cap >= 2 && cap <= this.cfg.maxPlayers ? cap : 2;
     this.onChange = onChange;
-    this.seats = [null, null]; // { token, name, connected, offlineSince }
-    this.scores = [0, 0];
+    this.seats = Array(this.capacity).fill(null); // { token, name, connected, offlineSince }
+    this.scores = Array(this.capacity).fill(0); // перемоги в серії
     this.starter = 0;
     this.status = 'waiting'; // waiting | playing | finished
     this.timer = null;
-    this.notice = null; // повідомлення для того, хто лишився: { type: 'left', name }
+    this.notice = null; // { type: 'left', name } — показуємо тим, хто лишився
     this.lastActivity = Date.now();
-    this.eventSeq = 0; // номер події — клієнт по ньому розуміє, що подія нова (а не повтор при зміні стану)
+    this.eventSeq = 0; // номер події — клієнт по ньому розуміє, що подія нова
     this.resetGameState();
   }
 
   resetGameState() {
+    const n = this.cfg.size;
     this.grid = null;
-    this.board = Array(9).fill(null); // { seat, playerId }
+    this.board = Array(n * n).fill(null); // { seat, playerId }
     this.used = new Set();
+    this.out = new Set(); // місця, що вибули з поточної партії (здався / виключений / вийшов)
+    this.points = Array(this.capacity).fill(0); // очки в режимі «збір ліній»
+    this.scoredLines = []; // [{ seat, cells }] — зібрані лінії (для підсвічування)
     this.turn = 0;
     this.deadline = null;
-    this.winner = null; // 0 | 1 | 'draw'
+    this.winners = []; // місця переможців; порожньо + finished = нічия
     this.winLine = null;
     this.endReason = null;
     this.lastEvent = null;
-    this.drawOffer = null; // місце, яке запропонувало нічию
+    this.drawVotes = new Set(); // хто погодився на нічию
     this.rematchVotes = new Set();
     this.moveNo = 0;
   }
@@ -60,9 +64,23 @@ class Room {
     return this.seats.every((s) => s === null);
   }
 
+  presentSeats() {
+    return this.seats.map((s, i) => (s ? i : -1)).filter((i) => i !== -1);
+  }
+
+  // Ті, хто ще бере участь у поточній партії.
+  activeSeats() {
+    return this.presentSeats().filter((i) => !this.out.has(i));
+  }
+
+  event(data) {
+    this.lastEvent = { id: ++this.eventSeq, ...data };
+  }
+
   join(token, name) {
     let seat = this.seatOf(token);
     if (seat === -1) {
+      if (this.status !== 'waiting') return { error: 'Гра вже йде — дочекайся кінця або створи свою' };
       seat = this.seats.findIndex((s) => s === null);
       if (seat === -1) return { error: 'Кімната вже заповнена — створи свою гру' };
       this.seats[seat] = { token, name, connected: true, offlineSince: null };
@@ -88,30 +106,45 @@ class Room {
     this.changed();
   }
 
-  // Гравець вийшов з кімнати. Хто лишився — чекає нового суперника за тим самим посиланням.
+  // Повернення в лобі: ті, хто лишився, займають перші місця й чекають нових гравців за тим самим посиланням.
+  backToLobby(notice) {
+    clearTimeout(this.timer);
+    const left = this.seats.filter(Boolean);
+    this.seats = [...left, ...Array(this.capacity - left.length).fill(null)];
+    this.resetGameState();
+    this.status = 'waiting';
+    this.scores = Array(this.capacity).fill(0);
+    this.starter = 0;
+    this.notice = notice;
+  }
+
   leave(seat) {
     const name = this.seats[seat]?.name;
     this.seats[seat] = null;
     this.touch();
-    clearTimeout(this.timer);
-    this.resetGameState();
-    this.status = 'waiting';
-    this.scores = [0, 0];
-    this.starter = 0;
-    this.notice = { type: 'left', name };
-    // той, хто лишився, переїжджає на місце 0, щоб новий гравець сів на 1
-    if (!this.seats[0] && this.seats[1]) this.seats = [this.seats[1], null];
-    this.changed();
+    const present = this.presentSeats();
+    if (this.status === 'playing' && present.length >= 2) {
+      // утрьох/вчотирьох гра триває без того, хто вийшов (його клітинки лишаються на полі)
+      this.out.add(seat);
+      this.drawVotes.delete(seat);
+      this.event({ type: 'left', seat, name });
+      if (this.activeSeats().length < 2) this.finish(this.activeSeats(), 'abandoned');
+      else if (this.turn === seat) this.passTurn();
+      else this.changed();
+    } else {
+      this.backToLobby({ type: 'left', name });
+      this.changed();
+    }
     return { ok: true };
   }
 
   // ── партія
   newGame() {
     this.resetGameState();
-    this.grid = generateGrid(this.mode);
+    this.grid = generateGrid(this.mode, this.cfg.size);
     this.status = 'playing';
     this.turn = this.starter;
-    this.starter = 1 - this.starter; // у наступній партії починає інший
+    this.starter = (this.starter + 1) % this.capacity; // у наступній партії починає наступний
     this.startTurn();
   }
 
@@ -131,20 +164,28 @@ class Room {
 
   onTimeout(moveNo) {
     if (this.status !== 'playing' || moveNo !== this.moveNo) return;
-    this.lastEvent = { id: ++this.eventSeq, type: 'timeout', seat: this.turn };
+    this.event({ type: 'timeout', seat: this.turn });
     this.passTurn();
   }
 
+  // Хід переходить до наступного активного гравця по колу.
   passTurn() {
-    this.drawOffer = null;
-    this.turn = 1 - this.turn;
+    const active = this.activeSeats();
+    for (let step = 1; step <= this.capacity; step++) {
+      const next = (this.turn + step) % this.capacity;
+      if (active.includes(next)) {
+        this.turn = next;
+        break;
+      }
+    }
     this.startTurn();
   }
 
   move(seat, cell, playerId) {
+    const n = this.cfg.size;
     if (this.status !== 'playing') return { error: 'Гра не йде' };
     if (seat !== this.turn) return { error: 'Зараз не ваш хід' };
-    if (!Number.isInteger(cell) || cell < 0 || cell > 8) return { error: 'Невірна клітинка' };
+    if (!Number.isInteger(cell) || cell < 0 || cell >= n * n) return { error: 'Невірна клітинка' };
     if (this.board[cell]) return { error: 'Клітинка вже зайнята' };
     const player = playerById.get(playerId);
     if (!player) return { error: 'Такого футболіста немає в базі' };
@@ -152,77 +193,109 @@ class Room {
     if (this.used.has(player.id)) return { error: `${player.uk} вже був у цій грі` };
 
     this.touch();
-    const row = this.grid.rows[Math.floor(cell / 3)];
-    const col = this.grid.cols[cell % 3];
+    this.drawVotes.clear();
+    const row = this.grid.rows[Math.floor(cell / n)];
+    const col = this.grid.cols[cell % n];
     const correct = matches(player, row) && matches(player, col);
 
     if (!correct) {
       // яку саме умову не виконано — показуємо після ходу, щоб було зрозуміло «чому»
       const failed = [row, col].filter((id) => !matches(player, id)).map((id) => categoryById.get(id).label);
-      this.lastEvent = { id: ++this.eventSeq, type: 'miss', seat, cell, player: publicPlayer(player), failed };
+      this.event({ type: 'miss', seat, cell, player: publicPlayer(player), failed });
       this.passTurn();
       return { ok: true, correct: false };
     }
 
     this.board[cell] = { seat, playerId: player.id };
     this.used.add(player.id);
-    this.lastEvent = { id: ++this.eventSeq, type: 'hit', seat, cell, player: publicPlayer(player) };
+    const mine = (i) => this.board[i] && this.board[i].seat === seat;
+    const completed = segments(n, this.cfg.win).filter((s) => s.includes(cell) && s.every(mine));
 
-    const line = LINES.find((l) => l.every((i) => this.board[i] && this.board[i].seat === seat));
-    if (line) {
-      this.finish(seat, 'line', line);
-    } else if (!this.hasPossibleMoves()) {
-      this.finish('draw', this.board.every(Boolean) ? 'full' : 'stuck');
-    } else {
-      this.passTurn();
+    if (this.cfg.scoring === 'points') {
+      this.points[seat] += completed.length;
+      completed.forEach((cells) => this.scoredLines.push({ seat, cells }));
+      this.event({ type: 'hit', seat, cell, player: publicPlayer(player), gained: completed.length });
+      if (!this.hasPossibleMoves()) this.finishByPoints(this.board.every(Boolean) ? 'full' : 'stuck');
+      else this.passTurn();
+      return { ok: true, correct: true };
     }
+
+    this.event({ type: 'hit', seat, cell, player: publicPlayer(player) });
+    if (completed.length) this.finish([seat], 'line', completed[0]);
+    else if (!this.hasPossibleMoves()) this.finish([], this.board.every(Boolean) ? 'full' : 'stuck');
+    else this.passTurn();
     return { ok: true, correct: true };
   }
 
   skip(seat) {
     if (this.status !== 'playing' || seat !== this.turn) return { error: 'Зараз не ваш хід' };
     this.touch();
-    this.lastEvent = { id: ++this.eventSeq, type: 'skip', seat };
+    this.event({ type: 'skip', seat });
     this.passTurn();
     return { ok: true };
   }
 
+  // Нічия — коли погодились усі, хто ще в грі.
   offerDraw(seat) {
     if (this.status !== 'playing') return { error: 'Гра не йде' };
+    if (!this.activeSeats().includes(seat)) return { error: 'Ти вже не в цій партії' };
     this.touch();
-    if (this.drawOffer === 1 - seat) {
-      this.finish('draw', 'agreed');
+    this.drawVotes.add(seat);
+    if (this.activeSeats().every((s) => this.drawVotes.has(s))) {
+      if (this.cfg.scoring === 'points') this.finishByPoints('agreed');
+      else this.finish([], 'agreed');
     } else {
-      this.drawOffer = seat;
-      this.lastEvent = { id: ++this.eventSeq, type: 'drawOffer', seat };
+      this.event({ type: 'drawOffer', seat });
       this.changed();
     }
     return { ok: true };
   }
 
   declineDraw(seat) {
-    if (this.status !== 'playing' || this.drawOffer !== 1 - seat) return { error: 'Немає пропозиції нічиєї' };
-    this.drawOffer = null;
-    this.lastEvent = { id: ++this.eventSeq, type: 'drawDeclined', seat };
+    if (this.status !== 'playing' || !this.drawVotes.size || this.drawVotes.has(seat)) {
+      return { error: 'Немає пропозиції нічиєї' };
+    }
+    this.drawVotes.clear();
+    this.event({ type: 'drawDeclined', seat });
     this.changed();
     return { ok: true };
   }
 
+  // Здатися: удвох — перемога супернику; утрьох/вчотирьох — вибуваєш, гра триває.
   surrender(seat) {
     if (this.status !== 'playing') return { error: 'Гра не йде' };
+    if (!this.activeSeats().includes(seat)) return { error: 'Ти вже не в цій партії' };
     this.touch();
-    this.finish(1 - seat, 'surrender');
+    this.out.add(seat);
+    this.drawVotes.delete(seat);
+    const active = this.activeSeats();
+    if (active.length < 2) {
+      this.finish(active, 'surrender');
+    } else {
+      this.event({ type: 'surrender', seat });
+      if (this.turn === seat) this.passTurn();
+      else this.changed();
+    }
     return { ok: true };
   }
 
-  // Суперник надовго зник — можна не чекати і забрати перемогу.
+  // Хтось надовго зник — решта може не чекати: він вибуває з партії.
   claimWin(seat) {
     if (this.status !== 'playing') return { error: 'Гра не йде' };
-    const opp = this.seats[1 - seat];
-    if (!opp || opp.connected || Date.now() - opp.offlineSince < CLAIM_WIN_AFTER_MS) {
-      return { error: 'Суперник ще в грі' };
+    const absent = this.activeSeats().filter((i) => {
+      const s = this.seats[i];
+      return i !== seat && !s.connected && Date.now() - s.offlineSince >= CLAIM_WIN_AFTER_MS;
+    });
+    if (!absent.length) return { error: 'Усі ще в грі' };
+    absent.forEach((i) => this.out.add(i));
+    const active = this.activeSeats();
+    if (active.length < 2) {
+      this.finish(active, 'abandoned');
+    } else {
+      this.event({ type: 'kicked', seats: absent });
+      if (absent.includes(this.turn)) this.passTurn();
+      else this.changed();
     }
-    this.finish(seat, 'abandoned');
     return { ok: true };
   }
 
@@ -231,23 +304,32 @@ class Room {
     return this.board.some((b, i) => !b && candidates[i].length > 0);
   }
 
-  finish(winner, reason, line = null) {
+  // «Збір ліній»: перемагає той, у кого більше очок серед тих, хто ще в грі.
+  finishByPoints(reason) {
+    const active = this.activeSeats();
+    const best = Math.max(...active.map((s) => this.points[s]));
+    const winners = best > 0 ? active.filter((s) => this.points[s] === best) : [];
+    this.finish(winners.length === active.length ? [] : winners, reason);
+  }
+
+  finish(winners, reason, line = null) {
     clearTimeout(this.timer);
     this.status = 'finished';
-    this.winner = winner;
+    this.winners = winners;
     this.endReason = reason;
     this.winLine = line;
     this.deadline = null;
-    this.drawOffer = null;
-    if (winner === 0 || winner === 1) this.scores[winner]++;
+    this.drawVotes.clear();
+    winners.forEach((s) => this.scores[s]++);
     this.changed();
   }
 
+  // Реванш — коли погодились усі, хто в кімнаті.
   voteRematch(seat) {
     if (this.status !== 'finished') return { error: 'Гра ще не завершена' };
-    if (!this.seats[1 - seat]) return { error: 'Суперник вийшов' };
+    if (this.presentSeats().length < this.capacity) return { error: 'Хтось вийшов — зачекайте нового гравця' };
     this.rematchVotes.add(seat);
-    if (this.rematchVotes.size === 2) this.newGame();
+    if (this.presentSeats().every((s) => this.rematchVotes.has(s))) this.newGame();
     else this.changed();
     return { ok: true };
   }
@@ -265,46 +347,44 @@ class Room {
     clearTimeout(this.timer);
   }
 
-  // Стан для клієнтів. Правильні відповіді не відправляємо, поки гра йде.
+  // Стан для клієнтів. Правильні відповіді не відправляємо ніколи — ні під час гри, ні після.
   publicState() {
     const state = {
       code: this.code,
       turnSeconds: this.turnSeconds,
       mode: this.mode,
+      board: { key: this.boardKey, ...this.cfg },
+      capacity: this.capacity,
       seats: this.seats.map((s) =>
         s ? { name: s.name, connected: s.connected, offlineSince: s.offlineSince } : null,
       ),
+      out: [...this.out],
       claimWinAfterMs: CLAIM_WIN_AFTER_MS,
       scores: this.scores,
+      points: this.points,
+      scoredLines: this.scoredLines,
       status: this.status,
       notice: this.notice,
       turn: this.turn,
       deadline: this.deadline,
       serverNow: Date.now(),
-      winner: this.winner,
+      winners: this.winners,
       winLine: this.winLine,
       endReason: this.endReason,
       lastEvent: this.lastEvent,
-      drawOffer: this.drawOffer,
+      drawVotes: [...this.drawVotes],
       rematchVotes: [...this.rematchVotes],
       usedIds: [...this.used],
       grid: null,
-      board: this.board.map((b) => (b ? { seat: b.seat, player: publicPlayer(playerById.get(b.playerId)) } : null)),
-      reveal: null,
+      cells: this.board.map((b) => (b ? { seat: b.seat, player: publicPlayer(playerById.get(b.playerId)) } : null)),
     };
     if (this.grid) {
       state.grid = {
+        size: this.cfg.size,
         rows: this.grid.rows.map(publicCategory),
         cols: this.grid.cols.map(publicCategory),
         answerCounts: this.grid.answerCounts,
       };
-    }
-    if (this.status === 'finished' && this.grid) {
-      // Після гри показуємо, кого можна було поставити у порожні клітинки (найвідоміших).
-      const candidates = cellCandidates(this.grid.rows, this.grid.cols, this.used);
-      state.reveal = candidates.map((ids, i) =>
-        this.board[i] ? null : ids.slice(0, 3).map((id) => publicPlayer(playerById.get(id))),
-      );
     }
     return state;
   }

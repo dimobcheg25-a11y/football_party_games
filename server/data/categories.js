@@ -2,6 +2,7 @@
 //   qid    — елемент Wikidata (для клубів і збірних — за ним збирається база, див. scripts/build-players.js)
 //   image  — назва статті en.wikipedia, з якої береться герб/трофей (scripts/fetch-category-images.js),
 //            для збірних — файл прапора з Wikimedia Commons
+//   short  — коротший підпис для великих полів (5×5, 6×6), де клітинки вузькі
 //   colors — запасні кольори значка, поки немає картинки
 //   level — з якого режиму категорія з'являється: без поля — у всіх (легкий+), 'normal' — звичайний і складний, 'hard' — лише складний
 
@@ -11,11 +12,11 @@ const clubs = [
   { id: 'ATM', label: 'Атлетіко', qid: 'Q8701', image: 'Atlético Madrid', colors: ['#cb3524', '#272e61'] },
   { id: 'SEV', level: 'hard', label: 'Севілья', qid: 'Q10329', image: 'Sevilla FC', colors: ['#ffffff', '#d81920'] },
   { id: 'VAL', level: 'hard', label: 'Валенсія', qid: 'Q10333', image: 'Valencia CF', colors: ['#ffffff', '#ee7814'] },
-  { id: 'MUN', label: 'Манчестер Юнайтед', qid: 'Q18656', image: 'Manchester United F.C.', colors: ['#da291c', '#fbe122'] },
+  { id: 'MUN', label: 'Манчестер Юнайтед', short: 'Ман Юнайтед', qid: 'Q18656', image: 'Manchester United F.C.', colors: ['#da291c', '#fbe122'] },
   { id: 'LIV', label: 'Ліверпуль', qid: 'Q1130849', image: 'Liverpool F.C.', colors: ['#c8102e', '#00b2a9'] },
   { id: 'CHE', label: 'Челсі', qid: 'Q9616', image: 'Chelsea F.C.', colors: ['#034694', '#dba111'] },
   { id: 'ARS', label: 'Арсенал', qid: 'Q9617', image: 'Arsenal F.C.', colors: ['#ef0107', '#ffffff'] },
-  { id: 'MCI', label: 'Манчестер Сіті', qid: 'Q50602', image: 'Manchester City F.C.', colors: ['#6cabdd', '#1c2c5b'] },
+  { id: 'MCI', label: 'Манчестер Сіті', short: 'Ман Сіті', qid: 'Q50602', image: 'Manchester City F.C.', colors: ['#6cabdd', '#1c2c5b'] },
   { id: 'TOT', label: 'Тоттенгем', qid: 'Q18741', image: 'Tottenham Hotspur F.C.', colors: ['#132257', '#ffffff'] },
   { id: 'JUV', label: 'Ювентус', qid: 'Q1422', image: 'Juventus FC', colors: ['#000000', '#ffffff'] },
   { id: 'MIL', label: 'Мілан', qid: 'Q1543', image: 'AC Milan', colors: ['#fb090b', '#000000'] },
@@ -30,7 +31,7 @@ const clubs = [
   { id: 'FCP', level: 'hard', label: 'Порту', qid: 'Q128446', image: 'FC Porto', colors: ['#00428c', '#ffffff'] },
   { id: 'DYN', level: 'normal', label: 'Динамо Київ', qid: 'Q179075', image: 'FC Dynamo Kyiv', colors: ['#ffffff', '#0050a0'] },
   { id: 'SHA', level: 'normal', label: 'Шахтар', qid: 'Q172969', image: 'FC Shakhtar Donetsk', colors: ['#f26522', '#000000'] },
-  { id: 'MET', level: 'hard', label: 'Металіст Харків', qid: 'Q207462', image: 'FC Metalist Kharkiv', colors: ['#ffd200', '#1b3f8b'] },
+  { id: 'MET', level: 'hard', label: 'Металіст Харків', short: 'Металіст', qid: 'Q207462', image: 'FC Metalist Kharkiv', colors: ['#ffd200', '#1b3f8b'] },
   { id: 'DNI', level: 'hard', label: 'Дніпро', qid: 'Q175687', image: 'FC Dnipro', colors: ['#1b4fa0', '#ffffff'] },
 ].map((c) => ({ ...c, type: 'club' }));
 
@@ -53,18 +54,18 @@ const nations = [
 const awards = [
   { id: 'BALLON', label: "Золотий м'яч", image: "Ballon d'Or", icon: '🥇' },
   { id: 'WC', label: 'Чемпіон світу', image: 'FIFA World Cup Trophy', icon: '🏆' },
-  { id: 'UCL', label: 'Переможець ЛЧ', image: "European Champion Clubs' Cup", icon: '⭐' },
+  { id: 'UCL', label: 'Переможець ЛЧ', short: 'Виграв ЛЧ', image: "European Champion Clubs' Cup", icon: '⭐' },
   { id: 'EURO', label: 'Чемпіон Європи', image: 'Henri Delaunay Trophy', icon: '🏅' },
   { id: 'COPA', level: 'hard', label: 'Копа Америка', image: 'File:Copa america trofeo.jpg', icon: '🌎' },
-  { id: 'UEL', level: 'hard', label: 'Переможець ЛЄ / Кубка УЄФА', image: 'File:PD-Shape Europa League Trophy.svg', icon: '🟠' },
+  { id: 'UEL', level: 'hard', label: 'Переможець ЛЄ / Кубка УЄФА', short: 'Виграв ЛЄ', image: 'File:PD-Shape Europa League Trophy.svg', icon: '🟠' },
   { id: 'BOOT', level: 'hard', label: 'Золотий бутс', image: 'European Golden Shoe', icon: '👟' },
   { id: 'APL', level: 'normal', label: 'Чемпіон АПЛ', image: "File:Premier League Trophy at Manchester's National Football Museum (Ank Kumar) 02.jpg", icon: '🦁' },
 ].map((c) => ({ ...c, type: 'award', colors: ['#d4af37', '#8a6d1d'] }));
 
 const stats = [
-  { id: 'G300', level: 'normal', label: "300+ голів у кар'єрі", icon: '⚽' },
-  { id: 'A100', level: 'hard', label: '100+ гольових передач', icon: '🎯' },
-  { id: 'CAPS100', level: 'normal', label: '100+ матчів за збірну', icon: '💯' },
+  { id: 'G300', level: 'normal', label: "300+ голів у кар'єрі", short: '300+ голів', icon: '⚽' },
+  { id: 'A100', level: 'hard', label: '100+ гольових передач', short: '100+ передач', icon: '🎯' },
+  { id: 'CAPS100', level: 'normal', label: '100+ матчів за збірну', short: '100+ за збірну', icon: '💯' },
 ].map((c) => ({ ...c, type: 'stat', colors: ['#5ad1b8', '#1d6b5c'] }));
 
 const positions = [
