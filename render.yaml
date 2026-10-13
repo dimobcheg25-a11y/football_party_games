@@ -1,0 +1,14 @@
+# Налаштування для Render (https://render.com): New → Blueprint → обрати цей репозиторій.
+# Безкоштовний план засинає після 15 хв без відвідувачів, перше відкриття після цього — ~30–60 с.
+services:
+  - type: web
+    name: sitka9
+    runtime: node
+    plan: free
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"

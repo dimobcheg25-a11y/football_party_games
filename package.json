@@ -1,0 +1,26 @@
+{
+  "name": "sitka9",
+  "version": "1.0.0",
+  "description": "Сітка 9 — футбольні хрестики-нулики онлайн 1 на 1",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "test": "node scripts/smoke-test.js",
+    "fetch-photos": "node scripts/fetch-photos.js",
+    "build-players": "node scripts/build-players.js",
+    "fetch-category-images": "node scripts/fetch-category-images.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "compression": "^1.8.2",
+    "express": "^4.22.3",
+    "socket.io": "^4.8.4"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.4"
+  }
+}

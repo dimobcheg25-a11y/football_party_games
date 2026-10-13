@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Сітка 9 — футбольні хрестики-нулики</title>
+  <meta name="description" content="Футбольні хрестики-нулики онлайн 1 на 1 з другом." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@600;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="pitch-bg" aria-hidden="true"></div>
+  <div class="sound-ctl">
+    <button id="mute-btn" class="mute-btn" aria-label="Налаштування звуку" aria-expanded="false">🔊</button>
+    <div id="sound-panel" class="sound-panel hidden">
+      <label class="vol-row">
+        <span>Гучність</span>
+        <input id="volume" type="range" min="0" max="100" step="5" />
+        <b id="volume-val"></b>
+      </label>
+      <button id="mute-toggle" class="btn btn-secondary"></button>
+    </div>
+  </div>
+
+  <!-- ── Головний екран -->
+  <main id="screen-home" class="screen">
+    <header class="hero">
+      <div class="logo"><span>СІТКА</span><b>9</b></div>
+      <p class="tagline">Футбольні хрестики-нулики. Знайди гравця, який підходить і по рядку, і по стовпцю — та збери три в ряд.</p>
+    </header>
+
+    <section class="card home-card">
+      <p id="invite-note" class="invite-note hidden"></p>
+      <button id="resume-btn" class="btn btn-secondary resume hidden"></button>
+      <label class="field">
+        <span>Твоє ім'я</span>
+        <input id="name-input" maxlength="20" placeholder="Наприклад, Дмитро" autocomplete="nickname" />
+      </label>
+
+      <div class="field">
+        <span>Режим</span>
+        <div class="modes" id="mode-chips" role="radiogroup">
+          <button type="button" class="mode" data-mode="easy">
+            <b>🟢 Легкий</b><small>Топ-клуби й зірки, багато варіантів</small>
+          </button>
+          <button type="button" class="mode active" data-mode="normal">
+            <b>🟡 Звичайний</b><small>Плюс Україна, АПЛ, рекорди</small>
+          </button>
+          <button type="button" class="mode" data-mode="hard">
+            <b>🔴 Складний</b><small>Усі клуби й трофеї, рідкісні перетини</small>
+          </button>
+        </div>
+      </div>
+
+      <div class="field">
+        <span>Час на хід</span>
+        <div class="chips" id="timer-chips" role="radiogroup">
+          <button type="button" class="chip" data-sec="15">15 с</button>
+          <button type="button" class="chip active" data-sec="20">20 с</button>
+          <button type="button" class="chip" data-sec="30">30 с</button>
+          <button type="button" class="chip" data-sec="45">45 с</button>
+          <button type="button" class="chip" data-sec="60">60 с</button>
+          <button type="button" class="chip" data-sec="0">∞ Без ліміту</button>
+        </div>
+      </div>
+
+      <button id="create-btn" class="btn btn-primary btn-lg">Створити гру</button>
+
+      <div class="divider"><span>або</span></div>
+
+      <div class="join-row">
+        <input id="code-input" maxlength="5" placeholder="КОД" autocomplete="off" spellcheck="false" />
+        <button id="join-btn" class="btn btn-secondary">Приєднатися</button>
+      </div>
+      <p id="home-error" class="error" role="alert"></p>
+    </section>
+
+    <details class="card rules">
+      <summary>Правила гри</summary>
+      <ul>
+        <li>Поле 3×3: над стовпцями та біля рядків — клуби, збірні або трофеї.</li>
+        <li>У свій хід обери клітинку й напиши футболіста, який підходить під <b>обидві</b> умови.</li>
+        <li>Правильна відповідь — клітинка твоя. Неправильна — хід переходить до суперника.</li>
+        <li>Не встиг за відведений час — хід переходить до суперника.</li>
+        <li>Кожного футболіста можна використати лише <b>один раз</b> за гру.</li>
+        <li><b>Легкий</b> — 15 топ-клубів, топові збірні, ЧС/ЛЧ/Євро/Золотий м'яч і позиції; у кожній клітинці щонайменше 10 варіантів.
+          <b>Звичайний</b> — додаються Динамо, Шахтар, Україна, чемпіон АПЛ, 300+ голів і 100+ матчів за збірну; щонайменше 6 варіантів.
+          <b>Складний</b> — додаються Аякс, Порту, Бенфіка, Севілья, Валенсія, Наполі, Рома, Металіст, Дніпро,
+          Бельгія, Хорватія, Уругвай, Копа Америка, ЛЄ, Золотий бутс; перетини вужчі, кількість варіантів прихована.</li>
+        <li>Перемагає той, хто першим займе три клітинки в ряд — по горизонталі, вертикалі чи діагоналі.</li>
+        <li>Можна пропустити хід, запропонувати нічию, здатися або вийти з кімнати. Якщо суперник зник більш ніж на 30 с — можна забрати перемогу.</li>
+      </ul>
+    </details>
+  </main>
+
+  <!-- ── Очікування суперника -->
+  <main id="screen-lobby" class="screen hidden">
+    <section class="card lobby-card">
+      <div class="logo small"><span>СІТКА</span><b>9</b></div>
+      <h2 id="lobby-title">Кімната створена</h2>
+      <p class="muted" id="lobby-sub">Надішли посилання другу — гра почнеться, щойно він зайде.</p>
+      <div class="room-code" id="lobby-code">-----</div>
+      <div class="share-row">
+        <input id="share-link" readonly />
+        <button id="copy-btn" class="btn btn-primary">Копіювати</button>
+      </div>
+      <p class="muted small" id="lobby-timer"></p>
+      <div class="waiting"><span class="dot"></span><span class="dot"></span><span class="dot"></span> Чекаємо суперника</div>
+      <button class="btn btn-ghost" data-action="leave">✕ Скасувати кімнату</button>
+    </section>
+  </main>
+
+  <!-- ── Гра -->
+  <main id="screen-game" class="screen hidden">
+    <div class="scoreboard">
+      <div class="player-card seat-0" id="seat-0">
+        <div class="mark">✕</div>
+        <div class="pinfo"><div class="pname"></div><div class="pstatus"></div></div>
+        <div class="pscore">0</div>
+      </div>
+      <div class="turn-box">
+        <div class="mode-badge" id="mode-badge"></div>
+        <div class="turn-label" id="turn-label"></div>
+        <div class="timer" id="timer"><div class="timer-bar" id="timer-bar"></div><span id="timer-text"></span></div>
+      </div>
+      <div class="player-card seat-1" id="seat-1">
+        <div class="pscore">0</div>
+        <div class="pinfo"><div class="pname"></div><div class="pstatus"></div></div>
+        <div class="mark">◯</div>
+      </div>
+    </div>
+
+    <div id="banner" class="banner hidden" role="status"></div>
+
+    <div class="board-wrap">
+      <div class="board" id="board"></div>
+    </div>
+
+    <div class="reactions" id="reactions" aria-label="Реакції">
+      <button data-emoji="👍">👍</button><button data-emoji="😂">😂</button><button data-emoji="😮">😮</button>
+      <button data-emoji="😡">😡</button><button data-emoji="🔥">🔥</button><button data-emoji="👏">👏</button>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-secondary" data-action="skip">Пропустити хід</button>
+      <button class="btn btn-secondary" data-action="draw" id="draw-btn">Запропонувати нічию</button>
+      <button class="btn btn-ghost" data-action="surrender">Здатися</button>
+    </div>
+    <p class="room-footer muted small">
+      Кімната <b id="game-code"></b> · <a href="#" id="game-copy">скопіювати посилання</a> ·
+      <a href="#" data-action="leave-confirm">вийти з кімнати</a>
+    </p>
+  </main>
+
+  <!-- ── Введення гравця -->
+  <div id="picker" class="picker hidden" role="dialog" aria-modal="true" aria-labelledby="picker-title">
+    <div class="picker-backdrop" data-action="close-picker"></div>
+    <div class="picker-panel">
+      <div class="picker-head">
+        <div id="picker-title" class="picker-title"></div>
+        <button class="icon-btn" data-action="close-picker" aria-label="Закрити">✕</button>
+      </div>
+      <div class="search">
+        <input id="picker-input" placeholder="Почни вводити прізвище…" autocomplete="off" spellcheck="false" />
+        <ul id="suggestions" class="suggestions" role="listbox"></ul>
+      </div>
+      <p class="muted small picker-hint">Можна українською, російською або англійською. ↑↓ — вибір, Enter — підтвердити.</p>
+    </div>
+  </div>
+
+  <!-- ── Кінець гри -->
+  <div id="result" class="result hidden">
+    <div class="result-card">
+      <div class="result-emoji" id="result-emoji"></div>
+      <h2 id="result-title"></h2>
+      <p id="result-sub" class="muted"></p>
+      <p id="result-rematch" class="rematch-note hidden"></p>
+      <div class="result-actions">
+        <button class="btn btn-primary btn-lg" data-action="rematch" id="rematch-btn">Реванш</button>
+        <button class="btn btn-secondary" data-action="leave">Вийти · нова гра з іншим другом</button>
+        <button class="btn btn-ghost" data-action="view-board">Подивитися поле</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/sounds.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
