@@ -64,7 +64,9 @@ function canFillDistinct(rows, cols, cells, usedIds) {
 // normal — топ-клуби й збірні; у кожній клітинці щонайменше 4 ВІДОМІ відповіді й 6 відповідей загалом
 //          (клітинки з 5 і менше варіантами — «ту мач» для звичайного режиму). Для українських категорій
 //          поріг м'якший: їхніх гравців наші знають краще, ніж каже статистика Вікіпедії, а перетинів у них мало;
-// hard   — усі категорії (level: 'hard' у categories.js), рідкісніші перетини, мінімум 2 відповіді.
+// hard   — усі категорії, але щонайменше 4 з 6 — «нешаблонні» (level у categories.js); у клітинці 3–15 відповідей
+//          і не більше 3 зірок — щоб клітинку не закривали Роналду з Мессі. Через це найочевидніші категорії
+//          (Реал, ЧС, ЛЧ, Золотий м'яч, польові позиції) у складний майже не потрапляють — вони для легкого/звичайного.
 const UA_TAGS = ['UKR', 'DYN', 'SHA'];
 const isFamous = (p) => p.fame >= 50 || (p.fame >= 25 && UA_TAGS.some((t) => p.tags.has(t)));
 
@@ -88,9 +90,12 @@ const MODES = {
   hard: {
     categories: categories.map((c) => c.id),
     pool: players,
-    minAnswers: 2,
-    minTotal: 2,
-    maxMeanAnswers: 14, // у середньому не більше ~14 відповідей на клітинку — «вузькі» перетини
+    minAnswers: 3,
+    minTotal: 3, // з 2 відповідями й правилом «без повторів» клітинка перетворюється на лотерею
+    maxTotal: 15, // більше — клітинка надто проста
+    maxStars: 3, // зірок (55+ мовних розділів Вікіпедії) у клітинці
+    minNiche: 4, // категорій не з легкого режиму в сітці
+    maxMeanAnswers: Infinity,
   },
 };
 
@@ -108,9 +113,11 @@ const countPairs = (pool, ids) => {
   }
   return m;
 };
+const STAR_FAME = 55;
 for (const mode of Object.values(MODES)) {
   mode.pairCount = countPairs(mode.pool, mode.categories);
   mode.pairTotal = mode.pool === players ? mode.pairCount : countPairs(players, mode.categories);
+  if (mode.maxStars !== undefined) mode.pairStars = countPairs(players.filter((p) => p.fame >= STAR_FAME), mode.categories);
 }
 
 // Мінімальні пороги для клітинки «a × b» (для українських категорій — м'якші, якщо задані)
@@ -127,7 +134,10 @@ const typeOf = (id) => categoryById.get(id).type;
 function pickCompatible(mode, mustMatch, taken, count) {
   const enough = (a, b) => {
     const t = thresholds(mode, a, b);
-    return (mode.pairCount.get(a).get(b) || 0) >= t.famous && (mode.pairTotal.get(a).get(b) || 0) >= t.total;
+    const total = mode.pairTotal.get(a).get(b) || 0;
+    if (mode.maxTotal !== undefined && total > mode.maxTotal) return false;
+    if (mode.maxStars !== undefined && (mode.pairStars.get(a).get(b) || 0) > mode.maxStars) return false;
+    return (mode.pairCount.get(a).get(b) || 0) >= t.famous && total >= t.total;
   };
   const options = shuffle(mode.categories.filter((id) => !taken.includes(id) && mustMatch.every((m) => enough(id, m))));
   return options.length >= count ? options.slice(0, count) : null;
@@ -164,6 +174,7 @@ function generateGrid(modeName = 'normal') {
     let colsOrdered = cols;
     if (Math.random() < 0.5) [rows, colsOrdered] = [colsOrdered, rows]; // насіння буває і в стовпцях
     if (!validMix([...rows, ...colsOrdered])) continue;
+    if (mode.minNiche && [...rows, ...colsOrdered].filter((id) => categoryById.get(id).level).length < mode.minNiche) continue;
 
     const pool = poolCandidates(mode, rows, colsOrdered);
     const cellMin = (i) => thresholds(mode, rows[Math.floor(i / 3)], colsOrdered[i % 3]);
