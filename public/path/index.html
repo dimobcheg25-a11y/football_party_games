@@ -42,9 +42,10 @@
       <div id="setup-options">
         <div class="field">
           <span class="field-label">Гравці</span>
-          <div class="chips" data-opt="set" role="radiogroup" aria-label="Набір гравців">
+          <div class="chips" data-opt="era" role="radiogroup" aria-label="Які гравці">
             <button type="button" class="chip" data-val="all">Усі</button>
-            <button type="button" class="chip" data-val="upl">УПЛ 2000–2014</button>
+            <button type="button" class="chip" data-val="modern">Сучасні</button>
+            <button type="button" class="chip" data-val="retired">Завершили кар'єру</button>
           </div>
         </div>
 
@@ -53,7 +54,9 @@
           <div class="chips" data-opt="difficulty" role="radiogroup" aria-label="Складність">
             <button type="button" class="chip" data-val="easy">🟢 Легкий</button>
             <button type="button" class="chip" data-val="normal">🟡 Звичайний</button>
+            <button type="button" class="chip" data-val="fan">🟣 Фанат</button>
             <button type="button" class="chip" data-val="hard">🔴 Складний</button>
+            <button type="button" class="chip" data-val="expert">⚫ Експерт</button>
           </div>
           <p class="hint" id="difficulty-hint"></p>
         </div>
@@ -106,9 +109,11 @@
     <section class="card rules-card">
       <h3>Як грати</h3>
       <ul class="rules-list">
-        <li>Спершу видно лише один клуб з кар'єри. Далі клуби відкриваються по одному, потім — збірна, позиція і рік народження.</li>
-        <li>На кожному етапі — <b>одна спроба</b>. Не вгадав — чекай наступної підказки. Можна натиснути «Далі», щоб не чекати.</li>
-        <li>Очки: <span id="points-rule"></span>.</li>
+        <li>Спершу видно лише один клуб з кар'єри. Далі клуби відкриваються по одному.</li>
+        <li>На кожному етапі — <b>одна спроба</b>. Не вгадав — чекай наступного клубу. Можна натиснути «Далі», щоб не чекати.</li>
+        <li>Очки за вгадування: <span id="points-rule"></span>.</li>
+        <li><b>Підказки</b> — позиція, рік народження, збірна, перша літера прізвища — бери будь-коли, скільки хочеш.
+          Кожна знімає бали з тих, що можна заробити (але щонайменше 1 очко за правильну відповідь). Твої підказки й відповіді бачиш лише ти.</li>
         <li>Матчі й голи — лише в чемпіонаті (як у Вікіпедії).</li>
       </ul>
     </section>
@@ -142,6 +147,9 @@
         <ol class="path" id="path"></ol>
 
         <div class="answer-box" id="answer-box">
+          <div class="earn" id="earn"></div>
+          <div class="hints" id="hints"></div>
+          <ul class="my-hints" id="my-hints"></ul>
           <div class="search">
             <input id="guess-input" placeholder="Хто це? Почни вводити прізвище…" autocomplete="off" />
             <ul class="suggestions" id="suggestions"></ul>

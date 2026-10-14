@@ -2,7 +2,8 @@
 // вихід і прибирання покинутих кімнат. Кожна гра — свій простір імен /<id> і свій /api/<id>/room/:code.
 //
 //   createRoomServer({ app, io, id, createRoom, actions, roomInfo })
-//     createRoom(code, options, broadcast) → кімната (наслідує BaseRoom; має join, leave, publicState)
+//     createRoom(code, options, broadcast) → кімната (наслідує BaseRoom; має join, leave, publicState;
+//                                           необов'язково privateState(seat) — те, що бачить лише цей гравець)
 //     actions   — { подія: (room, seat, payload) => відповідь } — ігрові дії гравця
 //     roomInfo  — (room) => поля для екрана запрошення (налаштування гри)
 const crypto = require('crypto');
@@ -42,12 +43,15 @@ function createRoomServer({ app, io, id, createRoom, actions, roomInfo = () => (
     return code;
   }
 
+  // Стан для одного гравця: спільне + його місце + його особисте (підказки, свої відповіді).
+  const stateFor = (room, state, seat) => ({ ...state, you: seat, ...(room.privateState && seat !== -1 ? room.privateState(seat) : {}) });
+
   // Кожному сокету — стан кімнати + його власне місце (воно може змінитися, коли хтось виходить).
   function broadcast(room) {
     const state = room.publicState();
     for (const sid of nsp.adapter.rooms.get(room.code) || []) {
       const s = nsp.sockets.get(sid);
-      if (s) s.emit('state', { ...state, you: room.seatOf(s.data.token) });
+      if (s) s.emit('state', stateFor(room, state, room.seatOf(s.data.token)));
     }
   }
 
@@ -64,7 +68,7 @@ function createRoomServer({ app, io, id, createRoom, actions, roomInfo = () => (
       socket.join(room.code);
       socket.data = { code: room.code, token, seat: res.seat };
       cb?.({ ok: true, code: room.code, token, seat: res.seat });
-      socket.emit('state', { ...room.publicState(), you: res.seat });
+      socket.emit('state', stateFor(room, room.publicState(), res.seat));
       socket.emit('chatHistory', room.chat);
     }
 

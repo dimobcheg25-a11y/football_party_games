@@ -1,6 +1,6 @@
-// Кар'єри для «Шляху футболіста»: хто може бути загаданим (набір × складність) і з яких етапів складається раунд.
+// Кар'єри для «Шляху футболіста»: хто може бути загаданим (епоха × складність), етапи раунду (клуби) і підказки.
 // Дані — server/data/careers.json (npm run build-careers), гравці — спільна база.
-const { players, categoryById } = require('../../data');
+const { players, categories, categoryById } = require('../../data');
 
 let data = { teams: {}, careers: {} };
 try {
@@ -9,66 +9,114 @@ try {
   // кар'єри ще не зібрані — у грі не буде кого загадувати
 }
 
-const POSITIONS = { GK: 'Воротар', DF: 'Захисник', MF: 'Півзахисник', FW: 'Нападник' };
-const UA_TAGS = ['UKR', 'DYN', 'SHA', 'UPL0014'];
-const isUa = (p) => UA_TAGS.some((t) => p.tags.has(t));
-
-// Відомість — кількість мовних розділів Вікіпедії зі статтею про гравця (поле fame).
-// Набори: усі гравці бази або лише ті, хто грав у чемпіонаті України 2000–2014.
-const POOLS = {
-  all: {
-    easy: (p) => p.fame >= 60,
-    normal: (p) => p.fame >= 45 || (isUa(p) && p.fame >= 20),
-    hard: () => true,
-  },
-  upl: {
-    easy: (p) => p.fame >= 25,
-    normal: (p) => p.fame >= 12,
-    hard: () => true,
-  },
-};
-
 const careerOf = (p) => (p.qid ? data.careers[p.qid] : null);
 
-// Загадувати можна лише тих, у кого щонайменше 3 клуби, і не більше одного клубу без матчів/голів.
+// ── наскільки гравець відомий САМЕ ЯК ГРАВЕЦЬ
+// fame (кількість мовних розділів Вікіпедії) завищене в тих, хто прославився як тренер (Вальверде, Лопетегі),
+// тому до нього додаємо ігрові ознаки: трофеї, матчі за збірну, матчі за великі клуби (клуби з категорій).
+const MAJOR = ['BALLON', 'WC', 'UCL', 'EURO', 'COPA', 'BOOT', 'CAPS100', 'G300'];
+const CHAMP = ['APL', 'CH_IT', 'CH_ES', 'CH_DE', 'UEL'];
+const UA_TAGS = ['UKR', 'DYN', 'SHA', 'UPL0014'];
+
+function signals(p) {
+  const c = careerOf(p);
+  const caps = c.nation?.a || 0;
+  const bigApps = c.clubs.filter((x) => data.teams[x.t]?.cat).reduce((s, x) => s + (x.a || 0), 0);
+  const major = MAJOR.some((t) => p.tags.has(t));
+  const champ = CHAMP.some((t) => p.tags.has(t));
+  const strong = major || caps >= 50 || bigApps >= 200;
+  const medium = strong || (champ && bigApps >= 60) || caps >= 25 || bigApps >= 100;
+  const some = medium || caps >= 10 || bigApps >= 40;
+  // своїх ми знаємо краще: українцям — бонус до відомості
+  const fame = p.fame + (UA_TAGS.some((t) => p.tags.has(t)) ? 25 : 0);
+  return { fame, strong, medium, some };
+}
+
+const DIFFICULTIES = {
+  easy: (s) => s.fame >= 65 && s.strong,
+  normal: (s) => s.fame >= 45 && s.medium,
+  fan: (s) => s.fame >= 30 && s.some,
+  hard: (s) => s.fame >= 35 || s.some,
+  expert: () => true,
+};
+
+// Сучасні — ще грають (останній клуб без року завершення; для старших — дані просто неповні).
+function isActive(p) {
+  const c = careerOf(p);
+  const last = c.clubs[c.clubs.length - 1];
+  return last.e == null ? (p.born || 0) >= 1983 : last.e >= 2025;
+}
+const ERAS = {
+  all: () => true,
+  modern: isActive,
+  retired: (p) => !isActive(p),
+};
+
+// Загадувати можна лише тих, у кого щонайменше 3 клуби, не більше одного клубу без матчів/голів
+// і є всі великі клуби, за які він грав (інакше у Wikidata бракує періоду без дат — шлях вводив би в оману).
+const CLUB_IDS = new Set(categories.filter((c) => c.type === 'club').map((c) => c.id));
 function hasGoodCareer(p) {
   const c = careerOf(p);
-  return !!c && c.clubs.length >= 3 && c.clubs.filter((x) => x.a == null).length <= 1;
+  if (!c || c.clubs.length < 3 || c.clubs.filter((x) => x.a == null).length > 1) return false;
+  const have = new Set(c.clubs.map((x) => data.teams[x.t]?.cat).filter(Boolean));
+  return [...p.tags].every((t) => !CLUB_IDS.has(t) || have.has(t));
 }
 
-const candidates = players.filter(hasGoodCareer);
+const candidates = players.filter(hasGoodCareer).map((p) => ({ p, s: signals(p) }));
 
-function poolFor(set, difficulty) {
-  const fit = POOLS[set][difficulty];
-  return candidates.filter((p) => (set === 'upl' ? p.tags.has('UPL0014') : true) && fit(p));
+function poolFor(era, difficulty) {
+  const fit = DIFFICULTIES[difficulty];
+  return candidates.filter(({ p, s }) => ERAS[era](p) && fit(s)).map(({ p }) => p);
 }
 
-const years = (s, e) => (e === s ? `${s}` : `${s}–${e ?? ''}`);
+const years = (s, e) => (!s ? `до ${e}` : e === s ? `${s}` : `${s}–${e ?? ''}`);
 
 function team(qid) {
   const t = data.teams[qid] || { name: '?' };
   const cat = t.cat ? categoryById.get(t.cat) : null;
-  return { name: t.name, country: t.country || null, img: cat?.img || null };
+  return { name: t.name, country: t.country || null, img: cat?.img || t.img || null };
 }
 
-// Етапи раунду: клуби (з першого або з останнього), далі підказки — збірна, позиція, рік народження.
+// Етапи раунду — клуби кар'єри (з першого або з останнього).
 function stagesFor(p, { start = 'first', showYears = true, showStats = true } = {}) {
   const c = careerOf(p);
   const clubs = start === 'last' ? [...c.clubs].reverse() : c.clubs;
-  const stages = clubs.map((x) => ({
+  return clubs.map((x) => ({
     kind: 'club',
     ...team(x.t),
     years: showYears ? years(x.s, x.e) : null,
+    loan: !!x.loan,
     apps: showStats ? x.a : undefined,
     goals: showStats ? x.g : undefined,
   }));
-  if (c.nation) {
-    stages.push({ kind: 'nation', name: team(c.nation.t).name, apps: showStats ? c.nation.a : undefined, goals: showStats ? c.nation.g : undefined });
-  }
-  const pos = ['GK', 'DF', 'MF', 'FW'].find((t) => p.tags.has(t));
-  if (pos) stages.push({ kind: 'position', name: POSITIONS[pos] });
-  if (p.born) stages.push({ kind: 'born', name: String(p.born) });
-  return stages;
 }
 
-module.exports = { poolFor, stagesFor, POOLS };
+// ── підказки: гравець сам обирає, яку взяти; кожна знімає бали з можливих
+const HINTS = [
+  { id: 'position', label: 'Позиція', cost: 1 },
+  { id: 'born', label: 'Рік народження', cost: 2 },
+  { id: 'nation', label: 'Збірна', cost: 2 },
+  { id: 'letter', label: 'Перша літера прізвища', cost: 4 },
+];
+const POSITIONS = { GK: 'Воротар', DF: 'Захисник', MF: 'Півзахисник', FW: 'Нападник' };
+
+function hintValue(p, id, { showStats = true } = {}) {
+  const c = careerOf(p);
+  if (id === 'position') {
+    const pos = ['GK', 'DF', 'MF', 'FW'].find((t) => p.tags.has(t));
+    return { text: pos ? POSITIONS[pos] : 'невідома' };
+  }
+  if (id === 'born') return { text: p.born ? String(p.born) : 'невідомий' };
+  if (id === 'nation') {
+    if (!c.nation) return { text: 'не грав за збірну' };
+    const t = team(c.nation.t);
+    return { text: t.name, img: t.img, apps: showStats ? c.nation.a : undefined, goals: showStats ? c.nation.g : undefined };
+  }
+  if (id === 'letter') {
+    const surname = (p.uk || p.name).trim().split(/\s+/).pop();
+    return { text: `${surname[0].toUpperCase()}…` };
+  }
+  return null;
+}
+
+module.exports = { poolFor, stagesFor, hintValue, HINTS, ERAS, DIFFICULTIES };

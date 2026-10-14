@@ -56,21 +56,47 @@
   background: rgba(255,255,255,0.06); border: 1px solid var(--line); font-weight: 800; font-size: 15px;
 }
 .st-icon img { width: 40px; height: 40px; object-fit: contain; }
+.st-icon.crest { background: #e8efe9; border-color: transparent; } /* темні герби (Тоттенгем, Ювентус) не зливаються з фоном */
 .st-body { display: grid; gap: 2px; min-width: 0; }
 .st-body b { font-size: 17px; overflow-wrap: anywhere; }
 .st-body small { color: var(--muted); font-size: 13px; }
+.st-body .loan { color: var(--gold); font-weight: 700; }
 .st-stats { font-size: 13px; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
-.stage.nation, .stage.position, .stage.born { background: rgba(232,196,90,0.07); border-color: rgba(232,196,90,0.3); }
-.stage.nation.current, .stage.position.current, .stage.born.current { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold) inset; }
 
 .answer-box { margin-top: 14px; display: grid; gap: 8px; position: relative; }
 .answer-box .search { position: relative; }
 .answer-box .suggestions {
-  position: absolute; left: 0; right: 0; bottom: calc(100% + 6px); z-index: 10; margin: 0;
+  position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 10; margin: 0;
   background: var(--surface-solid); border: 1px solid var(--line-strong); border-radius: 14px; padding: 6px;
   box-shadow: 0 20px 50px rgba(0,0,0,0.5);
 }
 .answer-actions { display: flex; justify-content: flex-end; }
+
+/* підказки й «скільки можна заробити» */
+.earn { font-weight: 700; font-size: 15px; }
+.earn:empty { display: none; }
+.earn b { font-family: var(--display); color: var(--accent); font-size: 20px; }
+.earn small { color: var(--muted); font-weight: 600; }
+.hints { display: flex; flex-wrap: wrap; gap: 6px; }
+.hints:empty { display: none; }
+.hint-btn {
+  font: inherit; font-size: 13px; font-weight: 700; color: var(--text); cursor: pointer;
+  padding: 7px 11px; border-radius: 99px; background: rgba(232,196,90,0.08); border: 1px solid rgba(232,196,90,0.35);
+}
+.hint-btn b { color: var(--gold); margin-left: 2px; }
+.hint-btn:hover:not(:disabled) { border-color: var(--gold); }
+.hint-btn:disabled { opacity: .35; cursor: default; }
+.my-hints { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.my-hints:empty { display: none; }
+.my-hints li {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 6px; padding: 8px 12px; border-radius: 12px;
+  background: rgba(232,196,90,0.07); border: 1px solid rgba(232,196,90,0.3); font-size: 14px;
+}
+.my-hints span { color: var(--muted); }
+.my-hints small { color: var(--muted); }
+.my-hints img, .facts img { width: 22px; height: 16px; object-fit: contain; }
+.facts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.facts span { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 99px; background: rgba(255,255,255,0.06); border: 1px solid var(--line); }
 .answer-box .suggestions .s-text { display: grid; }
 .answer-box input:disabled { opacity: .5; }
 
@@ -96,7 +122,7 @@
 .scoreboard li.me { background: color-mix(in srgb, var(--pc) 12%, var(--surface-solid)); }
 .scoreboard li.offline { opacity: .5; }
 .scoreboard .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.scoreboard .mark { color: var(--accent); width: 14px; text-align: center; }
+.scoreboard .mark { color: var(--accent); white-space: nowrap; font-size: 13px; }
 .scoreboard b { font-family: var(--display); font-variant-numeric: tabular-nums; }
 .guess-feed { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; max-height: 260px; overflow-y: auto; font-size: 13px; }
 .guess-feed:empty { display: none; }
@@ -131,3 +157,4 @@
   .st-body b { font-size: 15px; }
   .room-code { font-size: 34px; }
 }
+.answer-box .search input { scroll-margin-top: 12px; }

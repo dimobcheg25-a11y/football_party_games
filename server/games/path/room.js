@@ -1,14 +1,15 @@
 // Партія «Шляху футболіста»: серія раундів, у кожному — один загаданий гравець, етапи відкриваються по одному.
-// На кожному етапі кожен має одну спробу; вгадав раніше — більше очок. Соло — кімната на одного.
+// На кожному етапі кожен має одну спробу; вгадав раніше — більше очок. Підказки (позиція, рік, збірна, літера)
+// кожен бере сам, коли захоче, — кожна знімає бали з можливих. Свої підказки й відповіді бачить лише сам гравець.
+// Соло — кімната на одного.
 const { playerById } = require('../../data');
 const { BaseRoom } = require('../../core/base-room');
-const { poolFor, stagesFor, POOLS } = require('./careers');
+const { poolFor, stagesFor, hintValue, HINTS, ERAS, DIFFICULTIES } = require('./careers');
 
 const POINTS = [10, 8, 6, 4, 3, 2]; // очки за вгадування на етапі 1, 2, 3…; далі — 1
 const pointsAt = (stage) => POINTS[stage] ?? 1;
 const ALLOWED_TIMERS = [0, 15, 20, 30, 45]; // секунд на етап; 0 — без обмеження
 const ALLOWED_ROUNDS = [5, 10, 15];
-const DIFFICULTIES = ['easy', 'normal', 'hard'];
 const MAX_PLAYERS = 8;
 const REVEAL_MS = Number(process.env.PATH_REVEAL_MS) || 10000; // пауза з відповіддю між раундами (у кімнаті)
 
@@ -30,8 +31,8 @@ class PathRoom extends BaseRoom {
     super(code, onChange, opts.solo ? 1 : MAX_PLAYERS);
     this.solo = !!opts.solo;
     this.options = {
-      set: POOLS[opts.set] ? opts.set : 'all',
-      difficulty: DIFFICULTIES.includes(opts.difficulty) ? opts.difficulty : 'normal',
+      era: ERAS[opts.era] ? opts.era : 'all',
+      difficulty: DIFFICULTIES[opts.difficulty] ? opts.difficulty : 'normal',
       rounds: ALLOWED_ROUNDS.includes(Number(opts.rounds)) ? Number(opts.rounds) : 10,
       turnSeconds: ALLOWED_TIMERS.includes(Number(opts.turnSeconds)) ? Number(opts.turnSeconds) : this.solo ? 0 : 30,
       start: opts.start === 'last' ? 'last' : 'first',
@@ -53,6 +54,7 @@ class PathRoom extends BaseRoom {
     this.solved = new Map(); // seat → { stage, points }
     this.stageDone = new Set(); // хто вже відповів (або пропустив) на цьому етапі
     this.guesses = []; // { seat, stage, playerId, correct }
+    this.hints = new Map(); // seat → [id підказки] (у порядку, в якому брав)
     this.nextVotes = new Set();
     this.deadline = null;
   }
@@ -101,8 +103,8 @@ class PathRoom extends BaseRoom {
   }
 
   startSeries() {
-    const { set, difficulty, rounds } = this.options;
-    const pool = poolFor(set, difficulty);
+    const { era, difficulty, rounds } = this.options;
+    const pool = poolFor(era, difficulty);
     if (!pool.length) return { error: 'Немає гравців для цих налаштувань' };
     this.picks = shuffle(pool).slice(0, rounds);
     this.scores = Array(this.capacity).fill(0);
@@ -130,7 +132,28 @@ class PathRoom extends BaseRoom {
     if (sec) this.timer = setTimeout(() => this.advanceStage(), sec * 1000);
   }
 
+  // ── очки: за етап мінус ціна взятих підказок, але щонайменше 1
+  hintCost(seat) {
+    return (this.hints.get(seat) || []).reduce((sum, id) => sum + HINTS.find((h) => h.id === id).cost, 0);
+  }
+
+  potential(seat) {
+    return Math.max(1, pointsAt(this.stage) - this.hintCost(seat));
+  }
+
   // ── дії гравця
+  hint(seat, id) {
+    if (this.status !== 'playing' || this.phase !== 'guess') return { error: 'Зараз не можна' };
+    if (this.solved.has(seat)) return { error: 'Ти вже вгадав' };
+    if (!HINTS.some((h) => h.id === id)) return { error: 'Немає такої підказки' };
+    const taken = this.hints.get(seat) || [];
+    if (taken.includes(id)) return { ok: true };
+    this.hints.set(seat, [...taken, id]);
+    this.touch();
+    this.changed();
+    return { ok: true };
+  }
+
   guess(seat, playerId) {
     if (this.status !== 'playing' || this.phase !== 'guess') return { error: 'Зараз не можна відповідати' };
     if (this.solved.has(seat)) return { error: 'Ти вже вгадав' };
@@ -142,7 +165,7 @@ class PathRoom extends BaseRoom {
     this.guesses.push({ seat, stage: this.stage, playerId: player.id, correct });
     this.stageDone.add(seat);
     if (correct) {
-      const points = pointsAt(this.stage);
+      const points = this.potential(seat);
       this.scores[seat] += points;
       this.solved.set(seat, { stage: this.stage, points });
     }
@@ -219,7 +242,6 @@ class PathRoom extends BaseRoom {
 
   // Стан для клієнтів: загаданого гравця не відправляємо, поки раунд не скінчився.
   publicState() {
-    const reveal = this.phase === 'reveal' || this.status === 'finished';
     const state = {
       code: this.code,
       solo: this.solo,
@@ -237,18 +259,17 @@ class PathRoom extends BaseRoom {
       stages: this.phase === 'reveal' ? this.stages : this.stages.slice(0, this.stage + 1),
       stageDone: [...this.stageDone],
       solved: Object.fromEntries(this.solved),
-      // чужі правильні відповіді не показуємо до кінця раунду — щоб не підказати
-      guesses: this.guesses.map((g) => ({
-        seat: g.seat,
-        stage: g.stage,
-        correct: g.correct,
-        player: g.correct && !reveal ? null : publicPlayer(playerById.get(g.playerId)),
-      })),
+      hintCosts: HINTS,
+      // скільки підказок узяв кожен (самі підказки й чужі відповіді не показуємо — щоб не підказати)
+      hintsUsed: Object.fromEntries([...this.hints].map(([s, l]) => [s, l.length])),
+      guesses: this.guesses.map((g) => ({ seat: g.seat, stage: g.stage, correct: g.correct })),
       nextVotes: [...this.nextVotes],
       scores: this.scores,
       deadline: this.deadline,
       serverNow: Date.now(),
-      answer: this.phase === 'reveal' && this.answer ? publicPlayer(this.answer) : null,
+      answer: this.phase === 'reveal' && this.answer
+        ? { ...publicPlayer(this.answer), facts: HINTS.filter((h) => h.id !== 'letter').map((h) => ({ id: h.id, label: h.label, ...hintValue(this.answer, h.id, this.options) })) }
+        : null,
       history: this.status === 'finished'
         ? this.history.map((h) => ({ answer: publicPlayer(h.answer), results: h.results }))
         : [],
@@ -256,6 +277,20 @@ class PathRoom extends BaseRoom {
     if (process.env.PATH_TEST_ANSWER === '1' && this.answer) state.testAnswer = this.answer.id; // лише для автотесту
     return state;
   }
+
+  // Те, що бачить лише цей гравець: його підказки, його відповіді й скільки він може зараз заробити.
+  privateState(seat) {
+    const taken = this.hints.get(seat) || [];
+    return {
+      myHints: this.answer
+        ? taken.map((id) => ({ id, label: HINTS.find((h) => h.id === id).label, ...hintValue(this.answer, id, this.options) }))
+        : [],
+      myGuesses: this.guesses
+        .filter((g) => g.seat === seat)
+        .map((g) => ({ stage: g.stage, correct: g.correct, player: publicPlayer(playerById.get(g.playerId)) })),
+      potential: this.phase === 'guess' && !this.solved.has(seat) ? this.potential(seat) : null,
+    };
+  }
 }
 
-module.exports = { PathRoom, POINTS, ALLOWED_TIMERS, ALLOWED_ROUNDS };
+module.exports = { PathRoom, POINTS, ALLOWED_TIMERS, ALLOWED_ROUNDS, HINTS };

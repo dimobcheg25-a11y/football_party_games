@@ -7,13 +7,14 @@ Node 18+, Express + Socket.IO, клієнт — чистий HTML/CSS/JS без 
 - `server/index.js` — ядро: статика, `/api/players` (спільна база), `/api/games` (каталог), редірект старих `/?room=` → `/crossroads/`.
 - `server/games/index.js` — список ігор. Кожна гра: `server/games/<id>/index.js` експортує `{ meta, register({ app, io }) }`.
 - `server/core/` — спільне для кімнат: `room-server.js` (`createRoomServer`: код кімнати, вхід за токеном, дії, чат, реакції,
-  прибирання; простір імен `/<id>`, `/api/<id>/room/:code`) і `base-room.js` (`BaseRoom`: місця, онлайн, чат). Кімната гри наслідує BaseRoom.
+  прибирання; простір імен `/<id>`, `/api/<id>/room/:code`; `room.privateState(seat)` — особисте для гравця) і `base-room.js` (`BaseRoom`: місця, онлайн, чат). Кімната гри наслідує BaseRoom.
 - `server/games/crossroads/` — «Футбольне перехрестя»: `room.js` (партія), `grid.js` (генерація сітки), `boards.js` (поля).
   Сокети — простір імен `/crossroads`, API — `/api/crossroads/...`.
-- `server/games/path/` — «Шлях футболіста»: `careers.js` (набори гравців × складність, етапи раунду), `room.js` (серія раундів,
-  етапи, очки 10/8/6/4/3/2/1; соло = кімната на одного). Дані — `server/data/careers.json`.
+- `server/games/path/` — «Шлях футболіста»: `careers.js` (епоха × складність за ігровою відомістю, етапи-клуби, підказки з ціною),
+  `room.js` (серія раундів, очки 10/8/6/4/3/2/1 мінус підказки; соло = кімната на одного; `privateState` — свої підказки й
+  відповіді лише гравцю). Дані — `server/data/careers.json` (кар'єри, герби/прапори посиланнями на Wikimedia).
 - `server/data/` — спільна база футболістів і категорій для всіх ігор (`index.js` — завантаження, `categories.js`, ручні правки в `manual-tags.js`).
-  Тег `UPL0014` — грав у чемпіонаті України 2000–2014 (набір «УПЛ» у «Шляху»).
+  Тег `UPL0014` — грав у чемпіонаті України 2000–2014 (у «Шляху» дає український бонус до відомості).
 - `public/index.html` + `hub.css` + `hub.js` — головна (картки з `/api/games`).
 - `public/shared/` — спільне для сторінок ігор: `theme.css` (токени, фон, `.back-link`), `ui.css` (кнопки, поля, чипи, вікна,
   підказки пошуку, тост, звук, чат), `players.js` (`window.Players.search` — автодоповнення імен), `sounds.js` (`window.Sound`).
@@ -35,7 +36,7 @@ Node 18+, Express + Socket.IO, клієнт — чистий HTML/CSS/JS без 
 
 ## Команди
 - `npm test` — прогін усіх перевірок (~1,5 хв, є таймаут 15 с). Обов'язково перед комітом.
-- Оновити базу: `npm run build-players` (≈15 хв) → `npm run build-careers` (≈3 хв) → `npm run fetch-photos`.
+- Оновити базу: `npm run build-players` (≈15 хв) → `npm run build-careers` (≈10 хв; кар'єри з таблиць en.wikipedia) → `npm run fetch-photos`.
 - `npm run dev` — локальний сервер з перезапуском.
 - Деплой: push у `main` → Render сам деплоїть (~2–3 хв). Перевірити https://football-party-games.onrender.com.
 

@@ -19,6 +19,7 @@ function register({ app, io }) {
     actions: {
       start: (room, seat) => room.start(seat),
       guess: (room, seat, { playerId } = {}) => room.guess(seat, playerId),
+      hint: (room, seat, { id } = {}) => room.hint(seat, id),
       pass: (room, seat) => room.pass(seat),
       next: (room, seat) => room.next(seat),
     },

@@ -10,18 +10,22 @@
   };
 
   const DIFFICULTY_HINTS = {
-    easy: 'Лише зірки — гравці, яких знають усі.',
-    normal: 'Відомі гравці топ-ліг і збірних (і трохи менше відомі українці).',
-    hard: 'Уся база — включно з тими, кого пам’ятають лише справжні фанати.',
+    easy: 'Лише зірки — володарі великих трофеїв, лідери збірних, роки у великих клубах.',
+    normal: 'Відомі гравці топ-клубів і збірних (українців — трохи більше).',
+    fan: 'Для тих, хто дивиться футбол щотижня: міцні гравці топ-ліг і збірних.',
+    hard: 'Майже всі, включно з гравцями УПЛ 2000-х і середняками топ-ліг.',
+    expert: 'Уся база — включно з тими, кого пам’ятають лише справжні фанати.',
   };
-  const SET_LABELS = { all: 'Усі гравці', upl: 'УПЛ 2000–2014' };
-  const DIFF_LABELS = { easy: '🟢 Легкий', normal: '🟡 Звичайний', hard: '🔴 Складний' };
+  const ERA_LABELS = { all: 'Усі гравці', modern: 'Сучасні', retired: 'Завершили кар’єру' };
+  const DIFF_LABELS = { easy: '🟢 Легкий', normal: '🟡 Звичайний', fan: '🟣 Фанат', hard: '🔴 Складний', expert: '⚫ Експерт' };
   const SEAT_COLORS = ['#4fb3ff', '#ff6b8b', '#ffb547', '#a98bff', '#5fe0b5', '#ff8a4c', '#e0e86a', '#f08fe0'];
 
   // налаштування нової гри (запам'ятовуємо між візитами)
-  const defaults = { set: 'all', difficulty: 'normal', start: 'first', rounds: '10', turnSeconds: '30', showYears: true, showStats: true };
+  const defaults = { era: 'all', difficulty: 'normal', start: 'first', rounds: '10', turnSeconds: '30', showYears: true, showStats: true };
   let setup = { ...defaults };
   try { setup = { ...defaults, ...JSON.parse(store.get('path:setup') || '{}') }; } catch { /* ignore */ }
+  if (!ERA_LABELS[setup.era]) setup.era = 'all';
+  if (!DIFF_LABELS[setup.difficulty]) setup.difficulty = 'normal';
 
   let session = null; // { code, token }
   try { session = JSON.parse(store.get('path:session') || 'null'); } catch { /* ignore */ }
@@ -176,7 +180,7 @@
         return renderHome();
       }
       const o = info.options;
-      note.innerHTML = `${escapeHtml(info.players[0] || 'Друг')} кличе грати!<br><small>${SET_LABELS[o.set]} · ${DIFF_LABELS[o.difficulty]} · ${o.rounds} ${plural(o.rounds, 'раунд', 'раунди', 'раундів')}</small>`;
+      note.innerHTML = `${escapeHtml(info.players[0] || 'Друг')} кличе грати!<br><small>${ERA_LABELS[o.era]} · ${DIFF_LABELS[o.difficulty]} · ${o.rounds} ${plural(o.rounds, 'раунд', 'раунди', 'раундів')}</small>`;
     } catch { /* мережа — просто без опису */ }
   }
 
@@ -212,7 +216,7 @@
   }
 
   function optionChips(o) {
-    return [SET_LABELS[o.set], DIFF_LABELS[o.difficulty], o.start === 'first' ? 'з першого клубу' : 'з останнього клубу',
+    return [ERA_LABELS[o.era], DIFF_LABELS[o.difficulty], o.start === 'first' ? 'з першого клубу' : 'з останнього клубу',
       `${o.rounds} ${plural(o.rounds, 'раунд', 'раунди', 'раундів')}`, o.turnSeconds ? `${o.turnSeconds} с на етап` : 'без таймера',
       !o.showYears && 'без років', !o.showStats && 'без матчів і голів']
       .filter(Boolean).map((t) => `<span>${escapeHtml(t)}</span>`).join('');
@@ -251,25 +255,12 @@
     const stats = st.apps != null || st.goals != null
       ? `<span class="st-stats">${st.apps ?? '—'} ${plural(st.apps ?? 0, 'матч', 'матчі', 'матчів')} · ${st.goals ?? '—'} ${plural(st.goals ?? 0, 'гол', 'голи', 'голів')}</span>`
       : st.apps === null && st.kind === 'club' ? '<span class="st-stats muted">матчі й голи невідомі</span>' : '';
-    let icon;
-    let title = escapeHtml(st.name);
-    let sub = '';
-    if (st.kind === 'club') {
-      icon = st.img ? `<img src="${st.img}" alt="" loading="lazy" />` : `<span>${escapeHtml(initials(st.name))}</span>`;
-      sub = [st.country, st.years].filter(Boolean).map(escapeHtml).join(' · ');
-    } else if (st.kind === 'nation') {
-      icon = '<span>🏳️</span>';
-      sub = 'збірна';
-    } else if (st.kind === 'position') {
-      icon = '<span>🧭</span>';
-      sub = 'позиція';
-    } else {
-      icon = '<span>🎂</span>';
-      sub = 'рік народження';
-    }
+    const icon = st.img ? `<img src="${st.img}" alt="" loading="lazy" />` : `<span>${escapeHtml(initials(st.name))}</span>`;
+    const title = escapeHtml(st.name);
+    const sub = [st.country, st.years].filter(Boolean).map(escapeHtml).join(' · ') + (st.loan ? ' · <span class="loan">оренда</span>' : '');
     return `<li class="stage ${st.kind} ${current ? 'current' : ''}">
       <div class="st-num">${i + 1}</div>
-      <div class="st-icon">${icon}</div>
+      <div class="st-icon ${st.img ? 'crest' : ''}">${icon}</div>
       <div class="st-body"><b>${title}</b>${sub ? `<small>${sub}</small>` : ''}${stats}</div>
     </li>`;
   }
@@ -278,12 +269,12 @@
     showScreen('game');
     const s = state;
     const reveal = s.phase === 'reveal';
-    $('#round-info').innerHTML = `<b>Раунд ${s.round} з ${s.rounds}</b><span>${reveal ? 'відповідь' : `етап ${s.stage + 1} з ${s.totalStages} · ${pointsNow()} ${plural(pointsNow(), 'очко', 'очки', 'очок')} за вгадування`}</span>`;
+    $('#round-info').innerHTML = `<b>Раунд ${s.round} з ${s.rounds}</b><span>${reveal ? 'відповідь' : `клуб ${s.stage + 1} з ${s.totalStages}`}</span>`;
 
     const shown = s.stages.map((st, i) => stageHtml(st, i, !reveal && i === s.stage)).join('');
     const left = s.totalStages - s.stages.length;
     const hidden = left > 0
-      ? `<li class="stage locked"><div class="st-num">…</div><div class="st-body"><b>Ще ${left} ${plural(left, 'підказка', 'підказки', 'підказок')} попереду</b></div></li>`
+      ? `<li class="stage locked"><div class="st-num">…</div><div class="st-body"><b>Ще ${left} ${plural(left, 'клуб', 'клуби', 'клубів')} попереду</b></div></li>`
       : '';
     $('#path').innerHTML = shown + hidden;
 
@@ -297,7 +288,8 @@
     if (input.disabled) { input.value = ''; renderSuggestions(); }
     $('#answer-hint').textContent = solved
       ? `✓ Вгадав на етапі ${solved.stage + 1}: +${solved.points}. Чекаємо інших…`
-      : done ? 'Відповідь на цьому етапі вже є — чекай наступної підказки.' : '';
+      : done ? 'Відповідь на цьому етапі вже є — чекай наступного клубу.' : '';
+    renderHints(solved);
 
     // відповідь після раунду
     const rv = $('#reveal');
@@ -309,7 +301,8 @@
       const iVoted = s.nextVotes.includes(mySeat);
       rv.innerHTML = `<div class="answer-card">
           <div class="answer-photo">${a.photo ? `<img src="${a.photo}" alt="" />` : `<span>${escapeHtml(initials(a.name))}</span>`}</div>
-          <div><small>Це був</small><h2>${escapeHtml(a.uk || a.name)}</h2>${a.uk && a.uk !== a.name ? `<small class="muted">${escapeHtml(a.name)}</small>` : ''}</div>
+          <div><small>Це був</small><h2>${escapeHtml(a.uk || a.name)}</h2>${a.uk && a.uk !== a.name ? `<small class="muted">${escapeHtml(a.name)}</small>` : ''}
+            <div class="facts">${a.facts.map((f) => `<span>${f.img ? `<img src="${f.img}" alt="" />` : ''}${escapeHtml(f.text)}${f.apps != null ? ` · ${f.apps} / ${f.goals ?? '—'}` : ''}</span>`).join('')}</div></div>
         </div>
         ${s.solo ? '' : `<ul class="round-results">${results}</ul>`}
         <button id="next-btn" class="btn btn-primary btn-lg" ${iVoted ? 'disabled' : ''}>${s.round >= s.rounds ? 'Підсумки' : 'Наступний гравець →'}</button>`;
@@ -322,29 +315,43 @@
     tick();
   }
 
-  const pointsNow = () => state.points[state.stage] ?? 1;
+  // ── підказки: свої (privateState), з ціною; «можна заробити» — за етап мінус взяті підказки
+  function renderHints(solved) {
+    const s = state;
+    const taken = new Set(s.myHints.map((h) => h.id));
+    const stagePts = s.points[s.stage] ?? 1;
+    $('#earn').innerHTML = solved || s.potential == null ? '' : `Вгадаєш зараз — <b>+${s.potential}</b> ${plural(s.potential, 'очко', 'очки', 'очок')}` +
+      (s.potential < stagePts ? ` <small>(${stagePts} за етап − підказки)</small>` : '');
+    $('#hints').innerHTML = solved ? '' : s.hintCosts.map((h) => `<button type="button" class="hint-btn" data-hint="${h.id}" ${taken.has(h.id) ? 'disabled' : ''}>
+        💡 ${escapeHtml(h.label)} <b>−${h.cost}</b></button>`).join('');
+    $('#my-hints').innerHTML = s.myHints.map((h) => `<li>${h.img ? `<img src="${h.img}" alt="" />` : ''}<span>${escapeHtml(h.label)}:</span>
+        <b>${escapeHtml(h.text)}</b>${h.apps != null ? ` <small>${h.apps} ${plural(h.apps, 'матч', 'матчі', 'матчів')} · ${h.goals ?? '—'} ${plural(h.goals ?? 0, 'гол', 'голи', 'голів')}</small>` : ''}</li>`).join('');
+  }
+  $('#hints').addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-hint]');
+    if (!b) return;
+    const res = await emit('hint', { id: b.dataset.hint });
+    if (res.error) toast(res.error, 'bad');
+  });
 
   function renderScoreboard() {
     const s = state;
     const seats = s.seats.map((x, i) => (x ? i : -1)).filter((i) => i >= 0).sort((a, b) => s.scores[b] - s.scores[a]);
     $('#scoreboard').innerHTML = seats.map((i) => {
-      const st = s.solved[i] ? '✓' : s.stageDone.includes(i) ? '•' : '';
+      const st = (s.solved[i] ? '✓' : s.stageDone.includes(i) ? '•' : '') + (s.hintsUsed[i] ? ` 💡${s.hintsUsed[i]}` : '');
       return `<li style="${seatStyle(i)}" class="${i === mySeat ? 'me' : ''} ${s.seats[i].connected ? '' : 'offline'}">
         <span class="dot-p"></span><span class="nm">${escapeHtml(seatName(i))}</span><span class="mark">${st}</span><b>${s.scores[i]}</b></li>`;
     }).join('');
   }
 
+  // Свої відповіді — з іменами; чужі — лише «помилився/вгадав», щоб не підказати іншим.
   function renderFeed() {
     const s = state;
-    if (s.solo) {
-      $('#guess-feed').innerHTML = s.guesses.filter((g) => !g.correct).map((g) => `<li class="bad">✗ ${escapeHtml(g.player.uk || g.player.name)} <small>етап ${g.stage + 1}</small></li>`).join('');
-      return;
-    }
-    $('#guess-feed').innerHTML = [...s.guesses].reverse().map((g) => {
-      const who = `<b style="${seatStyle(g.seat)}">${escapeHtml(seatName(g.seat))}</b>`;
-      if (g.correct) return `<li class="good">${who} вгадав${g.player ? `: ${escapeHtml(g.player.uk || g.player.name)}` : ''} ✓ <small>етап ${g.stage + 1}</small></li>`;
-      return `<li class="bad">${who}: ${escapeHtml(g.player.uk || g.player.name)} ✗ <small>етап ${g.stage + 1}</small></li>`;
-    }).join('');
+    const mine = s.myGuesses.filter((g) => !g.correct).map((g) =>
+      `<li class="bad">✗ ${escapeHtml(g.player.uk || g.player.name)} <small>клуб ${g.stage + 1}</small></li>`);
+    const others = s.solo ? [] : [...s.guesses].filter((g) => g.seat !== mySeat).reverse().map((g) =>
+      `<li class="${g.correct ? 'good' : 'bad'}"><b style="${seatStyle(g.seat)}">${escapeHtml(seatName(g.seat))}</b> ${g.correct ? 'вгадав ✓' : 'помилився ✗'} <small>клуб ${g.stage + 1}</small></li>`);
+    $('#guess-feed').innerHTML = [...mine.reverse(), ...others].join('');
   }
 
   // ── таймер етапу
@@ -366,7 +373,7 @@
     const list = $('#suggestions');
     if (!input.value.trim() || input.disabled) { list.innerHTML = ''; suggestions = []; return; }
     suggestions = window.Players.search(input.value);
-    const wrong = new Set(state.guesses.filter((g) => g.seat === mySeat && !g.correct).map((g) => g.player.id));
+    const wrong = new Set(state.myGuesses.filter((g) => !g.correct).map((g) => g.player.id));
     list.innerHTML = suggestions.length
       ? suggestions.map((p, i) => `<li data-i="${i}" class="${i === active ? 'active' : ''} ${wrong.has(p.id) ? 'used' : ''}">
           <span class="s-avatar">${p.thumb ? `<img src="${p.thumb}" alt="" loading="lazy" />` : escapeHtml(initials(p.name))}</span>
@@ -376,6 +383,8 @@
   }
 
   input.addEventListener('input', () => { active = 0; renderSuggestions(); });
+  // список підказок відкривається вниз — піднімаємо поле вгору екрана, щоб його було видно цілком (і над клавіатурою)
+  input.addEventListener('focus', () => setTimeout(() => input.scrollIntoView({ block: 'start', behavior: 'smooth' }), 250));
   input.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowDown') { active = Math.min(active + 1, suggestions.length - 1); renderSuggestions(); e.preventDefault(); }
     if (e.key === 'ArrowUp') { active = Math.max(active - 1, 0); renderSuggestions(); e.preventDefault(); }
@@ -409,10 +418,10 @@
     const max = s.rounds * s.points[0];
     if (s.solo) {
       $('#final-title').textContent = `${s.scores[mySeat]} з ${max} очок`;
-      const key = `path:best:${s.options.set}:${s.options.difficulty}:${s.rounds}`;
+      const key = `path:best:${s.options.era}:${s.options.difficulty}:${s.rounds}`;
       const best = Number(store.get(key)) || 0;
       if (s.scores[mySeat] > best) store.set(key, s.scores[mySeat]);
-      $('#final-standings').innerHTML = `<li><span class="nm">Рекорд (${SET_LABELS[s.options.set]}, ${DIFF_LABELS[s.options.difficulty]}, ${s.rounds})</span><span class="val">${Math.max(best, s.scores[mySeat])}${s.scores[mySeat] > best && best ? ' — новий!' : ''}</span></li>`;
+      $('#final-standings').innerHTML = `<li><span class="nm">Рекорд (${ERA_LABELS[s.options.era]}, ${DIFF_LABELS[s.options.difficulty]}, ${s.rounds})</span><span class="val">${Math.max(best, s.scores[mySeat])}${s.scores[mySeat] > best && best ? ' — новий!' : ''}</span></li>`;
     } else {
       const top = s.scores[seats[0]];
       const winners = seats.filter((i) => s.scores[i] === top);
