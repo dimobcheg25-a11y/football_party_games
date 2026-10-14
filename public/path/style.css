@@ -35,8 +35,13 @@
 @media (max-width: 760px) {
   .game-layout { grid-template-columns: 1fr; }
   .side-col { order: -1; }
-  .scoreboard { display: flex; flex-wrap: wrap; }
-  .scoreboard li { flex: 1 1 130px; padding: 7px 10px; }
+  .table-card { padding: 8px; }
+  .table-title { margin-bottom: 6px; }
+  .scoreboard { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 5px; }
+  .scoreboard li { padding: 6px 8px; gap: 6px; font-size: 14px; }
+  .scoreboard .st, .scoreboard .hn { display: none; }
+  .scoreboard .nm { min-width: 40px; }
+  .scoreboard b { font-size: 16px; min-width: 20px; }
   .guess-feed { max-height: 92px; }
 }
 
@@ -114,7 +119,18 @@
 
 /* бічна колонка: рахунок і відповіді */
 .side-col { display: grid; gap: 12px; }
+/* турнірна таблиця */
+.table-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; }
+.table-title { margin: 0 0 8px; font-size: 12px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
 .scoreboard { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.scoreboard .place { width: 16px; text-align: center; font-family: var(--display); font-size: 13px; color: var(--muted); }
+.scoreboard .gain { color: var(--accent); font-weight: 800; font-size: 13px; }
+.scoreboard .st { color: var(--muted); font-size: 12px; font-weight: 600; white-space: nowrap; }
+.scoreboard .st.thinking { opacity: .7; }
+.scoreboard .hn { font-size: 12px; white-space: nowrap; }
+.scoreboard b { min-width: 28px; text-align: right; font-size: 18px; }
+.scoreboard b.bump { animation: bump .7s ease-out; color: var(--accent); }
+@keyframes bump { 0% { transform: scale(1); } 30% { transform: scale(1.5); } 100% { transform: scale(1); } }
 .scoreboard li {
   position: relative; display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 12px;
   background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--pc); font-weight: 700;
@@ -122,7 +138,6 @@
 .scoreboard li.me { background: color-mix(in srgb, var(--pc) 12%, var(--surface-solid)); }
 .scoreboard li.offline { opacity: .5; }
 .scoreboard .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.scoreboard .mark { color: var(--accent); white-space: nowrap; font-size: 13px; }
 .scoreboard b { font-family: var(--display); font-variant-numeric: tabular-nums; }
 .guess-feed { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; max-height: 260px; overflow-y: auto; font-size: 13px; }
 .guess-feed:empty { display: none; }
@@ -158,3 +173,10 @@
   .room-code { font-size: 34px; }
 }
 .answer-box .search input { scroll-margin-top: 12px; }
+
+/* телефон: таблиця — над шляхом, стрічка відповідей і реакції — під грою (у кінці файлу, щоб перекрити .side-col) */
+@media (max-width: 760px) {
+  .side-col { display: contents; }
+  .table-card { order: -1; }
+  .guess-feed, .reactions { order: 1; }
+}

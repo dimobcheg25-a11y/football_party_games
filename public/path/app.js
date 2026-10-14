@@ -334,14 +334,29 @@
     if (res.error) toast(res.error, 'bad');
   });
 
+  // Турнірна таблиця наживо: місце, хто лідирує, що кожен робить у цьому раунді, загальний рахунок.
+  let shownScores = {};
   function renderScoreboard() {
     const s = state;
-    const seats = s.seats.map((x, i) => (x ? i : -1)).filter((i) => i >= 0).sort((a, b) => s.scores[b] - s.scores[a]);
+    const seats = s.seats.map((x, i) => (x ? i : -1)).filter((i) => i >= 0)
+      .sort((a, b) => s.scores[b] - s.scores[a] || a - b);
+    const top = s.scores[seats[0]];
+    const leaders = seats.filter((i) => s.scores[i] === top);
+    $('#table-title').textContent = s.solo ? 'Твій рахунок' : 'Таблиця';
     $('#scoreboard').innerHTML = seats.map((i) => {
-      const st = (s.solved[i] ? '✓' : s.stageDone.includes(i) ? '•' : '') + (s.hintsUsed[i] ? ` 💡${s.hintsUsed[i]}` : '');
-      return `<li style="${seatStyle(i)}" class="${i === mySeat ? 'me' : ''} ${s.seats[i].connected ? '' : 'offline'}">
-        <span class="dot-p"></span><span class="nm">${escapeHtml(seatName(i))}</span><span class="mark">${st}</span><b>${s.scores[i]}</b></li>`;
+      const place = seats.findIndex((j) => s.scores[j] === s.scores[i]) + 1; // однакові очки — однакове місце
+      const solved = s.solved[i];
+      const status = solved
+        ? `<span class="gain">+${solved.points}</span>`
+        : s.phase === 'guess' ? (s.stageDone.includes(i) ? '<span class="st">відповів</span>' : '<span class="st thinking">думає…</span>') : '';
+      const hints = s.hintsUsed[i] ? `<span class="hn" title="Підказок">💡${s.hintsUsed[i]}</span>` : '';
+      const crown = !s.solo && top > 0 && leaders.length === 1 && leaders[0] === i ? ' 👑' : '';
+      const bump = shownScores[i] != null && s.scores[i] > shownScores[i] ? 'bump' : '';
+      return `<li data-seat="${i}" style="${seatStyle(i)}" class="${i === mySeat ? 'me' : ''} ${s.seats[i].connected ? '' : 'offline'}">
+        ${s.solo ? '' : `<span class="place">${place}</span>`}<span class="dot-p"></span>
+        <span class="nm">${escapeHtml(seatName(i))}${crown}</span>${status}${hints}<b class="${bump}">${s.scores[i]}</b></li>`;
     }).join('');
+    shownScores = Object.fromEntries(seats.map((i) => [i, s.scores[i]]));
   }
 
   // Свої відповіді — з іменами; чужі — лише «помилився/вгадав», щоб не підказати іншим.
@@ -497,7 +512,7 @@
     if (b) socket.emit('react', b.dataset.r);
   });
   socket.on('reaction', ({ seat, emoji }) => {
-    const li = [...$('#scoreboard').children].find((x) => x.getAttribute('style')?.includes(SEAT_COLORS[seat % SEAT_COLORS.length]));
+    const li = $(`#scoreboard li[data-seat="${seat}"]`);
     const bubble = document.createElement('span');
     bubble.className = 'reaction-bubble';
     bubble.textContent = emoji;
