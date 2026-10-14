@@ -281,7 +281,7 @@ input::placeholder { color: #6b8577; }
 /* ── поле */
 .board-wrap {
   --tc: var(--accent);
-  display: flex; justify-content: center; padding: 10px; border-radius: 20px;
+  display: flex; flex-direction: column; align-items: center; padding: 10px; border-radius: 20px;
   border: 2px solid color-mix(in srgb, var(--tc) 55%, transparent);
   background: color-mix(in srgb, var(--tc) 6%, transparent);
   transition: border-color .3s, background .3s;
@@ -579,6 +579,10 @@ input::placeholder { color: #6b8577; }
 /* лічильник варіантів: на великих полях і телефоні — лише число в кутку */
 .cell .count b { font-weight: 800; }
 .cell .count .all { opacity: .6; font-weight: 400; }
+.board-legend { margin: 10px 4px 0; font-size: 12px; line-height: 1.5; color: var(--muted); text-align: center; }
+.board-legend .ex { display: inline-block; padding: 0 6px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line); color: var(--text); white-space: nowrap; }
+.board-legend .ex.few b { color: var(--gold); }
+@media (min-width: 900px) { .board.big .cell .count { font-size: 12px; right: 6px; bottom: 4px; } }
 .board.big .cell .count, .cell .count.compact { left: auto; right: 4px; bottom: 3px; font-size: 10px; }
 .board.big .cell .count .w { display: none; }
 @media (max-width: 560px) {
