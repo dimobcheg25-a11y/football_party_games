@@ -53,34 +53,43 @@ async function main() {
   ({ res, st } = await act(solo, 'guess', { playerId: wrongId(st) }, (x) => x.stage === 1));
   assert.strictEqual(res.correct, false);
   assert.strictEqual(st.stages.length, 2, 'неправильна відповідь → наступний етап');
+  const p1 = st.points[1];
   ({ res, st } = await act(solo, 'guess', { playerId: st.testAnswer }, (x) => x.phase === 'reveal'));
   assert.ok(res.correct);
-  assert.strictEqual(st.scores[0], 8, 'вгадав на 2-му етапі — 8 очок');
+  assert.strictEqual(st.points[0], 100, 'перший клуб — 100');
+  assert.strictEqual(st.points[st.points.length - 1], 10, 'останній клуб — 10');
+  assert.strictEqual(st.points.length, st.totalStages);
+  assert.ok(st.points.every((x, i) => i === 0 || x < st.points[i - 1]), 'очки спадають рівномірно');
+  assert.strictEqual(st.scores[0], p1, 'вгадав на 2-му клубі');
   assert.ok(st.answer && st.answer.id === st.testAnswer, 'після раунду відповідь показано');
   assert.strictEqual(st.stages.length, st.totalStages, 'після раунду видно весь шлях');
-  console.log('✓ соло: помилка → наступний етап, вгадав на 2-му: +8');
+  console.log(`✓ соло: очки ${st.points.join('/')}, помилка → наступний клуб, вгадав на 2-му: +${p1}`);
 
   assert.ok(st.answer.facts.some((f) => f.id === 'born'), 'після раунду — факти про гравця');
 
   // підказки: рік (−1) і позиція (−2) на першому етапі → вгадав за 10 − 3 = 7
   ({ st } = await act(solo, 'next', null, (x) => x.round === 2 && x.phase === 'guess'));
-  assert.strictEqual(st.potential, 10);
+  assert.strictEqual(st.potential, 100);
+  const cost = (id) => st.hintCosts.find((h) => h.id === id).cost;
+  const n = st.totalStages;
+  assert.ok(cost('letter') > cost('position') && cost('position') === cost('nation') && cost('nation') > cost('born'), 'літера найдорожча, позиція = збірна, рік — найдешевший');
   ({ res, st } = await act(solo, 'hint', { id: 'born' }, (x) => x.myHints.length === 1));
   assert.ok(res.ok);
-  assert.strictEqual(st.potential, 9, 'рік народження −1');
+  assert.strictEqual(st.potential, 100 - cost('born'), 'рік народження');
   assert.ok(/^\d{4}$|невідомий/.test(st.myHints[0].text), 'рік народження');
   ({ st } = await act(solo, 'hint', { id: 'position' }, (x) => x.myHints.length === 2));
-  assert.strictEqual(st.potential, 7);
+  const withHints = 100 - cost('born') - cost('position');
+  assert.strictEqual(st.potential, withHints);
   ({ st } = await act(solo, 'guess', { playerId: st.testAnswer }, (x) => x.phase === 'reveal'));
-  assert.strictEqual(st.scores[0], 8 + 7);
-  console.log('✓ підказки: −1 і −2 → вгадав за 7');
+  assert.strictEqual(st.scores[0], p1 + withHints);
+  console.log(`✓ підказки (кар'єра ${n} клубів): рік −${cost('born')}, позиція −${cost('position')} → вгадав за ${withHints}`);
 
   for (let r = 3; r <= 5; r++) {
     ({ st } = await act(solo, 'next', null, (x) => x.round === r && x.phase === 'guess'));
     ({ st } = await act(solo, 'guess', { playerId: st.testAnswer }, (x) => x.phase === 'reveal'));
   }
   ({ st } = await act(solo, 'next', null, (x) => x.status === 'finished'));
-  assert.strictEqual(st.scores[0], 8 + 7 + 3 * 10);
+  assert.strictEqual(st.scores[0], p1 + withHints + 3 * 100);
   assert.strictEqual(st.history.length, 5);
   assert.strictEqual(new Set(st.history.map((h) => h.answer.id)).size, 5, 'гравці в серії не повторюються');
   console.log('✓ соло: серія з 5 раундів, рахунок', st.scores[0]);
@@ -128,6 +137,7 @@ async function main() {
   const bView = await bSees;
   assert.strictEqual(bView.guesses[0].player, undefined, 'чужа правильна відповідь прихована');
   assert.strictEqual(bView.stage, 0, 'етап чекає на Б');
+  const aPts = bView.points[0];
   ({ st } = await act(b, 'pass', null, (x) => x.stage === 1));
   const aSeesWrong = nextState(a, (x) => x.guesses.some((g) => !g.correct));
   ({ st } = await act(b, 'guess', { playerId: wrongId(st) }, (x) => x.stage === 2));
@@ -137,10 +147,11 @@ async function main() {
   ({ st } = await act(b, 'hint', { id: 'letter' }, (x) => x.myHints.length === 1));
   const aHint = await aSeesHint;
   assert.strictEqual(aHint.myHints.length, 0, 'чужих підказок не видно');
-  assert.strictEqual(st.potential, 1, 'етап 3 (6) − літера (6) → щонайменше 1');
+  const bPts = Math.max(5, st.points[2] - st.hintCosts.find((h) => h.id === 'letter').cost);
+  assert.strictEqual(st.potential, bPts, 'клуб 3 − літера (щонайменше 5)');
   ({ st } = await act(b, 'guess', { playerId: st.testAnswer }, (x) => x.phase === 'reveal'));
-  assert.deepStrictEqual(st.scores.slice(0, 2), [10, 1], 'А +10 (етап 1), Б +1 (етап 3 з підказкою-літерою)');
-  console.log('✓ очки: 10 і 1; чужі відповіді й підказки не видно, лише «помилився/вгадав»');
+  assert.deepStrictEqual(st.scores.slice(0, 2), [aPts, bPts], 'А — за 1-й клуб, Б — за 3-й з підказкою-літерою');
+  console.log(`✓ очки: ${aPts} і ${bPts}; чужі відповіді й підказки не видно, лише «помилився/вгадав»`);
 
   // пауза з відповіддю закінчується сама
   ({ st } = await nextState(a, (x) => x.round === 2 && x.phase === 'guess').then((s) => ({ st: s })));

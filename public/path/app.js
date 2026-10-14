@@ -269,7 +269,11 @@
     showScreen('game');
     const s = state;
     const reveal = s.phase === 'reveal';
-    $('#round-info').innerHTML = `<b>Раунд ${s.round} з ${s.rounds}</b><span>${reveal ? 'відповідь' : `клуб ${s.stage + 1} з ${s.totalStages}`}</span>`;
+    $('#round-info').innerHTML = `<b>Раунд ${s.round} з ${s.rounds}</b><span>${reveal ? 'відповідь' : `клуб ${s.stage + 1} з ${s.totalStages}${s.stage === s.totalStages - 1 ? ' — останній' : ''}`}</span>`;
+    // смужка кар'єри: скільки всього клубів, скільки вже відкрито — щоб знати, до чого готуватися
+    $('#career-bar').innerHTML = Array.from({ length: s.totalStages }, (_, i) =>
+      `<span class="${i < s.stages.length ? 'open' : ''} ${!reveal && i === s.stage ? 'now' : ''}" title="Клуб ${i + 1}: ${s.points[i]} очок"></span>`).join('');
+    $('#career-bar').setAttribute('aria-label', `Кар'єра: ${s.totalStages} ${plural(s.totalStages, 'клуб', 'клуби', 'клубів')}`);
 
     const shown = s.stages.map((st, i) => stageHtml(st, i, !reveal && i === s.stage)).join('');
     const left = s.totalStages - s.stages.length;
@@ -319,9 +323,11 @@
   function renderHints(solved) {
     const s = state;
     const taken = new Set(s.myHints.map((h) => h.id));
-    const stagePts = s.points[s.stage] ?? 1;
+    const stagePts = s.points[s.stage];
+    const next = s.points[s.stage + 1];
     $('#earn').innerHTML = solved || s.potential == null ? '' : `Вгадаєш зараз — <b>+${s.potential}</b> ${plural(s.potential, 'очко', 'очки', 'очок')}` +
-      (s.potential < stagePts ? ` <small>(${stagePts} за етап − підказки)</small>` : '');
+      (s.potential < stagePts ? ` <small>(${stagePts} за клуб − підказки)</small>` : '') +
+      `<small class="next">${next != null ? `на наступному клубі — ${next}` : 'це останній клуб'}</small>`;
     $('#hints').innerHTML = solved ? '' : s.hintCosts.map((h) => `<button type="button" class="hint-btn" data-hint="${h.id}" ${taken.has(h.id) ? 'disabled' : ''}>
         💡 ${escapeHtml(h.label)} <b>−${h.cost}</b></button>`).join('');
     $('#my-hints').innerHTML = s.myHints.map((h) => `<li>${h.img ? `<img src="${h.img}" alt="" />` : ''}<span>${escapeHtml(h.label)}:</span>
@@ -430,10 +436,10 @@
     showScreen('final');
     const s = state;
     const seats = s.seats.map((x, i) => (x ? i : -1)).filter((i) => i >= 0).sort((a, b) => s.scores[b] - s.scores[a]);
-    const max = s.rounds * s.points[0];
+    const max = s.rounds * s.maxPoints;
     if (s.solo) {
       $('#final-title').textContent = `${s.scores[mySeat]} з ${max} очок`;
-      const key = `path:best:${s.options.era}:${s.options.difficulty}:${s.rounds}`;
+      const key = `path:best2:${s.options.era}:${s.options.difficulty}:${s.rounds}`;
       const best = Number(store.get(key)) || 0;
       if (s.scores[mySeat] > best) store.set(key, s.scores[mySeat]);
       $('#final-standings').innerHTML = `<li><span class="nm">Рекорд (${ERA_LABELS[s.options.era]}, ${DIFF_LABELS[s.options.difficulty]}, ${s.rounds})</span><span class="val">${Math.max(best, s.scores[mySeat])}${s.scores[mySeat] > best && best ? ' — новий!' : ''}</span></li>`;
@@ -527,7 +533,7 @@
   renderMute();
 
   // ── старт сторінки
-  $('#points-rule').textContent = '10 за перший етап, далі 8, 6, 4, 3, 2 і по 1';
+  $('#points-rule').textContent = '100 за перший клуб, далі рівномірно менше — до 10 за останній (скільки клубів у кар’єрі, видно одразу)';
   renderSetup();
   renderHome();
   showScreen('home');

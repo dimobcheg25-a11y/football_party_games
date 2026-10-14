@@ -6,8 +6,15 @@ const { playerById } = require('../../data');
 const { BaseRoom } = require('../../core/base-room');
 const { poolFor, stagesFor, hintValue, HINTS, ERAS, DIFFICULTIES } = require('./careers');
 
-const POINTS = [10, 8, 6, 4, 3, 2]; // очки за вгадування на етапі 1, 2, 3…; далі — 1
-const pointsAt = (stage) => POINTS[stage] ?? 1;
+// Очки: на першому клубі — MAX, на останньому — LAST, між ними рівномірно (для кар'єри будь-якої довжини
+// останні клуби ще мають вагу). Правильна відповідь з підказками — щонайменше MIN.
+const MAX_POINTS = 100;
+const LAST_POINTS = 10;
+const MIN_POINTS = 5;
+const stagePoints = (n) =>
+  Array.from({ length: n }, (_, i) => (n === 1 ? MAX_POINTS : Math.round(MAX_POINTS - (i * (MAX_POINTS - LAST_POINTS)) / (n - 1))));
+const stepFor = (n) => (MAX_POINTS - LAST_POINTS) / Math.max(1, n - 1);
+const hintCosts = (n) => HINTS.map((h) => ({ id: h.id, label: h.label, cost: Math.max(h.min, Math.round(h.steps * stepFor(n))) }));
 const ALLOWED_TIMERS = [0, 15, 20, 30, 45]; // секунд на етап; 0 — без обмеження
 const ALLOWED_ROUNDS = [5, 10, 15];
 const MAX_PLAYERS = 8;
@@ -120,6 +127,8 @@ class PathRoom extends BaseRoom {
     if (this.roundNo >= this.picks.length) return this.finish();
     this.answer = this.picks[this.roundNo++];
     this.stages = stagesFor(this.answer, this.options);
+    this.points = stagePoints(this.stages.length);
+    this.costs = hintCosts(this.stages.length);
     this.phase = 'guess';
     this.startTimer();
     this.changed();
@@ -134,11 +143,11 @@ class PathRoom extends BaseRoom {
 
   // ── очки: за етап мінус ціна взятих підказок, але щонайменше 1
   hintCost(seat) {
-    return (this.hints.get(seat) || []).reduce((sum, id) => sum + HINTS.find((h) => h.id === id).cost, 0);
+    return (this.hints.get(seat) || []).reduce((sum, id) => sum + this.costs.find((h) => h.id === id).cost, 0);
   }
 
   potential(seat) {
-    return Math.max(1, pointsAt(this.stage) - this.hintCost(seat));
+    return Math.max(MIN_POINTS, this.points[this.stage] - this.hintCost(seat));
   }
 
   // ── дії гравця
@@ -246,7 +255,8 @@ class PathRoom extends BaseRoom {
       code: this.code,
       solo: this.solo,
       options: this.options,
-      points: POINTS,
+      points: this.points || [], // очки за кожен клуб цього раунду
+      maxPoints: MAX_POINTS,
       capacity: this.capacity,
       seats: this.publicSeats(),
       host: this.host(),
@@ -259,7 +269,7 @@ class PathRoom extends BaseRoom {
       stages: this.phase === 'reveal' ? this.stages : this.stages.slice(0, this.stage + 1),
       stageDone: [...this.stageDone],
       solved: Object.fromEntries(this.solved),
-      hintCosts: HINTS,
+      hintCosts: this.costs || hintCosts(1),
       // скільки підказок узяв кожен (самі підказки й чужі відповіді не показуємо — щоб не підказати)
       hintsUsed: Object.fromEntries([...this.hints].map(([s, l]) => [s, l.length])),
       guesses: this.guesses.map((g) => ({ seat: g.seat, stage: g.stage, correct: g.correct })),
@@ -293,4 +303,4 @@ class PathRoom extends BaseRoom {
   }
 }
 
-module.exports = { PathRoom, POINTS, ALLOWED_TIMERS, ALLOWED_ROUNDS, HINTS };
+module.exports = { PathRoom, stagePoints, hintCosts, ALLOWED_TIMERS, ALLOWED_ROUNDS, HINTS };

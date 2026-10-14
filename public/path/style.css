@@ -28,6 +28,11 @@
 .round-info { display: grid; gap: 2px; }
 .round-info b { font-family: var(--display); font-size: 18px; }
 .round-info span { font-size: 13px; color: var(--muted); }
+.career-bar { flex: 1; display: flex; gap: 3px; max-width: 320px; align-self: center; }
+.career-bar span { flex: 1; height: 8px; border-radius: 99px; background: rgba(255,255,255,0.1); }
+.career-bar span.open { background: color-mix(in srgb, var(--accent) 55%, transparent); }
+.career-bar span.now { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+.earn .next { display: block; color: var(--muted); font-weight: 600; font-size: 13px; }
 .timer { font-family: var(--display); font-weight: 800; font-size: 20px; font-variant-numeric: tabular-nums; }
 .timer.low { color: var(--danger); }
 
@@ -179,4 +184,8 @@
   .side-col { display: contents; }
   .table-card { order: -1; }
   .guess-feed, .reactions { order: 1; }
+}
+@media (max-width: 560px) {
+  .game-top { flex-wrap: wrap; }
+  .career-bar { order: 3; flex-basis: 100%; max-width: none; }
 }
