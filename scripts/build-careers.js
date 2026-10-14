@@ -25,6 +25,10 @@ const CREST_SIZE = 80;
 // Назви перевіряємо кожною мовою окремо (суфікс « B» має бути в кінці саме своєї назви).
 const NOT_SENIOR = /\bU-?\d{2}\b|under-?\d{2}|\byouth\b|olympic|amateur|reserves?\b|\s(B|C|II|III|Б|В)$|-(2|3)\b|^jong\s|castilla|atlètic|юнацьк|молодіжн|олімпійськ|дубл|кастілья/i;
 
+// Справжні клуби, у назві яких є «II» чи « B» (не другі команди).
+const SENIOR_EXCEPTIONS = /^(willem ii|віллем ii|виллем ii)/i;
+const notSenior = (n) => NOT_SENIOR.test(n) && !SENIOR_EXCEPTIONS.test(n.replace(/^(fc|фк)\s+/i, ''));
+
 // Регіональні збірні, що не є членами ФІФА (у таблицях стоять поряд зі справжніми: «Basque Country» у Вальверде).
 const NOT_FIFA = /basque|catalonia|galicia|andalusia|corsica|brittany|padania|occitania|kurdistan|tibet|sápmi|zanzibar/i;
 
@@ -122,7 +126,7 @@ function parseCareer(params) {
   let nation = null;
   for (let i = 1; i <= 15; i++) {
     const link = linkOf(params[`nationalteam${i}`]);
-    if (!link || NOT_SENIOR.test(link.title) || NOT_SENIOR.test(link.label) || NOT_FIFA.test(link.title)) continue;
+    if (!link || notSenior(link.title) || notSenior(link.label) || NOT_FIFA.test(link.title)) continue;
     const a = cleanNum(params[`nationalcaps${i}`]);
     if (!nation || (a || 0) >= (nation.a || 0)) nation = { ...link, a, g: cleanNum(params[`nationalgoals${i}`]) };
   }
@@ -195,7 +199,11 @@ const commonsThumb = (url) => url && `${url.replace(/^http:/, 'https:')}?width=$
 // «Футбольний клуб Динамо (Київ)» → «Динамо (Київ)»: прибираємо службові слова з назви.
 function shortName(t) {
   const name = t.uk || t.ru || t.en || '';
-  return name.replace(/^(футбольний клуб|фк|fc|ак|ac)\s+/i, '').replace(/\s+\((футбольний )?клуб\)$/i, '').trim();
+  return name
+    .replace(/^(футбольний клуб|футбольный клуб|фк|fc|ак|ac)\s+/i, '')
+    .replace(/\s*\((футбольн\S* )?клуб\)$/i, '') // «Динамо Сухуми (футбольный клуб)»
+    .replace(/\s*\(\d{4}\)$/, '') // «Алания Владикавказ(2019)»
+    .trim();
 }
 
 // Один клуб кілька разів поспіль (оренда → викуп, продовжений контракт) — один період.
@@ -250,7 +258,7 @@ async function main() {
   const teams = {};
   const isSenior = (key, extra = []) => {
     const t = rawTeams[key] || {};
-    return ![t.en, t.uk, t.ru, ...extra].some((n) => n && NOT_SENIOR.test(n));
+    return ![t.en, t.uk, t.ru, ...extra].some((n) => n && notSenior(n));
   };
   // Ключ команди — qid Wikidata, а якщо статті немає у Wikidata — «w:назва статті».
   const useTeam = (key, { national = false, label = null, img = null } = {}) => {

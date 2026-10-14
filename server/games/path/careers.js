@@ -74,7 +74,9 @@ const years = (s, e) => (!s ? `до ${e}` : e === s ? `${s}` : `${s}–${e ?? ''
 function team(qid) {
   const t = data.teams[qid] || { name: '?' };
   const cat = t.cat ? categoryById.get(t.cat) : null;
-  return { name: t.name, country: t.country || null, img: cat?.img || t.img || null };
+  // «Барселона (жіночий футбольний клуб)» → «Барселона (жін.)», «Полтава (спортивний клуб)» → «Полтава»
+  const name = t.name.replace(/\s*\((жіночий|женский)[^)]*\)$/i, ' (жін.)').replace(/\s*\([^)]*клуб\)$/i, '');
+  return { name, country: t.country || null, img: cat?.img || t.img || null };
 }
 
 // Етапи раунду — клуби кар'єри (з першого або з останнього).
@@ -92,11 +94,13 @@ function stagesFor(p, { start = 'first', showYears = true, showStats = true } = 
 }
 
 // ── підказки: гравець сам обирає, яку взяти; кожна знімає бали з можливих
+// Позиція і збірна — рівноцінні; рік народження слабкий (епоху й так видно з років у клубах);
+// перша літера прізвища — найсильніша, тому найдорожча.
 const HINTS = [
-  { id: 'position', label: 'Позиція', cost: 1 },
-  { id: 'born', label: 'Рік народження', cost: 2 },
+  { id: 'position', label: 'Позиція', cost: 2 },
   { id: 'nation', label: 'Збірна', cost: 2 },
-  { id: 'letter', label: 'Перша літера прізвища', cost: 4 },
+  { id: 'born', label: 'Рік народження', cost: 1 },
+  { id: 'letter', label: 'Перша літера прізвища', cost: 6 },
 ];
 const POSITIONS = { GK: 'Воротар', DF: 'Захисник', MF: 'Півзахисник', FW: 'Нападник' };
 

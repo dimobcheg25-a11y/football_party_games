@@ -62,18 +62,18 @@ async function main() {
 
   assert.ok(st.answer.facts.some((f) => f.id === 'born'), 'після раунду — факти про гравця');
 
-  // підказки: рік (−2) і позиція (−1) на першому етапі → вгадав за 10 − 3 = 7
+  // підказки: рік (−1) і позиція (−2) на першому етапі → вгадав за 10 − 3 = 7
   ({ st } = await act(solo, 'next', null, (x) => x.round === 2 && x.phase === 'guess'));
   assert.strictEqual(st.potential, 10);
   ({ res, st } = await act(solo, 'hint', { id: 'born' }, (x) => x.myHints.length === 1));
   assert.ok(res.ok);
-  assert.strictEqual(st.potential, 8, 'підказка −2');
+  assert.strictEqual(st.potential, 9, 'рік народження −1');
   assert.ok(/^\d{4}$|невідомий/.test(st.myHints[0].text), 'рік народження');
   ({ st } = await act(solo, 'hint', { id: 'position' }, (x) => x.myHints.length === 2));
   assert.strictEqual(st.potential, 7);
   ({ st } = await act(solo, 'guess', { playerId: st.testAnswer }, (x) => x.phase === 'reveal'));
   assert.strictEqual(st.scores[0], 8 + 7);
-  console.log('✓ підказки: −2 і −1 → вгадав за 7');
+  console.log('✓ підказки: −1 і −2 → вгадав за 7');
 
   for (let r = 3; r <= 5; r++) {
     ({ st } = await act(solo, 'next', null, (x) => x.round === r && x.phase === 'guess'));
@@ -137,10 +137,10 @@ async function main() {
   ({ st } = await act(b, 'hint', { id: 'letter' }, (x) => x.myHints.length === 1));
   const aHint = await aSeesHint;
   assert.strictEqual(aHint.myHints.length, 0, 'чужих підказок не видно');
-  assert.strictEqual(st.potential, 6 - 4, 'етап 3 (6) − літера (4)');
+  assert.strictEqual(st.potential, 1, 'етап 3 (6) − літера (6) → щонайменше 1');
   ({ st } = await act(b, 'guess', { playerId: st.testAnswer }, (x) => x.phase === 'reveal'));
-  assert.deepStrictEqual(st.scores.slice(0, 2), [10, 2], 'А +10 (етап 1), Б +2 (етап 3 з підказкою)');
-  console.log('✓ очки: 10 і 2; чужі відповіді й підказки не видно, лише «помилився/вгадав»');
+  assert.deepStrictEqual(st.scores.slice(0, 2), [10, 1], 'А +10 (етап 1), Б +1 (етап 3 з підказкою-літерою)');
+  console.log('✓ очки: 10 і 1; чужі відповіді й підказки не видно, лише «помилився/вгадав»');
 
   // пауза з відповіддю закінчується сама
   ({ st } = await nextState(a, (x) => x.round === 2 && x.phase === 'guess').then((s) => ({ st: s })));
