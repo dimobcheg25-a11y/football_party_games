@@ -24,10 +24,13 @@ Node 18+, Express + Socket.IO, клієнт — чистий HTML/CSS/JS без 
 - `public/<id>/` — сторінка гри (`crossroads/app.js` — ~1100 рядків, читати частинами через Grep).
 - `scripts/smoke-test.js` (Перехрестя), `scripts/smoke-path.js` (Шлях), `scripts/smoke-guess.js` (Вгадай гравця) — автотести ботами через справжній сервер.
 - `scripts/build-players.js` → `players.json`; `scripts/build-careers.js` → `careers.json` (запускати після build-players);
+  `scripts/build-transfers.js` → `transfers.json` (за id гравця: `maxValue` — макс. ринкова вартість, `value` — поточна (лише активні),
+  `topFee/topFrom/topTo/topSeason` — найдорожчий трансфер, `totalFees` — сума всіх трансферів, `paid` — їх кількість; євро; з відкритого
+  transfermarkt-datasets, CC0; покриття — гравці приблизно з 2012 р., легенди 90-х здебільшого без даних);
   `scripts/lib/wikidata.js` — запити до Wikidata з повторами.
 
 ## Не читати цілком
-`server/data/players.json`, `server/data/careers.json`, `server/data/photos.json` (сотні КБ), `package-lock.json` — лише Grep
+`server/data/players.json`, `server/data/careers.json`, `server/data/photos.json`, `server/data/transfers.json` (сотні КБ), `package-lock.json` — лише Grep
 або `node -e` по конкретному імені/ключу.
 
 ## Нова гра
@@ -65,7 +68,7 @@ actions: { start, guess, ... : (room, seat, payload) => ({ ok } | { error }) }, 
 
 ## Команди
 - `npm test` — прогін усіх перевірок (~1,5 хв, є таймаут 15 с). Обов'язково перед комітом.
-- Оновити базу: `npm run build-players` (≈15 хв) → `npm run build-careers` (≈10 хв; кар'єри з таблиць en.wikipedia) → `npm run fetch-photos`.
+- Оновити базу: `npm run build-players` (≈15 хв) → `npm run build-careers` (≈10 хв; кар'єри з таблиць en.wikipedia) → `npm run fetch-photos`; `npm run build-transfers` (≈1 хв).
 - `npm run dev` — локальний сервер з перезапуском.
 - Деплой: push у `main` → Render сам деплоїть (~2–3 хв). Перевірити https://football-party-games.onrender.com.
 
