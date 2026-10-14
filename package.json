@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server/index.js",
     "dev": "node --watch server/index.js",
-    "test": "node scripts/smoke-test.js && node scripts/smoke-path.js",
+    "test": "node scripts/smoke-test.js && node scripts/smoke-path.js && node scripts/smoke-guess.js",
     "fetch-photos": "node scripts/fetch-photos.js",
     "build-players": "node scripts/build-players.js",
     "build-careers": "node scripts/build-careers.js",

@@ -124,4 +124,4 @@ function hintValue(p, id, { showStats = true } = {}) {
   return null;
 }
 
-module.exports = { poolFor, stagesFor, hintValue, HINTS, ERAS, DIFFICULTIES };
+module.exports = { poolFor, stagesFor, hintValue, careerOf, team, teams: data.teams, POSITIONS, HINTS, ERAS, DIFFICULTIES };
