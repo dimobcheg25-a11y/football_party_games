@@ -17,7 +17,8 @@
 /* дошка: рядок = гравець + 9 клітинок */
 .board { display: grid; gap: 6px; }
 .board-empty { color: var(--muted); text-align: center; margin: 10px 0; }
-.g-row { display: grid; grid-template-columns: 150px repeat(9, minmax(0, 1fr)); gap: 5px; align-items: stretch; }
+/* «Спільні клуби» ширша: там кілька назв */
+.g-row { display: grid; grid-template-columns: 150px repeat(5, minmax(0, 1fr)) minmax(0, 1.7fr) repeat(3, minmax(0, 1fr)); gap: 5px; align-items: stretch; }
 .g-row.fresh .cell { animation: flip .45s ease-out both; }
 .g-row.fresh .cell:nth-child(3) { animation-delay: .04s; } .g-row.fresh .cell:nth-child(4) { animation-delay: .08s; }
 .g-row.fresh .cell:nth-child(5) { animation-delay: .12s; } .g-row.fresh .cell:nth-child(6) { animation-delay: .16s; }
@@ -39,6 +40,7 @@
   position: relative; min-height: 64px; padding: 6px 4px; border-radius: 10px; text-align: center;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   background: var(--g-grey); border: 1px solid var(--line); font-size: 13px; line-height: 1.15;
+  min-width: 0; overflow: hidden;
 }
 .cell.green { background: var(--g-green); border-color: transparent; }
 .cell.yellow { background: var(--g-yellow); border-color: transparent; color: #1b1606; }
@@ -50,11 +52,11 @@
 .cell .lbl { display: none; }
 .cell.c-trophies b { font-size: 15px; letter-spacing: 1px; }
 .cell.c-goals b, .cell.c-caps b, .cell.c-born b { font-family: var(--display); font-size: 16px; }
-.clubs { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; }
-.clubs > span { display: inline-flex; align-items: center; gap: 2px; font-size: 11.5px; font-weight: 800; }
+.clubs { display: flex; flex-wrap: wrap; gap: 3px 6px; justify-content: center; max-width: 100%; }
+.clubs > span { display: inline-flex; align-items: center; gap: 3px; font-size: 11.5px; font-weight: 800; min-width: 0; max-width: 100%; }
 .clubs img { width: 18px; height: 18px; object-fit: contain; background: #e8efe9; border-radius: 4px; padding: 1px; }
-.clubs em { font-style: normal; }
-.answer-board .g-row { grid-template-columns: 150px repeat(9, minmax(0, 1fr)); }
+.clubs em { font-style: normal; overflow-wrap: anywhere; text-align: left; }
+.clubs img { flex: none; }
 
 /* таблиця: кольори чужих спроб */
 .guess-game .scoreboard li { display: grid; gap: 4px; }
@@ -68,7 +70,7 @@
 /* вузький екран: рядок — гравець зверху, клітинки 3×3 з підписами */
 @media (max-width: 980px) {
   .g-head { display: none; }
-  .g-row, .answer-board .g-row { grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 8px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); }
+  .g-row { grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 8px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); }
   .g-player { grid-column: 1 / -1; }
   .cell { min-height: 58px; padding-top: 16px; }
   .cell .lbl { display: block; position: absolute; top: 3px; left: 6px; right: 18px; text-align: left; font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; opacity: .7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
