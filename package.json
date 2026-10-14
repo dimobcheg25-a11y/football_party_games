@@ -6,9 +6,10 @@
   "scripts": {
     "start": "node server/index.js",
     "dev": "node --watch server/index.js",
-    "test": "node scripts/smoke-test.js",
+    "test": "node scripts/smoke-test.js && node scripts/smoke-path.js",
     "fetch-photos": "node scripts/fetch-photos.js",
     "build-players": "node scripts/build-players.js",
+    "build-careers": "node scripts/build-careers.js",
     "fetch-category-images": "node scripts/fetch-category-images.js"
   },
   "engines": {

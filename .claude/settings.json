@@ -1,0 +1,15 @@
+  {
+    "enabledPlugins": {
+      "planet-qa@namecheap-claude-code": false,
+      "planet-dev@namecheap-claude-code": false,
+      "satellite-ssl@namecheap-claude-code": false,
+      "postman@claude-plugins-official": false
+    },
+    "permissions": {
+      "deny": [
+        "Read(server/data/players.json)",
+        "Read(server/data/photos.json)",
+        "Read(package-lock.json)"
+      ]
+    }
+  }

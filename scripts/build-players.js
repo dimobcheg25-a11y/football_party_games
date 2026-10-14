@@ -2,6 +2,7 @@
 //
 // Джерела:
 //   • Wikidata — клуби (P54, включно з орендами), збірні, позиції (P413), імена EN/RU/UA, рік народження;
+//     гравці чемпіонату України 2000–2014 (категорія en.wikipedia + періоди в українських клубах);
 //     дати перебування в клубах + каденції тренерів (P6087) — для «грав у тренера»; дубль/молодіжні команди (P831) — академії;
 //   • категорії Вікіпедії — трофеї (чемпіони світу/Європи, Копа, ЛЧ, ЛЄ, Золотий м'яч/бутса, 100+ матчів за збірну),
 //     гравці ліг (en), чемпіони Італії/Іспанії/Німеччини (de), гравці дублів (en) — для академій;
@@ -18,13 +19,14 @@ const shortNames = require('../server/data/manual-names');
 const { categories } = require('../server/data/categories');
 
 const OUT = path.join(__dirname, '..', 'server', 'data', 'players.json');
-const UA = 'football-games-grid9/1.0 (hobby project)';
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const { getJson, sparql, sleep, qidOf, values } = require('./lib/wikidata');
 
 // Поріг «відомості» — кількість мовних версій статті у Вікіпедії.
 const MIN_SITELINKS_CLUB = 35; // грав за один із наших клубів
 const MIN_SITELINKS_NATION = 45; // зірки збірних без наших клубів (Пеле, Еусебіо…)
 const MIN_SITELINKS_UKRAINE = 18; // українські клуби і збірна — нижчий поріг, щоб їх було достатньо
+const MIN_SITELINKS_UPL = 5; // гравці чемпіонату України 2000–2014 (тег UPL0014) — для «Шляху футболіста»
+const UPL_YEARS = [2000, 2014];
 
 const TEAM_CODES = Object.fromEntries(categories.filter((c) => c.qid).map((c) => [c.qid, c.id]));
 const POSITION_CODES = Object.fromEntries(categories.filter((c) => c.type === 'position').map((c) => [c.positionQid, c.id]));
@@ -104,48 +106,6 @@ const WIKI_LINK_PAGES = [
 ];
 
 // ── мережа
-async function getJson(url, headers = {}, attempt = 0) {
-  let res;
-  try {
-    res = await fetch(url, { headers: { 'User-Agent': UA, ...headers } });
-  } catch (e) {
-    // обірване з'єднання / таймаут — пробуємо ще
-    if (attempt >= 6) throw e;
-    console.log(`  (мережева помилка: ${e.message}, повтор)`);
-    await sleep(4000 * (attempt + 1));
-    return getJson(url, headers, attempt + 1);
-  }
-  if ((res.status === 429 || res.status >= 500) && attempt < 6) {
-    const wait = 4000 * (attempt + 1);
-    console.log(`  (HTTP ${res.status}, чекаю ${wait / 1000} с)`);
-    await sleep(wait);
-    return getJson(url, headers, attempt + 1);
-  }
-  if (!res.ok) throw new Error(`HTTP ${res.status} ${url.slice(0, 120)}`);
-  let text;
-  try {
-    text = await res.text();
-  } catch (e) {
-    // з'єднання обірвалось під час читання відповіді — повторюємо запит
-    if (attempt >= 6) throw e;
-    console.log(`  (обірвано під час читання: ${e.message}, повтор)`);
-    await sleep(4000 * (attempt + 1));
-    return getJson(url, headers, attempt + 1);
-  }
-  if (text.startsWith('You are making too many requests') && attempt < 6) {
-    console.log('  (ліміт запитів Вікіпедії, чекаю)');
-    await sleep(5000 * (attempt + 1));
-    return getJson(url, headers, attempt + 1);
-  }
-  return JSON.parse(text);
-}
-
-async function sparql(query) {
-  const url = 'https://query.wikidata.org/sparql?query=' + encodeURIComponent(query);
-  const j = await getJson(url, { Accept: 'application/sparql-results+json' });
-  return j.results.bindings.map((b) => Object.fromEntries(Object.entries(b).map(([k, v]) => [k, v.value])));
-}
-
 async function wikiApi(host, params) {
   const url = `https://${host}.wikipedia.org/w/api.php?` + new URLSearchParams({ format: 'json', formatversion: '2', ...params });
   const j = await getJson(url);
@@ -153,8 +113,6 @@ async function wikiApi(host, params) {
   return j;
 }
 
-const qidOf = (uri) => uri.split('/').pop();
-const values = (qids) => qids.map((q) => 'wd:' + q).join(' ');
 
 // ── 1. Кандидати
 async function fetchCandidates() {
@@ -164,6 +122,31 @@ async function fetchCandidates() {
     ?p wdt:P106 wd:Q937857 .
   }`);
   return new Map(rows.map((r) => [qidOf(r.p), Number(r.sl)]));
+}
+
+// Гравці чемпіонату України 2000–2014: категорія en.wikipedia «Ukrainian Premier League players» (років там немає)
+// ∩ період в українському клубі (Wikidata, країна команди — Україна), що перетинається з UPL_YEARS.
+async function fetchUplCandidates() {
+  const qids = [];
+  let cont = {};
+  do {
+    const j = await wikiApi('en', {
+      action: 'query', generator: 'categorymembers', gcmtitle: 'Category:Ukrainian Premier League players',
+      gcmlimit: '500', gcmtype: 'page', prop: 'pageprops', ppprop: 'wikibase_item', ...cont,
+    });
+    for (const pg of j.query?.pages || []) if (pg.pageprops?.wikibase_item) qids.push(pg.pageprops.wikibase_item);
+    cont = j.continue || null;
+  } while (cont);
+  const found = new Map();
+  const [from, to] = UPL_YEARS;
+  for (let i = 0; i < qids.length; i += 200) {
+    const rows = await sparql(`SELECT ?p (MAX(?sl) AS ?s) WHERE { VALUES ?p { ${values(qids.slice(i, i + 200))} }
+      ?p p:P54 ?st . ?st ps:P54 ?team . ?team wdt:P17 wd:Q212 . ?st pq:P580 ?b . OPTIONAL { ?st pq:P582 ?e }
+      FILTER(YEAR(?b) <= ${to} && (!BOUND(?e) || YEAR(?e) >= ${from}))
+      ?p wikibase:sitelinks ?sl . FILTER(?sl >= ${MIN_SITELINKS_UPL}) } GROUP BY ?p`);
+    for (const r of rows) found.set(qidOf(r.p), Number(r.s));
+  }
+  return found;
 }
 
 // дата Wikidata → рік із дробом; точність «рік» (1 січня) трактуємо як середину року (літнє трансферне вікно)
@@ -310,12 +293,15 @@ function naturalOrder(s) {
 async function main() {
   console.log('1/5 Кандидати з Wikidata…');
   const candidates = await fetchCandidates();
-  console.log(`  знайдено ${candidates.size}`);
+  const upl = await fetchUplCandidates();
+  for (const [q, sl] of upl) if (!candidates.has(q)) candidates.set(q, sl);
+  console.log(`  знайдено ${candidates.size} (з них УПЛ 2000–2014: ${upl.size})`);
 
   console.log('2/5 Клуби, збірні, позиції, тренери, академії…');
   const tenures = await fetchCoachTenures();
   console.log(`  каденцій тренерів (клуби + завершені у збірних): ${tenures.length}`);
   const players = await fetchDetails([...candidates.keys()], tenures);
+  for (const q of upl.keys()) players.get(q)?.tags.add('UPL0014');
 
   console.log('3/5 Категорії Вікіпедії…');
   const byWikiTitle = { en: new Map(), uk: new Map(), ru: new Map(), de: new Map() };
@@ -389,13 +375,13 @@ async function main() {
   if (diffs.length) console.log('  Розбіжності (клуби з ручного списку, яких немає у Wikidata — залишені):\n   ' + diffs.join('\n   '));
 
   // ── формуємо вихід
-  const knownCodes = new Set(categories.map((c) => c.id));
+  const knownCodes = new Set([...categories.map((c) => c.id), 'UPL0014']);
   const usedIds = new Set();
   const out = [];
   for (const p of players.values()) {
     const tags = [...p.tags].filter((t) => knownCodes.has(t));
-    // без жодного клубу чи збірної гравець у сітку не потрапить
-    if (!tags.some((t) => categories.find((c) => c.id === t && (c.type === 'club' || c.type === 'nation')))) continue;
+    // без жодного клубу чи збірної гравець у сітку не потрапить (гравці УПЛ лишаються — для «Шляху футболіста»)
+    if (!tags.includes('UPL0014') && !tags.some((t) => categories.find((c) => c.id === t && (c.type === 'club' || c.type === 'nation')))) continue;
     const c = p.curated;
     // назва статті en.wikipedia надійніша за підпис Wikidata (там трапляється вандалізм, напр. «elpisha» замість Joaquín)
     const name = c?.name || (p.enwiki && p.enwiki.replace(/\s*\(.*\)$/, '')) || p.en;

@@ -1,0 +1,161 @@
+// Кімнати гри поверх Socket.IO: код-запрошення, вхід/перепідключення за токеном, ігрові дії, чат, реакції,
+// вихід і прибирання покинутих кімнат. Кожна гра — свій простір імен /<id> і свій /api/<id>/room/:code.
+//
+//   createRoomServer({ app, io, id, createRoom, actions, roomInfo })
+//     createRoom(code, options, broadcast) → кімната (наслідує BaseRoom; має join, leave, publicState)
+//     actions   — { подія: (room, seat, payload) => відповідь } — ігрові дії гравця
+//     roomInfo  — (room) => поля для екрана запрошення (налаштування гри)
+const crypto = require('crypto');
+
+const ROOM_TTL_MS = 60 * 60 * 1000; // кімнату без активності видаляємо через годину
+const REACTIONS = ['👍', '😂', '😮', '😡', '🔥', '👏'];
+
+function cleanName(name) {
+  return String(name || '').trim().slice(0, 20) || 'Гравець';
+}
+
+function createRoomServer({ app, io, id, createRoom, actions, roomInfo = () => ({}) }) {
+  const nsp = io.of(`/${id}`);
+  const rooms = new Map();
+
+  // Короткий опис кімнати для екрана запрошення (до входу): хто вже там і які налаштування.
+  app.get(`/api/${id}/room/:code`, (req, res) => {
+    const room = rooms.get(String(req.params.code || '').toUpperCase());
+    // «не знайдено» — звичайна відповідь (не 404), щоб у консолі браузера не було помилки
+    if (!room) return res.json({ found: false });
+    res.json({
+      found: true,
+      code: room.code,
+      capacity: room.capacity,
+      status: room.status,
+      players: room.seats.filter(Boolean).map((s) => s.name),
+      ...roomInfo(room),
+    });
+  });
+
+  function makeCode() {
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // без схожих символів 0/O, 1/I
+    let code;
+    do {
+      code = Array.from(crypto.randomBytes(5), (b) => alphabet[b % alphabet.length]).join('');
+    } while (rooms.has(code));
+    return code;
+  }
+
+  // Кожному сокету — стан кімнати + його власне місце (воно може змінитися, коли хтось виходить).
+  function broadcast(room) {
+    const state = room.publicState();
+    for (const sid of nsp.adapter.rooms.get(room.code) || []) {
+      const s = nsp.sockets.get(sid);
+      if (s) s.emit('state', { ...state, you: room.seatOf(s.data.token) });
+    }
+  }
+
+  nsp.on('connection', (socket) => {
+    // socket.data: { code, token, seat }
+
+    function currentRoom() {
+      return socket.data.code ? rooms.get(socket.data.code) : null;
+    }
+
+    function enter(room, token, name, cb) {
+      const res = room.join(token, cleanName(name));
+      if (res.error) return cb?.({ error: res.error });
+      socket.join(room.code);
+      socket.data = { code: room.code, token, seat: res.seat };
+      cb?.({ ok: true, code: room.code, token, seat: res.seat });
+      socket.emit('state', { ...room.publicState(), you: res.seat });
+      socket.emit('chatHistory', room.chat);
+    }
+
+    socket.on('create', (options = {}, cb) => {
+      const code = makeCode();
+      const room = createRoom(code, options || {}, broadcast);
+      rooms.set(code, room);
+      enter(room, crypto.randomUUID(), options?.name, cb);
+    });
+
+    socket.on('join', ({ code, name, token } = {}, cb) => {
+      const room = rooms.get(String(code || '').toUpperCase().trim());
+      if (!room) return cb?.({ error: 'Кімнату не знайдено' });
+      enter(room, token || crypto.randomUUID(), name, cb);
+    });
+
+    // Усі ігрові дії: перевіряємо кімнату і місце гравця на сервері.
+    for (const [event, handler] of Object.entries(actions)) {
+      socket.on(event, (payload, cb) => {
+        const room = currentRoom();
+        if (!room) return cb?.({ error: 'Ви не в кімнаті' });
+        const seat = room.seatOf(socket.data.token);
+        if (seat === -1) return cb?.({ error: 'Ви не гравець цієї кімнати' });
+        cb?.(handler(room, seat, payload));
+      });
+    }
+
+    socket.on('leave', (_, cb) => {
+      const room = currentRoom();
+      if (room) {
+        const seat = room.seatOf(socket.data.token);
+        socket.leave(room.code);
+        if (seat !== -1) room.leave(seat);
+        if (room.isEmpty()) {
+          room.destroy();
+          rooms.delete(room.code);
+        }
+      }
+      socket.data = {};
+      cb?.({ ok: true });
+    });
+
+    // Чат кімнати: до 200 символів, не частіше ніж раз на 0,7 с.
+    let lastChat = 0;
+    socket.on('chat', (text, cb) => {
+      const room = currentRoom();
+      if (!room) return cb?.({ error: 'Ви не в кімнаті' });
+      const seat = room.seatOf(socket.data.token);
+      if (seat === -1) return cb?.({ error: 'Ви не гравець цієї кімнати' });
+      if (Date.now() - lastChat < 700) return cb?.({ error: 'Не так швидко 🙂' });
+      const msg = room.addChat(seat, text);
+      if (!msg) return cb?.({ error: 'Порожнє повідомлення' });
+      lastChat = Date.now();
+      nsp.to(room.code).emit('chat', msg);
+      cb?.({ ok: true });
+    });
+
+    // Швидкі реакції-емодзі: не частіше ніж раз на секунду.
+    let lastReaction = 0;
+    socket.on('react', (emoji) => {
+      const room = currentRoom();
+      if (!room || !REACTIONS.includes(emoji) || Date.now() - lastReaction < 1000) return;
+      const seat = room.seatOf(socket.data.token);
+      if (seat === -1) return;
+      lastReaction = Date.now();
+      nsp.to(room.code).emit('reaction', { seat, emoji });
+    });
+
+    socket.on('disconnect', () => {
+      const room = currentRoom();
+      if (!room) return;
+      // Гравець міг відкрити кілька вкладок — офлайн, лише якщо не лишилось жодного сокета.
+      const stillHere = [...(nsp.adapter.rooms.get(room.code) || [])].some(
+        (sid) => nsp.sockets.get(sid)?.data.token === socket.data.token,
+      );
+      if (!stillHere) room.setConnected(socket.data.token, false);
+    });
+  });
+
+  setInterval(() => {
+    const now = Date.now();
+    for (const [code, room] of rooms) {
+      const someoneOnline = room.seats.some((s) => s && s.connected);
+      if (room.isEmpty() || (!someoneOnline && now - room.lastActivity > ROOM_TTL_MS)) {
+        room.destroy();
+        rooms.delete(code);
+      }
+    }
+  }, 5 * 60 * 1000).unref();
+
+  return { rooms };
+}
+
+module.exports = { createRoomServer, cleanName };

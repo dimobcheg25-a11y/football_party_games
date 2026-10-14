@@ -1,6 +1,7 @@
 const { playerById, categoryById, matches } = require('../../data');
 const { generateGrid, cellCandidates, isFamous } = require('./grid');
 const { BOARDS, segments } = require('./boards');
+const { BaseRoom } = require('../../core/base-room');
 
 const ALLOWED_TIMERS = [0, 15, 20, 30, 45, 60]; // 0 — без обмеження
 const MODES = ['easy', 'normal', 'fan', 'hard', 'mix'];
@@ -16,25 +17,19 @@ function publicPlayer(p) {
   return { id: p.id, name: p.name, uk: p.uk, photo: p.photo };
 }
 
-class Room {
+class Room extends BaseRoom {
   constructor(code, turnSeconds, onChange, mode = 'normal', boardKey = 'classic', capacity = 2) {
-    this.code = code;
+    const board = BOARDS[boardKey] ? boardKey : 'classic';
+    const cap = Number(capacity);
+    super(code, onChange, Number.isInteger(cap) && cap >= 2 && cap <= BOARDS[board].maxPlayers ? cap : 2);
     this.turnSeconds = ALLOWED_TIMERS.includes(turnSeconds) ? turnSeconds : 20;
     this.mode = MODES.includes(mode) ? mode : 'normal';
-    this.boardKey = BOARDS[boardKey] ? boardKey : 'classic';
-    this.cfg = BOARDS[this.boardKey];
-    const cap = Number(capacity);
-    this.capacity = Number.isInteger(cap) && cap >= 2 && cap <= this.cfg.maxPlayers ? cap : 2;
-    this.onChange = onChange;
-    this.seats = Array(this.capacity).fill(null); // { token, name, connected, offlineSince }
+    this.boardKey = board;
+    this.cfg = BOARDS[board];
     this.scores = Array(this.capacity).fill(0); // перемоги в серії
     this.status = 'waiting'; // waiting | playing | finished
-    this.timer = null;
     this.notice = null; // { type: 'left', name } — показуємо тим, хто лишився
-    this.lastActivity = Date.now();
     this.eventSeq = 0; // номер події — клієнт по ньому розуміє, що подія нова
-    this.chat = []; // останні повідомлення чату (живуть, поки існує кімната)
-    this.chatSeq = 0;
     this.resetGameState();
   }
 
@@ -60,18 +55,6 @@ class Room {
   }
 
   // ── місця гравців
-  seatOf(token) {
-    return this.seats.findIndex((s) => s && s.token === token);
-  }
-
-  isEmpty() {
-    return this.seats.every((s) => s === null);
-  }
-
-  presentSeats() {
-    return this.seats.map((s, i) => (s ? i : -1)).filter((i) => i !== -1);
-  }
-
   // Ті, хто ще бере участь у поточній партії.
   activeSeats() {
     return this.presentSeats().filter((i) => !this.out.has(i));
@@ -82,15 +65,11 @@ class Room {
   }
 
   join(token, name) {
-    let seat = this.seatOf(token);
+    let seat = this.rejoin(token, name);
     if (seat === -1) {
       if (this.status !== 'waiting') return { error: 'Гра вже йде — дочекайся кінця або створи свою' };
-      seat = this.seats.findIndex((s) => s === null);
+      seat = this.takeSeat(token, name);
       if (seat === -1) return { error: 'Кімната вже заповнена — створи свою гру' };
-      this.seats[seat] = { token, name, connected: true, offlineSince: null };
-    } else {
-      Object.assign(this.seats[seat], { connected: true, offlineSince: null });
-      if (name) this.seats[seat].name = name;
     }
     this.touch();
     if (this.status === 'waiting' && this.seats.every(Boolean)) {
@@ -100,14 +79,6 @@ class Room {
       this.changed();
     }
     return { seat };
-  }
-
-  setConnected(token, connected) {
-    const seat = this.seatOf(token);
-    if (seat === -1) return;
-    Object.assign(this.seats[seat], { connected, offlineSince: connected ? null : Date.now() });
-    this.touch();
-    this.changed();
   }
 
   // Повернення в лобі: ті, хто лишився, займають перші місця й чекають нових гравців за тим самим посиланням.
@@ -359,30 +330,6 @@ class Room {
     return { ok: true };
   }
 
-  // ── чат
-  addChat(seat, text) {
-    const clean = String(text || '').replace(/\s+/g, ' ').trim().slice(0, 200);
-    if (!clean) return null;
-    const msg = { id: ++this.chatSeq, seat, name: this.seats[seat]?.name || 'Гравець', text: clean, t: Date.now() };
-    this.chat.push(msg);
-    if (this.chat.length > 100) this.chat.shift();
-    this.touch();
-    return msg;
-  }
-
-  // ── сервісне
-  touch() {
-    this.lastActivity = Date.now();
-  }
-
-  changed() {
-    this.onChange(this);
-  }
-
-  destroy() {
-    clearTimeout(this.timer);
-  }
-
   // Стан для клієнтів. Правильні відповіді не відправляємо ніколи — ні під час гри, ні після.
   publicState() {
     const state = {
@@ -391,9 +338,7 @@ class Room {
       mode: this.mode,
       board: { key: this.boardKey, ...this.cfg },
       capacity: this.capacity,
-      seats: this.seats.map((s) =>
-        s ? { name: s.name, connected: s.connected, offlineSince: s.offlineSince } : null,
-      ),
+      seats: this.publicSeats(),
       out: [...this.out],
       claimWinAfterMs: CLAIM_WIN_AFTER_MS,
       missed: this.missed,

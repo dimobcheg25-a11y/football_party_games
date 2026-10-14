@@ -1,0 +1,133 @@
+/* Шлях футболіста. Токени й фон — /shared/theme.css, кнопки/поля/вікна/чат — /shared/ui.css. */
+
+.screen-game { max-width: 900px; padding-top: 16px; }
+.start-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+#setup-options { display: grid; gap: 20px; }
+.chip.toggle { min-width: 96px; }
+
+.rules-card { max-width: 560px; margin: 18px auto 0; padding: 16px 22px; }
+.rules-card h3 { margin: 0 0 8px; font-family: var(--display); font-size: 16px; }
+.rules-list { margin: 0; padding-left: 18px; color: var(--muted); display: grid; gap: 6px; font-size: 14px; }
+.rules-list b { color: var(--text); }
+
+/* ── лобі */
+.lobby { max-width: 500px; margin: 30px auto 0; text-align: center; display: grid; gap: 14px; justify-items: center; }
+.lobby .field-label { margin: 0; }
+.room-code { font-family: var(--display); font-weight: 800; font-size: 44px; letter-spacing: 0.2em; color: var(--accent); padding-left: 0.2em; }
+.share-row { display: flex; gap: 10px; width: 100%; }
+.share-row .btn { flex: 1; }
+.opt-chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.opt-chips span { font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 99px; background: rgba(255,255,255,0.06); border: 1px solid var(--line); color: var(--muted); }
+.lobby-players { list-style: none; padding: 0; margin: 0; width: 100%; display: grid; gap: 6px; }
+.lobby-players li { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--line); font-weight: 700; text-align: left; }
+.lobby-players small { color: var(--muted); font-weight: 600; }
+.dot-p { width: 10px; height: 10px; border-radius: 50%; background: var(--pc); flex: none; }
+
+/* ── гра */
+.game-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; padding-right: 50px; }
+.round-info { display: grid; gap: 2px; }
+.round-info b { font-family: var(--display); font-size: 18px; }
+.round-info span { font-size: 13px; color: var(--muted); }
+.timer { font-family: var(--display); font-weight: 800; font-size: 20px; font-variant-numeric: tabular-nums; }
+.timer.low { color: var(--danger); }
+
+.game-layout { display: grid; grid-template-columns: minmax(0, 1fr) 250px; gap: 16px; align-items: start; }
+@media (max-width: 760px) {
+  .game-layout { grid-template-columns: 1fr; }
+  .side-col { order: -1; }
+  .scoreboard { display: flex; flex-wrap: wrap; }
+  .scoreboard li { flex: 1 1 130px; padding: 7px 10px; }
+  .guess-feed { max-height: 92px; }
+}
+
+/* шлях: етапи зверху вниз */
+.path { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; counter-reset: none; }
+.stage {
+  display: grid; grid-template-columns: 26px 48px 1fr; align-items: center; gap: 12px;
+  padding: 10px 14px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line);
+  animation: rise .25s ease-out;
+}
+.stage.current { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.stage.locked { opacity: .45; animation: none; grid-template-columns: 26px 1fr; border-style: dashed; }
+.stage.locked b { font-size: 14px; font-weight: 600; color: var(--muted); }
+.st-num { font-family: var(--display); font-weight: 800; color: var(--muted); font-size: 14px; text-align: center; }
+.st-icon {
+  width: 48px; height: 48px; border-radius: 12px; display: grid; place-items: center; overflow: hidden;
+  background: rgba(255,255,255,0.06); border: 1px solid var(--line); font-weight: 800; font-size: 15px;
+}
+.st-icon img { width: 40px; height: 40px; object-fit: contain; }
+.st-body { display: grid; gap: 2px; min-width: 0; }
+.st-body b { font-size: 17px; overflow-wrap: anywhere; }
+.st-body small { color: var(--muted); font-size: 13px; }
+.st-stats { font-size: 13px; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+.stage.nation, .stage.position, .stage.born { background: rgba(232,196,90,0.07); border-color: rgba(232,196,90,0.3); }
+.stage.nation.current, .stage.position.current, .stage.born.current { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold) inset; }
+
+.answer-box { margin-top: 14px; display: grid; gap: 8px; position: relative; }
+.answer-box .search { position: relative; }
+.answer-box .suggestions {
+  position: absolute; left: 0; right: 0; bottom: calc(100% + 6px); z-index: 10; margin: 0;
+  background: var(--surface-solid); border: 1px solid var(--line-strong); border-radius: 14px; padding: 6px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+}
+.answer-actions { display: flex; justify-content: flex-end; }
+.answer-box .suggestions .s-text { display: grid; }
+.answer-box input:disabled { opacity: .5; }
+
+/* відповідь після раунду — над шляхом, щоб не гортати */
+.path-col { display: flex; flex-direction: column; }
+.reveal { order: -1; margin-bottom: 14px; display: grid; gap: 12px; animation: rise .3s ease-out; }
+.answer-card { display: flex; align-items: center; gap: 16px; padding: 16px; border-radius: var(--radius); background: rgba(182,243,106,0.08); border: 1px solid rgba(182,243,106,0.45); }
+.answer-card h2 { margin: 2px 0; font-family: var(--display); font-size: 24px; }
+.answer-card small { color: var(--muted); }
+.answer-photo { width: 84px; height: 84px; flex: none; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: #1d3a2a; border: 2px solid var(--accent); font-family: var(--display); font-weight: 800; font-size: 26px; }
+.answer-photo img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.round-results { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.round-results li { display: flex; align-items: center; gap: 8px; font-weight: 700; padding: 6px 10px; border-radius: 10px; background: rgba(255,255,255,0.04); }
+.round-results b { margin-left: auto; font-size: 13px; color: var(--muted); }
+
+/* бічна колонка: рахунок і відповіді */
+.side-col { display: grid; gap: 12px; }
+.scoreboard { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.scoreboard li {
+  position: relative; display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 12px;
+  background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--pc); font-weight: 700;
+}
+.scoreboard li.me { background: color-mix(in srgb, var(--pc) 12%, var(--surface-solid)); }
+.scoreboard li.offline { opacity: .5; }
+.scoreboard .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scoreboard .mark { color: var(--accent); width: 14px; text-align: center; }
+.scoreboard b { font-family: var(--display); font-variant-numeric: tabular-nums; }
+.guess-feed { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; max-height: 260px; overflow-y: auto; font-size: 13px; }
+.guess-feed:empty { display: none; }
+.guess-feed li { padding: 5px 10px; border-radius: 8px; background: rgba(255,255,255,0.04); }
+.guess-feed li b { color: var(--pc); }
+.guess-feed li.good { background: rgba(182,243,106,0.1); }
+.guess-feed small { color: var(--muted); }
+
+.reactions { display: flex; flex-wrap: wrap; gap: 4px; }
+.reactions button { background: rgba(255,255,255,0.05); border: 1px solid var(--line); border-radius: 10px; font-size: 18px; padding: 4px 8px; cursor: pointer; }
+.reactions button:hover { border-color: var(--accent); }
+.reaction-bubble { position: absolute; top: -10px; right: 10px; font-size: 28px; pointer-events: none; animation: floatup 1.8s ease-out forwards; z-index: 5; }
+@keyframes floatup { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-50px); opacity: 0; } }
+.game-footer { text-align: center; margin-top: 18px; }
+
+/* ── підсумок */
+.final { max-width: 520px; margin: 30px auto 0; text-align: center; }
+.final h2 { font-family: var(--display); margin: 4px 0 10px; font-size: 26px; }
+.final .field-label { margin: 22px 0 8px; text-align: left; }
+.final .standings li { --pc: var(--accent); }
+.history { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; text-align: left; }
+.history li { display: flex; gap: 10px; padding: 7px 12px; border-radius: 10px; background: rgba(255,255,255,0.04); border: 1px solid var(--line); }
+.history .nm { flex: 1; font-weight: 700; }
+.history .val { color: var(--accent); font-weight: 800; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 560px) {
+  .start-buttons { grid-template-columns: 1fr; }
+  .stage { grid-template-columns: 20px 40px 1fr; gap: 10px; padding: 8px 10px; }
+  .stage.locked { grid-template-columns: 20px 1fr; }
+  .st-icon { width: 40px; height: 40px; }
+  .st-icon img { width: 32px; height: 32px; }
+  .st-body b { font-size: 15px; }
+  .room-code { font-size: 34px; }
+}
