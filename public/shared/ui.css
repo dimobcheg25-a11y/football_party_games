@@ -140,7 +140,7 @@ input::placeholder { color: #6b8577; }
 .result-emoji { font-size: 56px; }
 .result-card h2 { font-family: var(--display); margin: 8px 0 6px; font-size: 26px; }
 .result-card p { margin: 0; }
-.standings { list-style: none; padding: 0; margin: 16px 0 0; display: grid; gap: 6px; text-align: left; }
+.standings { list-style: none; padding: 0; margin: 16px 0 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; text-align: left; } /* minmax: довгий рядок не розпирає картку */
 .standings li { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--line); font-weight: 700; }
 .standings li.win { border-color: var(--pc); background: color-mix(in srgb, var(--pc) 14%, transparent); }
 .standings .place { width: 22px; color: var(--muted); font-variant-numeric: tabular-nums; }

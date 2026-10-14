@@ -107,12 +107,17 @@ async function main() {
 
   // складність рахується за ігровою відомістю: тренер-«ноунейм як гравець» не потрапляє в легкі рівні
   const { poolFor } = require('../server/games/path/careers');
-  const valverde = players.find((p) => p.name === 'Ernesto Valverde');
-  if (valverde) {
-    for (const d of ['easy', 'normal', 'fan']) assert.ok(!poolFor('all', d).includes(valverde), `Вальверде не на рівні ${d}`);
+  // рівні — верхівка рейтингу впізнаваності: тренери й давні ветерани (дель Боске, Вальверде) — не на легких рівнях
+  for (const name of ['Ernesto Valverde', 'Vicente del Bosque', 'Alpay Özalan']) {
+    const p = players.find((x) => x.name === name);
+    if (p) for (const d of ['easy', 'normal']) assert.ok(!poolFor('all', d).includes(p), `${name} не на рівні ${d}`);
   }
-  for (const era of ['all', 'modern', 'retired']) for (const d of ['easy', 'normal', 'fan', 'hard', 'expert']) assert.ok(poolFor(era, d).length >= 15, `є кого загадувати: ${era}/${d}`);
-  console.log('✓ рівні складності й епохи: усюди є гравці; Вальверде — лише складний/експерт');
+  for (const name of ['Lionel Messi', 'Andriy Shevchenko', 'Frank Lampard']) {
+    assert.ok(poolFor('all', 'easy').some((x) => x.name === name), `${name} — на легкому рівні`);
+  }
+  assert.deepStrictEqual(['easy', 'normal', 'fan', 'hard'].map((d) => poolFor('all', d).length), [120, 300, 700, 1500], 'розміри рівнів');
+  for (const era of ['all', 'modern', 'retired']) for (const d of ['easy', 'normal', 'fan', 'hard', 'expert']) assert.ok(poolFor(era, d).length >= 40, `є кого загадувати: ${era}/${d}`);
+  console.log('✓ рівні складності: топ-120/300/700/1500 за впізнаваністю; дель Боске й Вальверде — не на легких');
 
   // ── кімната
   const a = io(GAME);

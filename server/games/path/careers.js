@@ -11,34 +11,35 @@ try {
 
 const careerOf = (p) => (p.qid ? data.careers[p.qid] : null);
 
-// ── наскільки гравець відомий САМЕ ЯК ГРАВЕЦЬ
-// fame (кількість мовних розділів Вікіпедії) завищене в тих, хто прославився як тренер (Вальверде, Лопетегі),
-// тому до нього додаємо ігрові ознаки: трофеї, матчі за збірну, матчі за великі клуби (клуби з категорій).
-const MAJOR = ['BALLON', 'WC', 'UCL', 'EURO', 'COPA', 'BOOT', 'CAPS100', 'G300'];
-const CHAMP = ['APL', 'CH_IT', 'CH_ES', 'CH_DE', 'UEL'];
+// ── наскільки гравця впізнають — рейтинг, з якого рівні складності беруть верхівку
+// fame (кількість мовних розділів Вікіпедії) завищене в тренерів (дель Боске, Вальверде) і легенд давнини,
+// тому до нього додаємо ігрові ознаки (вартість за Transfermarkt, великі трофеї, матчі за збірну й великі клуби)
+// і знімаємо бали тим, хто давно завершив кар'єру (молодші гравці їх не пам'ятають). Українцям — бонус: своїх знаємо краще.
+const MAJOR = ['BALLON', 'WC', 'UCL', 'EURO', 'COPA'];
 const UA_TAGS = ['UKR', 'DYN', 'SHA', 'UPL0014'];
 
-function signals(p) {
-  const c = careerOf(p);
-  const caps = c.nation?.a || 0;
-  const bigApps = c.clubs.filter((x) => data.teams[x.t]?.cat).reduce((s, x) => s + (x.a || 0), 0);
-  const major = MAJOR.some((t) => p.tags.has(t));
-  const champ = CHAMP.some((t) => p.tags.has(t));
-  const strong = major || caps >= 50 || bigApps >= 200;
-  const medium = strong || (champ && bigApps >= 60) || caps >= 25 || bigApps >= 100;
-  const some = medium || caps >= 10 || bigApps >= 40;
-  // своїх ми знаємо краще: українцям — бонус до відомості
-  const fame = p.fame + (UA_TAGS.some((t) => p.tags.has(t)) ? 25 : 0);
-  return { fame, strong, medium, some };
+let transfers = {};
+try {
+  transfers = require('../../data/transfers.json');
+} catch {
+  // трансфери ще не зібрані — рейтинг без вартості
 }
 
-const DIFFICULTIES = {
-  easy: (s) => s.fame >= 65 && s.strong,
-  normal: (s) => s.fame >= 45 && s.medium,
-  fan: (s) => s.fame >= 30 && s.some,
-  hard: (s) => s.fame >= 35 || s.some,
-  expert: () => true,
-};
+function recognition(p) {
+  const c = careerOf(p);
+  const end = c.clubs[c.clubs.length - 1].e ?? new Date().getFullYear();
+  const caps = c.nation?.a || 0;
+  const bigApps = c.clubs.filter((x) => data.teams[x.t]?.cat).reduce((s, x) => s + (x.a || 0), 0);
+  const value = (transfers[p.id]?.maxValue || 0) / 1e6;
+  let s = p.fame + Math.min(value, 150) * 0.35 + Math.min(caps, 150) / 8 + Math.min(bigApps, 400) / 15;
+  if (MAJOR.some((t) => p.tags.has(t))) s += 15;
+  if (p.tags.has('BALLON')) s += 20;
+  if (UA_TAGS.some((t) => p.tags.has(t))) s += 25;
+  return s - Math.max(0, 2002 - end) * 1.2;
+}
+
+// Рівень = скільки найвпізнаваніших гравців загадувати (для «Сучасні» / «Завершили» — пропорційно менше, але не менше 40).
+const DIFFICULTIES = { easy: 120, normal: 300, fan: 700, hard: 1500, expert: Infinity };
 
 // Сучасні — ще грають (останній клуб без року завершення; для старших — дані просто неповні).
 function isActive(p) {
@@ -62,11 +63,12 @@ function hasGoodCareer(p) {
   return [...p.tags].every((t) => !CLUB_IDS.has(t) || have.has(t));
 }
 
-const candidates = players.filter(hasGoodCareer).map((p) => ({ p, s: signals(p) }));
+const candidates = players.filter(hasGoodCareer).map((p) => ({ p, s: recognition(p) })).sort((a, b) => b.s - a.s).map(({ p }) => p);
 
 function poolFor(era, difficulty) {
-  const fit = DIFFICULTIES[difficulty];
-  return candidates.filter(({ p, s }) => ERAS[era](p) && fit(s)).map(({ p }) => p);
+  const list = candidates.filter(ERAS[era]);
+  const size = DIFFICULTIES[difficulty];
+  return list.slice(0, Math.max(40, Math.round((size * list.length) / candidates.length)));
 }
 
 const years = (s, e) => (!s ? `до ${e}` : e === s ? `${s}` : `${s}–${e ?? ''}`);
