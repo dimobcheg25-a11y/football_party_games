@@ -1,6 +1,6 @@
 (() => {
   const $ = (sel) => document.querySelector(sel);
-  const socket = io();
+  const socket = io('/crossroads');
   const { SYMBOLS, BOARDS, MODES } = window.Rules;
 
   // ── локальне сховище (може бути недоступне в приватному режимі)
@@ -1056,7 +1056,7 @@
     $('#invite-join').disabled = true;
     let info = null;
     try {
-      const res = await fetch(`/api/room/${encodeURIComponent(code)}`);
+      const res = await fetch(`/api/crossroads/room/${encodeURIComponent(code)}`);
       if (res.ok) info = await res.json();
       if (!info?.found) info = null;
     } catch { /* мережа */ }

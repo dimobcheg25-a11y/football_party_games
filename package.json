@@ -1,7 +1,7 @@
 {
   "name": "sitka9",
   "version": "1.0.0",
-  "description": "Футбольне перехрестя — футбольні хрестики-нулики онлайн з друзями",
+  "description": "Сайт футбольних ігор з друзями: Футбольне перехрестя та інші",
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",

@@ -1,4 +1,4 @@
-const { players, categories, categoryById, matches } = require('./data');
+const { players, categories, categoryById, matches } = require('../../data');
 
 // Минимум вариантов ответа в каждой клетке — чтобы не было «одного правильного ответа».
 const MIN_ANSWERS_PER_CELL = 3;

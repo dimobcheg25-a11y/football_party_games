@@ -10,6 +10,7 @@ const { players, matches } = require('../server/data');
 
 const PORT = 3000 + Math.floor(Math.random() * 1000);
 const URL = `http://localhost:${PORT}`;
+const GAME = `${URL}/crossroads`; // простір імен socket.io цієї гри
 
 const server = spawn(process.execPath, [path.join(__dirname, '..', 'server', 'index.js')], {
   env: { ...process.env, PORT, CLAIM_WIN_MS: '1500', FIXED_ORDER: '1' }, // фіксований порядок ходів — щоб сценарії були передбачувані
@@ -37,9 +38,17 @@ function wrongFor(state, cell) {
 }
 
 async function main() {
-  await new Promise((res) => server.stdout.on('data', (d) => d.toString().includes('запущена') && res()));
-  const a = io(URL);
-  const b = io(URL);
+  await new Promise((res) => server.stdout.on('data', (d) => d.toString().includes('запущено') && res()));
+  // сайт: каталог ігор, сторінка гри, старі посилання-запрошення ведуть у гру
+  const gamesList = await (await fetch(`${URL}/api/games`)).json();
+  assert.ok(gamesList.some((g) => g.id === 'crossroads'), 'гра є в каталозі');
+  assert.strictEqual((await fetch(`${URL}/crossroads/`)).status, 200);
+  const old = await fetch(`${URL}/?room=ABCDE`, { redirect: 'manual' });
+  assert.strictEqual(old.headers.get('location'), '/crossroads/?room=ABCDE');
+  console.log('✓ каталог ігор і переадресація старих запрошень');
+
+  const a = io(GAME);
+  const b = io(GAME);
 
   // створення з таймером 15 с
   const created = await emit(a, 'create', { name: 'Аня', turnSeconds: 15 });
@@ -47,11 +56,11 @@ async function main() {
   console.log('✓ кімната', created.code);
 
   // екран запрошення: інформація про кімнату до входу
-  const info = await (await fetch(`${URL}/api/room/${created.code}`)).json();
+  const info = await (await fetch(`${URL}/api/crossroads/room/${created.code}`)).json();
   assert.deepStrictEqual(info.players, ['Аня']);
   assert.strictEqual(info.capacity, 2);
   assert.strictEqual(info.status, 'waiting');
-  assert.strictEqual((await (await fetch(`${URL}/api/room/ZZZZZ`)).json()).found, false);
+  assert.strictEqual((await (await fetch(`${URL}/api/crossroads/room/ZZZZZ`)).json()).found, false);
   console.log('✓ інформація про кімнату для запрошення');
 
   const bad = await emit(b, 'join', { code: 'ZZZZZ', name: 'Борис' });
@@ -144,15 +153,15 @@ async function main() {
 
   // перепідключення за токеном
   a.disconnect();
-  const a2 = io(URL);
+  const a2 = io(GAME);
   const back = await emit(a2, 'join', { code: created.code, name: 'Аня', token: created.token });
   assert.strictEqual(back.seat, 0, 'повернулась на своє місце');
   console.log('✓ перепідключення');
 
   // кімната без ліміту часу
-  const c = io(URL);
+  const c = io(GAME);
   const unl = await emit(c, 'create', { name: 'Вова', turnSeconds: 0 });
-  const d = io(URL);
+  const d = io(GAME);
   const st0 = nextState(c, (s) => s.status === 'playing');
   await emit(d, 'join', { code: unl.code, name: 'Гена' });
   assert.strictEqual((await st0).deadline, null, 'без ліміту — немає дедлайну');
@@ -172,7 +181,7 @@ async function main() {
   console.log('✓ без ліміту часу + нічия за згодою');
 
   // третій гравець не може зайти
-  const e = io(URL);
+  const e = io(GAME);
   assert.ok((await emit(e, 'join', { code: unl.code, name: 'Зайвий' })).error, 'кімната повна');
   console.log('✓ третій гравець не пройшов');
 
@@ -188,7 +197,7 @@ async function main() {
   console.log('✓ суперник вийшов → кімната чекає нового гравця');
 
   // новий друг заходить за тим самим посиланням
-  const f = io(URL);
+  const f = io(GAME);
   w = nextState(c, (s) => s.status === 'playing');
   const fj = await emit(f, 'join', { code: unl.code, name: 'Іра' });
   assert.strictEqual(fj.seat, 1);
@@ -213,7 +222,7 @@ async function main() {
   console.log('✓ суперник офлайн → перемогу забрано');
 
   // обидва вийшли → кімнати більше нема (Іра повертається за токеном і теж виходить)
-  const f2 = io(URL);
+  const f2 = io(GAME);
   await emit(f2, 'join', { code: unl.code, name: 'Іра', token: fj.token });
   await emit(f2, 'leave');
   await emit(c, 'leave');
@@ -222,32 +231,32 @@ async function main() {
   console.log('✓ порожню кімнату видалено');
 
   // складний режим
-  const h1 = io(URL);
-  const h2 = io(URL);
+  const h1 = io(GAME);
+  const h2 = io(GAME);
   const hr = await emit(h1, 'create', { name: 'Хард', turnSeconds: 20, mode: 'hard' });
   w = nextState(h1, (s) => s.status === 'playing');
   await emit(h2, 'join', { code: hr.code, name: 'Гість' });
   sd = await w;
   assert.strictEqual(sd.mode, 'hard');
-  const normalOnly = new Set(require('../server/grid').MODES.normal.categories);
+  const normalOnly = new Set(require('../server/games/crossroads/grid').MODES.normal.categories);
   console.log('✓ складний режим:', [...sd.grid.rows, ...sd.grid.cols].map((c) => c.label + (normalOnly.has(c.id) ? '' : '*')).join(', '));
   h1.close();
   h2.close();
 
   // легкий режим — лише «легкі» категорії, мінімум 10 варіантів у клітинці
-  const e1 = io(URL);
-  const e2 = io(URL);
+  const e1 = io(GAME);
+  const e2 = io(GAME);
   const er = await emit(e1, 'create', { name: 'Легко', turnSeconds: 30, mode: 'easy' });
   w = nextState(e1, (s) => s.status === 'playing');
   await emit(e2, 'join', { code: er.code, name: 'Гість' });
   sd = await w;
   assert.strictEqual(sd.mode, 'easy');
-  const easyCats = new Set(require('../server/grid').MODES.easy.categories);
+  const easyCats = new Set(require('../server/games/crossroads/grid').MODES.easy.categories);
   assert.ok([...sd.grid.rows, ...sd.grid.cols].every((c) => easyCats.has(c.id)), 'лише категорії легкого режиму');
   assert.ok(sd.grid.answerCounts.every((n) => n >= 10), 'у кожній клітинці ≥10 варіантів');
   assert.ok(sd.grid.famousCounts.every((n, i) => n >= 6 && n <= sd.grid.answerCounts[i]), 'у кожній клітинці ≥6 відомих');
   // «відомий» враховує епоху: Вава (2 ЧС, але 1934 р.н.) — лише правильна відповідь, Грізманн — відомий
-  const { isFamous } = require('../server/grid');
+  const { isFamous } = require('../server/games/crossroads/grid');
   const byName = (n) => players.find((p) => p.name === n);
   assert.ok(!isFamous(byName('Vavá')) && isFamous(byName('Antoine Griezmann')) && isFamous(byName('Pelé')), 'відомість з урахуванням епохи');
   console.log('✓ лічильник відомих гравців');
@@ -257,14 +266,14 @@ async function main() {
 
   // «Фанат» і «Мікс» — нові рівні
   for (const mode of ['fan', 'mix']) {
-    const m1 = io(URL);
-    const m2 = io(URL);
+    const m1 = io(GAME);
+    const m2 = io(GAME);
     const mr = await emit(m1, 'create', { name: 'Режим', turnSeconds: 30, mode });
     w = nextState(m1, (s) => s.status === 'playing');
     await emit(m2, 'join', { code: mr.code, name: 'Гість' });
     sd = await w;
     assert.strictEqual(sd.mode, mode);
-    const allowed = new Set(require('../server/grid').MODES[mode].categories);
+    const allowed = new Set(require('../server/games/crossroads/grid').MODES[mode].categories);
     assert.ok([...sd.grid.rows, ...sd.grid.cols].every((c) => allowed.has(c.id)), 'категорії режиму');
     assert.ok(sd.grid.answerCounts.every((n) => n >= 3), 'у клітинках є відповіді');
     console.log(`✓ режим ${mode}:`, [...sd.grid.rows, ...sd.grid.cols].map((c) => c.label).join(', '));
@@ -273,7 +282,7 @@ async function main() {
   }
 
   // ── утрьох: «збір ліній» 6×6
-  const t = [io(URL), io(URL), io(URL)];
+  const t = [io(GAME), io(GAME), io(GAME)];
   const tr = await emit(t[0], 'create', { name: 'Перший', turnSeconds: 0, mode: 'easy', board: 'lines', players: 3 });
   await emit(t[1], 'join', { code: tr.code, name: 'Другий' });
   w = nextState(t[0], (s) => s.status === 'playing');
@@ -317,7 +326,7 @@ async function main() {
   sd = await w;
   assert.strictEqual(sd.status, 'playing');
   assert.notStrictEqual(sd.turn, 1);
-  const late = io(URL);
+  const late = io(GAME);
   assert.ok((await emit(late, 'join', { code: tr.code, name: 'Запізнився' })).error, 'посеред гри зайти не можна');
   late.close();
   // перший здається → лишився один → він переміг
@@ -329,7 +338,7 @@ async function main() {
   t.forEach((x) => x.close());
 
   // ── вчотирьох на 5×5, і класика завжди вдвох
-  const q = [io(URL), io(URL), io(URL), io(URL)];
+  const q = [io(GAME), io(GAME), io(GAME), io(GAME)];
   const qr = await emit(q[0], 'create', { name: 'А', turnSeconds: 20, mode: 'hard', board: 'five', players: 4 });
   for (let i = 1; i < 3; i++) await emit(q[i], 'join', { code: qr.code, name: 'Гравець' + i });
   w = nextState(q[0], (s) => s.status === 'playing');
@@ -340,7 +349,7 @@ async function main() {
   assert.strictEqual(sd.board.win, 4);
   console.log('✓ вчотирьох, 5×5 · 4 в ряд, складний:', sd.grid.rows.map((x) => x.label).join(', '));
   q.forEach((x) => x.close());
-  const k = io(URL);
+  const k = io(GAME);
   const kstate = new Promise((res) => k.once('state', res));
   const kr = await emit(k, 'create', { name: 'Класик', board: 'classic', players: 4 });
   const ks = await kstate;
@@ -351,7 +360,7 @@ async function main() {
 
   // жереб: без FIXED_ORDER першим ходить будь-хто, черговість — перестановка місць
   delete process.env.FIXED_ORDER;
-  const { Room } = require('../server/room');
+  const { Room } = require('../server/games/crossroads/room');
   const firsts = new Set();
   for (let i = 0; i < 60; i++) {
     const r = new Room('T', 0, () => {}, 'easy', 'five', 3);

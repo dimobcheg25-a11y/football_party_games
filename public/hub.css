@@ -1,0 +1,33 @@
+/* Головна сторінка — каталог ігор. Токени й фон — у /shared/theme.css. */
+.hub { max-width: 640px; margin: 0 auto; padding: 48px 16px 40px; }
+.hub-hero { text-align: center; margin-bottom: 32px; }
+.hub-title {
+  font-family: var(--display); font-weight: 800; line-height: 1.05; margin: 0;
+  font-size: clamp(32px, 8vw, 56px); letter-spacing: -0.02em;
+}
+.hub-title b {
+  color: var(--accent-ink); background: var(--accent); border-radius: 0.18em;
+  padding: 0 0.15em; display: inline-block; transform: rotate(-3deg);
+}
+.hub-tagline { color: var(--muted); max-width: 440px; margin: 16px auto 0; }
+
+.hub-games { display: grid; gap: 14px; }
+.game-card {
+  display: flex; align-items: center; gap: 18px; padding: 20px 22px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  backdrop-filter: blur(10px); box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+  color: var(--text); text-decoration: none;
+  transition: border-color .15s, transform .15s;
+}
+a.game-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.game-icon {
+  flex: none; width: 56px; height: 56px; display: grid; place-items: center;
+  font-family: var(--display); font-weight: 800; font-size: 28px;
+  color: var(--accent-ink); background: var(--accent); border-radius: 14px; transform: rotate(-6deg);
+}
+.game-body { display: grid; gap: 4px; min-width: 0; }
+.game-body b { font-family: var(--display); font-weight: 600; font-size: 18px; }
+.game-body span { color: var(--muted); }
+.game-body small { color: var(--muted); font-size: 13px; }
+.game-card.soon { opacity: 0.55; box-shadow: none; }
+.game-card.soon .game-icon { background: var(--surface-2); color: var(--text); transform: none; }

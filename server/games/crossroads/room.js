@@ -1,4 +1,4 @@
-const { playerById, categoryById, matches } = require('./data');
+const { playerById, categoryById, matches } = require('../../data');
 const { generateGrid, cellCandidates, isFamous } = require('./grid');
 const { BOARDS, segments } = require('./boards');
 
