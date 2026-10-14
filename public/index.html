@@ -90,6 +90,27 @@
     <section class="card rules-card" id="rules-home"></section>
   </main>
 
+  <!-- ── Запрошення: той, кому кинули посилання, бачить лише ім'я й одну кнопку -->
+  <main id="screen-invite" class="screen hidden">
+    <section class="card invite-card">
+      <div class="logo small"><small>ФУТБОЛЬНЕ</small><span>ПЕРЕ<b>Х</b>РЕСТЯ</span></div>
+      <h2 id="invite-title">Тебе запросили в гру</h2>
+      <p class="muted" id="invite-sub"></p>
+      <div class="config-chips" id="invite-config"></div>
+      <ul class="slots" id="invite-slots"></ul>
+      <label class="field invite-name" for="invite-name">
+        <span class="field-label">Як тебе звати?</span>
+        <input id="invite-name" maxlength="20" placeholder="Твоє ім'я" autocomplete="nickname" />
+      </label>
+      <button id="invite-join" class="btn btn-primary btn-lg invite-join">Приєднатися до гри</button>
+      <p id="invite-error" class="error" role="alert"></p>
+      <div class="invite-links">
+        <button class="btn btn-ghost btn-sm" data-action="rules-invite">Як грати?</button>
+        <button class="btn btn-ghost btn-sm" data-action="go-home">Або створити свою гру</button>
+      </div>
+    </section>
+  </main>
+
   <!-- ── Лобі -->
   <main id="screen-lobby" class="screen hidden">
     <section class="card lobby-card">

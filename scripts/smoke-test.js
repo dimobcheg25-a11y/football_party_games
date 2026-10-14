@@ -12,7 +12,7 @@ const PORT = 3000 + Math.floor(Math.random() * 1000);
 const URL = `http://localhost:${PORT}`;
 
 const server = spawn(process.execPath, [path.join(__dirname, '..', 'server', 'index.js')], {
-  env: { ...process.env, PORT, CLAIM_WIN_MS: '1500' },
+  env: { ...process.env, PORT, CLAIM_WIN_MS: '1500', FIXED_ORDER: '1' }, // фіксований порядок ходів — щоб сценарії були передбачувані
   stdio: ['ignore', 'pipe', 'inherit'],
 });
 
@@ -45,6 +45,14 @@ async function main() {
   const created = await emit(a, 'create', { name: 'Аня', turnSeconds: 15 });
   assert.ok(created.ok && created.code.length === 5, 'кімната створена');
   console.log('✓ кімната', created.code);
+
+  // екран запрошення: інформація про кімнату до входу
+  const info = await (await fetch(`${URL}/api/room/${created.code}`)).json();
+  assert.deepStrictEqual(info.players, ['Аня']);
+  assert.strictEqual(info.capacity, 2);
+  assert.strictEqual(info.status, 'waiting');
+  assert.strictEqual((await (await fetch(`${URL}/api/room/ZZZZZ`)).json()).found, false);
+  console.log('✓ інформація про кімнату для запрошення');
 
   const bad = await emit(b, 'join', { code: 'ZZZZZ', name: 'Борис' });
   assert.ok(bad.error, 'неіснуюча кімната → помилка');
@@ -334,6 +342,21 @@ async function main() {
   assert.strictEqual(ks.capacity, 2, 'класика — лише вдвох');
   k.close();
   console.log('✓ класика 3×3 завжди вдвох');
+
+  // жереб: без FIXED_ORDER першим ходить будь-хто, черговість — перестановка місць
+  delete process.env.FIXED_ORDER;
+  const { Room } = require('../server/room');
+  const firsts = new Set();
+  for (let i = 0; i < 60; i++) {
+    const r = new Room('T', 0, () => {}, 'easy', 'five', 3);
+    ['x', 'y', 'z'].forEach((t) => r.join(t, t));
+    assert.deepStrictEqual([...r.order].sort(), [0, 1, 2]);
+    assert.strictEqual(r.turn, r.order[0]);
+    firsts.add(r.turn);
+    r.destroy();
+  }
+  assert.strictEqual(firsts.size, 3, 'першим ходить будь-хто');
+  console.log('✓ жереб черговості ходів');
 
   console.log('\nУСІ ПЕРЕВІРКИ ПРОЙШЛИ');
   [a2, b, c, d, e, f].forEach((s) => s.close());

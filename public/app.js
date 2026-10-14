@@ -85,9 +85,9 @@
   const symHtml = (i) => `<span class="sym seat-${i}">${SYMBOLS[i]}</span>`;
 
   function showScreen(name) {
-    for (const id of ['home', 'lobby', 'game']) $(`#screen-${id}`).classList.toggle('hidden', id !== name);
-    $('#chat-btn').classList.toggle('hidden', name === 'home');
-    if (name === 'home') $('#chat-panel').classList.add('hidden');
+    for (const id of ['home', 'invite', 'lobby', 'game']) $(`#screen-${id}`).classList.toggle('hidden', id !== name);
+    $('#chat-btn').classList.toggle('hidden', name === 'home' || name === 'invite');
+    if (name === 'home' || name === 'invite') $('#chat-panel').classList.add('hidden');
   }
 
   function toast(text, kind = '', ms = 2600) {
@@ -422,9 +422,11 @@
       let sub = amActive() ? 'Чекай свого ходу' : 'Ти вибув з цієї партії — можна спостерігати';
       if (amActive() && active.length > 2) {
         // скільки ходів до мене
+        const order = state.order;
+        const pos = order.indexOf(t);
         let k = 0;
-        for (let step = 1; step <= state.capacity; step++) {
-          const i = (t + step) % state.capacity;
+        for (let step = 1; step <= order.length; step++) {
+          const i = order[(pos + step) % order.length];
           if (!active.includes(i)) continue;
           k++;
           if (i === mySeat) break;
@@ -438,8 +440,12 @@
 
   function renderPlayers() {
     const pointsMode = state.board.scoring === 'points';
-    $('#players').innerHTML = state.seats
-      .map((s, i) => {
+    const order = state.order?.length ? state.order : state.seats.map((_, i) => i);
+    const rest = state.seats.map((_, i) => i).filter((i) => !order.includes(i));
+    $('#players').innerHTML = [...order, ...rest]
+      .map((i) => {
+        const s = state.seats[i];
+        const turnNo = order.indexOf(i) + 1;
         const out = !s || state.out.includes(i);
         const active = state.status === 'playing' && state.turn === i;
         const status = !s ? 'вийшов' : state.out.includes(i) ? 'вибув' : s.connected ? 'онлайн' : 'офлайн';
@@ -450,7 +456,7 @@
         return `<div class="pcard seat-${i} ${active ? 'active' : ''} ${out ? 'is-out' : ''}" id="pcard-${i}">
           <span class="sym">${SYMBOLS[i]}</span>
           <div class="pinfo"><div class="pname">${escapeHtml(s?.name || '—')}${i === mySeat ? ' (ти)' : ''}</div>
-            <div class="pstatus ${s && !s.connected ? 'off' : ''}">${status}${pointsMode ? series : ''}</div></div>
+            <div class="pstatus ${s && !s.connected ? 'off' : ''}">${turnNo ? `хід ${turnNo} · ` : ''}${status}${pointsMode ? series : ''}</div></div>
           ${score}
         </div>`;
       })
@@ -604,6 +610,12 @@
         toast(`✗ ${who}: ${ev.player.uk}${why}`, 'bad', 8000);
         Sound.play('miss');
         document.querySelector(`[data-cell="${ev.cell}"]`)?.classList.add('flash-miss');
+        break;
+      }
+      case 'start': {
+        const names = ev.order.map((i) => `${SYMBOLS[i]} ${seatName(i)}`);
+        const first = ev.order[0] === mySeat ? 'ти' : state.seats[ev.order[0]]?.name || 'гравець';
+        toast(ev.order.length > 2 ? `🎲 Жереб: ${names.join(' → ')}` : `🎲 Жереб: першим ходить ${first}`, 'good', 5000);
         break;
       }
       case 'timeout':
@@ -938,6 +950,14 @@
       case 'close-rules': $('#rules-modal').classList.add('hidden'); break;
       case 'close-chat': toggleChat(false); break;
       case 'rules': if (state) openRules(roomCfg()); break;
+      case 'rules-invite':
+        if (inviteInfo) openRules({ board: inviteInfo.board, mode: inviteInfo.mode, capacity: inviteInfo.capacity, turnSeconds: inviteInfo.turnSeconds });
+        break;
+      case 'go-home':
+        inviteCode = null;
+        history.replaceState(null, '', location.pathname);
+        showScreen('home');
+        break;
       case 'confirm-yes': closeConfirm(true); break;
       case 'confirm-no': closeConfirm(false); break;
       case 'skip': socket.emit('skip', null, ack); break;
@@ -1019,6 +1039,83 @@
     copy(roomLink(session.code));
   });
 
+  // ── екран запрошення
+  let inviteCode = null;
+  let inviteInfo = null;
+  async function showInvite(code) {
+    inviteCode = code;
+    showScreen('invite');
+    const nameEl = $('#invite-name');
+    nameEl.value = nameInput.value || '';
+    $('#invite-error').textContent = '';
+    $('#invite-sub').textContent = 'Завантажуємо кімнату…';
+    $('#invite-config').innerHTML = '';
+    $('#invite-slots').innerHTML = '';
+    $('#invite-join').disabled = true;
+    let info = null;
+    try {
+      const res = await fetch(`/api/room/${encodeURIComponent(code)}`);
+      if (res.ok) info = await res.json();
+      if (!info?.found) info = null;
+    } catch { /* мережа */ }
+    inviteInfo = info;
+    if (!info) {
+      $('#invite-title').textContent = 'Кімнату не знайдено';
+      $('#invite-sub').textContent = `Кімнати ${code} вже немає — можливо, гра закінчилась або сервер перезапускався. Попроси друга створити нову і надіслати свіже посилання, або створи свою гру.`;
+      $('#invite-join').classList.add('hidden');
+      $('#invite-name').closest('.field').classList.add('hidden');
+      $('[data-action="rules-invite"]').classList.add('hidden');
+      $('[data-action="go-home"]').className = 'btn btn-primary';
+      $('[data-action="go-home"]').textContent = 'Створити свою гру';
+      return;
+    }
+    $('[data-action="rules-invite"]').classList.remove('hidden');
+    $('[data-action="go-home"]').className = 'btn btn-ghost btn-sm';
+    $('[data-action="go-home"]').textContent = 'Або створити свою гру';
+    const joined = info.players.length;
+    const full = joined >= info.capacity;
+    $('#invite-join').classList.remove('hidden');
+    $('#invite-name').closest('.field').classList.remove('hidden');
+    $('#invite-title').textContent = info.players[0] ? `${info.players[0]} кличе тебе в гру` : 'Тебе запросили в гру';
+    $('#invite-config').innerHTML = configChips(info);
+    $('#invite-slots').innerHTML = Array.from({ length: info.capacity }, (_, i) => info.players[i]
+      ? `<li class="seat-${i}"><span class="sym">${SYMBOLS[i]}</span><span>${escapeHtml(info.players[i])}</span></li>`
+      : `<li class="empty"><span class="sym">${SYMBOLS[i]}</span><span>${i === joined ? 'Тут будеш ти' : 'Вільне місце'}</span></li>`).join('');
+    if (full || info.status !== 'waiting') {
+      $('#invite-sub').textContent = info.status !== 'waiting'
+        ? 'Гра в цій кімнаті вже почалась — дочекайся кінця партії або створи свою гру.'
+        : 'Кімната вже заповнена — створи свою гру.';
+      $('#invite-join').disabled = true;
+      return;
+    }
+    $('#invite-sub').textContent = info.capacity - joined === 1
+      ? 'Залишилось одне місце — твоє. Гра почнеться, щойно ти зайдеш.'
+      : `Вільних місць: ${info.capacity - joined}. Гра почнеться, коли зберуться всі.`;
+    $('#invite-join').disabled = false;
+    if (!nameEl.value.trim()) nameEl.focus();
+  }
+
+  function joinFromInvite() {
+    const name = $('#invite-name').value.trim();
+    if (!name) {
+      $('#invite-error').textContent = "Введи своє ім'я — так тебе бачитимуть інші";
+      $('#invite-name').focus();
+      return;
+    }
+    nameInput.value = name;
+    store.set('g9:name', name);
+    $('#invite-error').textContent = '';
+    socket.emit('join', { code: inviteCode, name, token: store.get(`g9:token:${inviteCode}`) }, (res) => {
+      if (res?.error) {
+        $('#invite-error').textContent = res.error;
+        return;
+      }
+      onEntered(res);
+    });
+  }
+  $('#invite-join').addEventListener('click', joinFromInvite);
+  $('#invite-name').addEventListener('keydown', (e) => e.key === 'Enter' && joinFromInvite());
+
   // ── вхід за посиланням ?room=CODE
   const urlCode = new URLSearchParams(location.search).get('room');
   if (urlCode) {
@@ -1033,13 +1130,8 @@
       if (socket.connected) socket.emit('join', { code, name: nameInput.value.trim(), token }, onEntered);
       // інакше join надішле обробник 'connect'
     } else {
-      // нове запрошення — спершу даємо перевірити/змінити ім'я
-      $('#home-error').textContent = '';
-      $('#invite-note').textContent = `Тебе запросили в кімнату ${code}. Перевір ім'я і натисни «Приєднатися».`;
-      $('#invite-note').classList.remove('hidden');
-      $('#join-btn').classList.replace('btn-secondary', 'btn-primary');
-      nameInput.focus();
-      nameInput.select();
+      // нове запрошення — окремий простий екран: хто в кімнаті, ім'я й одна кнопка
+      showInvite(code);
     }
   }
 })();

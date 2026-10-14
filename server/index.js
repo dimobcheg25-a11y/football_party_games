@@ -23,6 +23,23 @@ app.get('/api/players', (req, res) => {
 
 const rooms = new Map();
 
+// Короткий опис кімнати для екрана запрошення (до входу): хто вже там і які налаштування.
+app.get('/api/room/:code', (req, res) => {
+  const room = rooms.get(String(req.params.code || '').toUpperCase());
+  // «не знайдено» — звичайна відповідь (не 404), щоб у консолі браузера не було помилки
+  if (!room) return res.json({ found: false });
+  res.json({
+    found: true,
+    code: room.code,
+    board: room.boardKey,
+    mode: room.mode,
+    capacity: room.capacity,
+    turnSeconds: room.turnSeconds,
+    status: room.status,
+    players: room.seats.filter(Boolean).map((s) => s.name),
+  });
+});
+
 function makeCode() {
   const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // без схожих символів 0/O, 1/I
   let code;

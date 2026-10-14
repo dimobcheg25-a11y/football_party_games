@@ -28,7 +28,6 @@ class Room {
     this.onChange = onChange;
     this.seats = Array(this.capacity).fill(null); // { token, name, connected, offlineSince }
     this.scores = Array(this.capacity).fill(0); // перемоги в серії
-    this.starter = 0;
     this.status = 'waiting'; // waiting | playing | finished
     this.timer = null;
     this.notice = null; // { type: 'left', name } — показуємо тим, хто лишився
@@ -49,6 +48,7 @@ class Room {
     this.missed = Array(this.capacity).fill(0); // пропущені поспіль ходи (час вийшов)
     this.scoredLines = []; // [{ seat, cells }] — зібрані лінії (для підсвічування)
     this.turn = 0;
+    this.order = []; // черговість ходів (місця), визначена жеребом
     this.deadline = null;
     this.winners = []; // місця переможців; порожньо + finished = нічия
     this.winLine = null;
@@ -118,7 +118,6 @@ class Room {
     this.resetGameState();
     this.status = 'waiting';
     this.scores = Array(this.capacity).fill(0);
-    this.starter = 0;
     this.notice = notice;
   }
 
@@ -147,8 +146,21 @@ class Room {
     this.resetGameState();
     this.grid = generateGrid(this.mode, this.cfg.size);
     this.status = 'playing';
-    this.turn = this.starter;
-    this.starter = (this.starter + 1) % this.capacity; // у наступній партії починає наступний
+    // Жереб: черговість ходів випадкова на кожну партію (а не «хто створив кімнату — той і перший»).
+    // FIXED_ORDER=1 — передбачуваний порядок для автотестів: за місцями, з зсувом на кожну наступну партію.
+    this.order = this.presentSeats();
+    this.gameNo = (this.gameNo || 0) + 1;
+    if (process.env.FIXED_ORDER === '1') {
+      const k = (this.gameNo - 1) % this.order.length;
+      this.order = [...this.order.slice(k), ...this.order.slice(0, k)];
+    } else {
+      for (let i = this.order.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [this.order[i], this.order[j]] = [this.order[j], this.order[i]];
+      }
+    }
+    this.turn = this.order[0];
+    this.event({ type: 'start', order: [...this.order] });
     this.startTurn();
   }
 
@@ -173,11 +185,12 @@ class Room {
     this.passTurn();
   }
 
-  // Хід переходить до наступного активного гравця по колу.
+  // Хід переходить до наступного активного гравця за чергою, визначеною жеребом.
   passTurn() {
     const active = this.activeSeats();
-    for (let step = 1; step <= this.capacity; step++) {
-      const next = (this.turn + step) % this.capacity;
+    const pos = this.order.indexOf(this.turn);
+    for (let step = 1; step <= this.order.length; step++) {
+      const next = this.order[(pos + step) % this.order.length];
       if (active.includes(next)) {
         this.turn = next;
         break;
@@ -391,6 +404,7 @@ class Room {
       status: this.status,
       notice: this.notice,
       turn: this.turn,
+      order: this.order,
       deadline: this.deadline,
       serverNow: Date.now(),
       winners: this.winners,
