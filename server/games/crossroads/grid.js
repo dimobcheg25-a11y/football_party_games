@@ -155,8 +155,12 @@ function thresholds(mode, a, b) {
 
 const typeOf = (id) => categoryById.get(id).type;
 
+// Ліга × своя збірна чи свій клуб — надто легко (або взагалі завжди так): таких перетинів не буває.
+const isHome = (a, b) => !!categoryById.get(a).home?.includes(b) || !!categoryById.get(b).home?.includes(a);
+
 function pickCompatible(mode, mustMatch, taken, count) {
   const enough = (a, b) => {
+    if (isHome(a, b)) return false;
     const t = thresholds(mode, a, b);
     const total = mode.pairTotal.get(a).get(b) || 0;
     if (mode.maxTotal !== undefined && total > mode.maxTotal) return false;

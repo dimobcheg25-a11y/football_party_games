@@ -237,6 +237,73 @@ async function fetchCoachTenures() {
     .filter((t) => t.s != null);
 }
 
+// Поточні каденції у збірних (Анчелотті — Бразилія, Зідан — Франція): у Wikidata членство у збірній часто без дати кінця,
+// тож «гравців тренера» беремо з Вікіпедії — розділи «Current squad» і «Recent call-ups» статті про збірну (виклик не раніше
+// початку каденції) та заявка на ЧС-2026, якщо тренером у ній був саме він.
+const MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+const WORLD_CUP_2026 = 2026.45; // червень 2026
+
+async function wikitext(title) {
+  const j = await wikiApi('en', { action: 'query', prop: 'revisions', rvprop: 'content', rvslots: 'main', titles: title, redirects: '1' });
+  return j.query?.pages?.[0]?.revisions?.[0]?.slots?.main?.content || '';
+}
+
+// Розділ статті від заголовка «=== name ===» до наступного заголовка.
+function section(text, name) {
+  const m = text.match(new RegExp(`\n(=+)\s*${name}\s*=+\s*\n`, 'i'));
+  if (!m) return '';
+  const rest = text.slice(m.index + m[0].length);
+  const next = rest.search(new RegExp(`\n={2,${m[1].length}}[^=]`));
+  return next === -1 ? rest : rest.slice(0, next);
+}
+
+// «latest=v. {{fb|AUS}}, 25 September 2026» / «[[2026 FIFA World Cup]]» → рік із дробом
+function callupDate(latest) {
+  const m = latest.match(new RegExp(`(${MONTHS.join('|')})\s+(\d{4})`, 'i'));
+  if (m) return Number(m[2]) + MONTHS.indexOf(m[1].toLowerCase()) / 12;
+  if (/2026 FIFA World Cup/.test(latest)) return WORLD_CUP_2026;
+  const y = latest.match(/\b(20\d\d)\b/);
+  return y ? Number(y[1]) + 0.5 : null;
+}
+
+const playerLink = (line) => line.match(/name\s*=\s*\[\[([^\]|#]+)/)?.[1]?.trim();
+
+async function currentCoachCallups() {
+  const rows = await sparql(`SELECT ?c ?start ?teamwiki ?coachEn WHERE { VALUES ?c { ${values(Object.keys(COACH_CODES))} }
+    ?c p:P6087 ?st . ?st ps:P6087 ?team . FILTER NOT EXISTS { ?st pq:P582 ?e } OPTIONAL { ?st pq:P580 ?start }
+    ?team wdt:P31/wdt:P279* wd:Q6979593 .
+    ?a schema:about ?team ; schema:isPartOf <https://en.wikipedia.org/> ; schema:name ?teamwiki .
+    ?c rdfs:label ?coachEn FILTER(LANG(?coachEn) = "en") }`);
+  const callups = new Map(); // назва статті гравця → Set<код тренера>
+  const add = (title, code) => {
+    if (!title) return;
+    if (!callups.has(title)) callups.set(title, new Set());
+    callups.get(title).add(code);
+  };
+  const wc = await wikitext('2026 FIFA World Cup squads');
+  for (const r of rows) {
+    const code = COACH_CODES[qidOf(r.c)];
+    const start = toYear(r.start) ?? 0;
+    const text = await wikitext(r.teamwiki);
+    let n = 0;
+    for (const line of section(text, 'Current squad').split('\n')) if (/nat fs g player/i.test(line) && playerLink(line)) { add(playerLink(line), code); n++; }
+    for (const line of section(text, 'Recent call-ups').split('\n')) {
+      const latest = line.match(/latest\s*=\s*([^|}]*(?:\{\{[^}]*\}\}[^|}]*)*)/)?.[1] || '';
+      const d = callupDate(latest);
+      if (/nat fs r player/i.test(line) && d != null && d >= start) { add(playerLink(line), code); n++; }
+    }
+    // заявка на ЧС-2026 — якщо тренером у ній був саме він
+    const country = r.teamwiki.replace(/ (men's )?national (association )?football team$/i, '');
+    const squad = section(wc, country);
+    const surname = r.coachEn.split(' ').pop();
+    if (start <= WORLD_CUP_2026 && new RegExp(`Coach:[^\n]*${surname}`).test(squad)) {
+      for (const line of squad.split('\n')) if (/nat fs g player/i.test(line) && playerLink(line)) { add(playerLink(line), code); n++; }
+    }
+    console.log(`  ${code} — ${r.teamwiki}: викликів ${n}`);
+  }
+  return callups;
+}
+
 // ── 3. Категорії й посилання Вікіпедії
 async function categoryMembers(host, title) {
   const titles = [];
@@ -316,6 +383,12 @@ async function main() {
       if (p) { p.tags.add(code); hits++; }
     }
     console.log(`  ${code.padEnd(8)} ${title}: ${members.length} статей, у нашій базі ${hits}`);
+  }
+
+  console.log('  поточні тренери збірних — склади з Вікіпедії:');
+  for (const [title, codes] of await currentCoachCallups()) {
+    const p = byWikiTitle.en.get(title);
+    if (p) codes.forEach((c) => p.tags.add(c));
   }
 
   console.log('4/5 Статті-списки (АПЛ, бомбардири, 50+ голів, Golden Boy)…');
@@ -415,7 +488,11 @@ async function main() {
   console.log(categories.map((c) => `${c.id}:${counts[c.id] || 0}`).join(' '));
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });
+}
+
+module.exports = { currentCoachCallups };

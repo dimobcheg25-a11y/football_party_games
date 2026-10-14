@@ -494,7 +494,29 @@
       }
     }
     board.innerHTML = html;
+    fitLabels(board);
   }
+
+  // Назва категорії має вміститися в заголовок (на телефоні й великих полях він крихітний):
+  // зменшуємо шрифт, поки текст не перестане обрізатися, але не дрібніше 6,5 px. Повна назва — ще й по тапу.
+  function fitLabels(root) {
+    for (const label of root.querySelectorAll('.cat-label')) {
+      const cat = label.closest('.cat');
+      label.style.fontSize = '';
+      if (!label.offsetParent) continue; // підпис схований (герби на великих полях)
+      let size = parseFloat(getComputedStyle(label).fontSize);
+      const overflows = () => label.scrollHeight > label.clientHeight + 1 || cat.scrollHeight > cat.clientHeight + 1;
+      while (overflows() && size > 6.5) {
+        size -= 0.5;
+        label.style.fontSize = `${size}px`;
+      }
+    }
+  }
+  let fitTimer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(fitTimer);
+    fitTimer = setTimeout(() => fitLabels($('#board')), 150);
+  });
 
   function renderActions() {
     const playing = state.status === 'playing';

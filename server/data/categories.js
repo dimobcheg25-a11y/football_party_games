@@ -56,12 +56,13 @@ const nations = [
 ].map((c) => ({ ...c, type: 'nation' }));
 
 // Грав у лізі (будь-коли в кар'єрі). Китай, ОАЕ й МЛС — щоб зірки, які туди поїхали, з'являлися ще й через ці ліги.
+//   home — збірна й клуби цієї ліги: на перетині з лігою вони не ставляться («Ла Ліга × Барселона» — завжди так, «× Іспанія» — надто легко).
 const leagues = [
-  { id: 'L_EPL', label: 'Грав в АПЛ', image: 'Premier League', icon: '🏴' },
-  { id: 'L_SA', label: 'Грав у Серії А', image: 'Serie A', icon: '🇮🇹' },
-  { id: 'L_LL', label: 'Грав у Ла Лізі', image: 'La Liga', icon: '🇪🇸' },
-  { id: 'L_BL', label: 'Грав у Бундеслізі', image: 'Bundesliga', icon: '🇩🇪' },
-  { id: 'L_L1', label: 'Грав у Лізі 1', image: 'Ligue 1', icon: '🇫🇷' },
+  { id: 'L_EPL', label: 'Грав в АПЛ', image: 'Premier League', icon: '🏴', home: ['ENG', 'MUN', 'LIV', 'CHE', 'ARS', 'MCI', 'TOT', 'NEW', 'AVL'] },
+  { id: 'L_SA', label: 'Грав у Серії А', image: 'Serie A', icon: '🇮🇹', home: ['ITA', 'JUV', 'MIL', 'INT', 'NAP', 'ROM', 'LAZ', 'PAR'] },
+  { id: 'L_LL', label: 'Грав у Ла Лізі', image: 'La Liga', icon: '🇪🇸', home: ['ESP', 'RMA', 'BAR', 'ATM', 'SEV', 'VAL'] },
+  { id: 'L_BL', label: 'Грав у Бундеслізі', image: 'Bundesliga', icon: '🇩🇪', home: ['GER', 'BAY', 'BVB'] },
+  { id: 'L_L1', label: 'Грав у Лізі 1', image: 'Ligue 1', icon: '🇫🇷', home: ['FRA', 'PSG'] },
   { id: 'L_MLS', level: 'fan', label: 'Грав в МЛС (США)', short: 'Грав в МЛС', image: 'Major League Soccer', icon: '🇺🇸' },
   { id: 'L_CSL', level: 'fan', label: 'Грав у Суперлізі Китаю', short: 'Грав у Китаї', image: 'Chinese Super League', icon: '🇨🇳' },
   { id: 'L_UAE', level: 'fan', label: 'Грав у Про-лізі ОАЕ', short: 'Грав в ОАЕ', image: 'UAE Pro League', icon: '🇦🇪' },
