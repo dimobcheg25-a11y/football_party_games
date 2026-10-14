@@ -264,7 +264,7 @@
     resultDismissed = false;
     closePicker();
     $('#result').classList.add('hidden');
-    document.title = 'Сітка 9 — футбольні хрестики-нулики';
+    document.title = 'Футбольне перехрестя';
     history.replaceState(null, '', location.pathname);
     showScreen('home');
     renderResume();
@@ -373,7 +373,7 @@
     closePicker();
     $('#result').classList.add('hidden');
     showScreen('lobby');
-    document.title = 'Сітка 9 — чекаємо гравців';
+    document.title = 'Чекаємо гравців · Футбольне перехрестя';
     $('#lobby-code').textContent = state.code;
     $('#share-link').value = roomLink(state.code);
     $('#lobby-config').innerHTML = configChips(roomCfg());
@@ -409,13 +409,13 @@
     if (!playing) {
       $('#turn-title').textContent = 'Гру завершено';
       $('#turn-sub').textContent = 'Реванш або нова гра — у вікні результату';
-      document.title = 'Сітка 9';
+      document.title = 'Футбольне перехрестя';
       return;
     }
     if (isMyTurn()) {
       $('#turn-title').textContent = 'Твій хід!';
       $('#turn-sub').textContent = 'Обери клітинку й назви футболіста';
-      document.title = '🟢 Твій хід · Сітка 9';
+      document.title = '🟢 Твій хід · Футбольне перехрестя';
     } else {
       $('#turn-title').textContent = `Ходить ${state.seats[t]?.name || 'гравець'}`;
       const active = activeSeats();
@@ -432,7 +432,7 @@
         sub = k === 1 ? 'Ти ходиш наступним' : `Твій хід через ${k} ${plural(k, 'хід', 'ходи', 'ходів')}`;
       }
       $('#turn-sub').textContent = sub;
-      document.title = `Хід: ${state.seats[t]?.name || ''} · Сітка 9`;
+      document.title = `Хід: ${state.seats[t]?.name || ''} · Футбольне перехрестя`;
     }
   }
 

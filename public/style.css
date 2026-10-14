@@ -1,4 +1,4 @@
-/* Сітка 9 — «нічний матч»: темне поле з крейдяними лініями.
+/* Футбольне перехрестя — «нічний матч»: темне поле з крейдяними лініями.
    Акцент лайм (як манішка) — лише для головних дій; кольори гравців — тільки для гравців.
    Свідомо одна (темна) тема. */
 :root {
@@ -64,17 +64,22 @@ h2, h3, h4 { text-wrap: balance; }
 .screen-game.wide { max-width: 1000px; }
 
 /* ── логотип */
+/* «ФУТБОЛЬНЕ ПЕРЕХРЕСТЯ»: «Х» — у лаймовому квадратику, як хрестик у хрестиках-нуликах */
 .logo {
-  font-family: var(--display); font-weight: 800;
-  font-size: clamp(44px, 11vw, 76px); letter-spacing: -0.02em; line-height: 1;
-  display: inline-flex; align-items: baseline; gap: 10px;
+  font-family: var(--display); font-weight: 800; line-height: 1;
+  display: inline-grid; justify-items: center; gap: 0.35em;
+  font-size: clamp(34px, 9.6vw, 70px);
 }
+.logo small {
+  font-family: var(--font); font-size: 0.24em; font-weight: 800; letter-spacing: 0.55em;
+  padding-left: 0.55em; color: var(--muted);
+}
+.logo span { letter-spacing: -0.02em; white-space: nowrap; }
 .logo b {
   color: var(--accent-ink); background: var(--accent);
-  border-radius: 14px; padding: 0 0.18em; transform: rotate(-4deg); display: inline-block;
+  border-radius: 0.18em; padding: 0 0.1em; margin: 0 0.04em; transform: rotate(-6deg); display: inline-block;
 }
-.logo.small { font-size: 28px; }
-.logo.small b { border-radius: 8px; }
+.logo.small { font-size: 24px; gap: 0.3em; }
 .hero { text-align: center; margin: 12px 0 24px; }
 .tagline { color: var(--muted); max-width: 470px; margin: 16px auto 0; }
 

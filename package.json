@@ -1,7 +1,7 @@
 {
   "name": "sitka9",
   "version": "1.0.0",
-  "description": "Сітка 9 — футбольні хрестики-нулики онлайн 1 на 1",
+  "description": "Футбольне перехрестя — футбольні хрестики-нулики онлайн з друзями",
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",

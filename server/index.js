@@ -160,5 +160,5 @@ setInterval(() => {
 }, 5 * 60 * 1000).unref();
 
 server.listen(PORT, () => {
-  console.log(`Сітка 9 запущена: http://localhost:${PORT}`);
+  console.log(`Гра «Футбольне перехрестя» запущена: http://localhost:${PORT}`);
 });
