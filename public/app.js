@@ -521,8 +521,10 @@
           </div>`;
         } else {
           // скільки гравців ще доступно для цієї клітинки (зменшується, коли підходящого поставили деінде)
+          // велике число — відомі гравці, мале — усі, кого зарахує гра
           const cnt = grid.answerCounts[i];
-          const count = `<span class="count ${cnt <= 2 ? 'few' : ''}" title="Ще можна поставити: ${cnt}"><b>${cnt}</b><span class="w"> ${plural(cnt, 'варіант', 'варіанти', 'варіантів')}</span></span>`;
+          const fam = grid.famousCounts?.[i] ?? cnt;
+          const count = `<span class="count ${fam <= 2 ? 'few' : ''}" title="Відомих гравців: ${fam}, усього правильних відповідей: ${cnt}"><b>${fam}</b><span class="w"> ${plural(fam, 'відомий', 'відомі', 'відомих')}</span><span class="all"> / ${cnt}</span></span>`;
           html += `<button class="cell ${myTurn ? 'playable' : ''}" data-cell="${i}" ${myTurn ? '' : 'disabled'} aria-label="Клітинка ${r + 1}×${c + 1}">
             <span class="plus">+</span>${count}
           </button>`;

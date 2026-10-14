@@ -14,12 +14,12 @@ function shuffle(arr) {
 }
 
 // candidates[cell] — массив id игроков, подходящих в клетку (cell = row * 3 + col).
-function cellCandidates(rows, cols, excluded = new Set()) {
+function cellCandidates(rows, cols, excluded = new Set(), filter = () => true) {
   const result = [];
   for (const r of rows) {
     for (const c of cols) {
       result.push(
-        players.filter((p) => !excluded.has(p.id) && matches(p, r) && matches(p, c)).map((p) => p.id),
+        players.filter((p) => !excluded.has(p.id) && filter(p) && matches(p, r) && matches(p, c)).map((p) => p.id),
       );
     }
   }
@@ -68,12 +68,19 @@ function canFillDistinct(rows, cols, cells, usedIds) {
 //          і не більше 3 зірок — щоб клітинку не закривали Роналду з Мессі. Через це найочевидніші категорії
 //          (Реал, ЧС, ЛЧ, Золотий м'яч, польові позиції) у складний майже не потрапляють — вони для легкого/звичайного.
 const UA_TAGS = ['UKR', 'DYN', 'SHA'];
-const isFamous = (p) => p.fame >= 50 || (p.fame >= 25 && UA_TAGS.some((t) => p.tags.has(t)));
+// «Відомий» гравець: стаття в 50+ мовних розділах Вікіпедії. Старші (народжені до 1965) за десятиліття
+// назбирали статей за титули, хоча сьогодні їх мало хто пам'ятає (Вава, Валдо) — для них поріг 65
+// (Пеле, Кройф, Гаррінча, Блохін лишаються відомими). Українців наші знають краще — поріг 25.
+const OLD_BORN = 1965;
+const famousAt = (p, fame) =>
+  p.fame >= (p.born && p.born < OLD_BORN ? Math.max(fame, 65) : fame) ||
+  (p.fame >= 25 && UA_TAGS.some((t) => p.tags.has(t)));
+const isFamous = (p) => famousAt(p, 50);
 
 const MODES = {
   easy: {
     categories: categories.filter((c) => !c.level).map((c) => c.id),
-    pool: players.filter((p) => p.fame >= 55),
+    pool: players.filter((p) => famousAt(p, 55)),
     minAnswers: 6,
     minTotal: 10,
   },
@@ -216,4 +223,4 @@ function generateGrid(modeName = 'normal', n = 3) {
   throw new Error('Не вдалося згенерувати сітку — замала база гравців');
 }
 
-module.exports = { generateGrid, cellCandidates, maxMatching, canFillDistinct, MODES };
+module.exports = { generateGrid, cellCandidates, maxMatching, canFillDistinct, isFamous, MODES };

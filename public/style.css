@@ -578,6 +578,7 @@ input::placeholder { color: #6b8577; }
 
 /* лічильник варіантів: на великих полях і телефоні — лише число в кутку */
 .cell .count b { font-weight: 800; }
+.cell .count .all { opacity: .6; font-weight: 400; }
 .board.big .cell .count, .cell .count.compact { left: auto; right: 4px; bottom: 3px; font-size: 10px; }
 .board.big .cell .count .w { display: none; }
 @media (max-width: 560px) {

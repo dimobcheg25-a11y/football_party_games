@@ -245,6 +245,12 @@ async function main() {
   const easyCats = new Set(require('../server/grid').MODES.easy.categories);
   assert.ok([...sd.grid.rows, ...sd.grid.cols].every((c) => easyCats.has(c.id)), 'лише категорії легкого режиму');
   assert.ok(sd.grid.answerCounts.every((n) => n >= 10), 'у кожній клітинці ≥10 варіантів');
+  assert.ok(sd.grid.famousCounts.every((n, i) => n >= 6 && n <= sd.grid.answerCounts[i]), 'у кожній клітинці ≥6 відомих');
+  // «відомий» враховує епоху: Вава (2 ЧС, але 1934 р.н.) — лише правильна відповідь, Грізманн — відомий
+  const { isFamous } = require('../server/grid');
+  const byName = (n) => players.find((p) => p.name === n);
+  assert.ok(!isFamous(byName('Vavá')) && isFamous(byName('Antoine Griezmann')) && isFamous(byName('Pelé')), 'відомість з урахуванням епохи');
+  console.log('✓ лічильник відомих гравців');
   console.log('✓ легкий режим:', [...sd.grid.rows, ...sd.grid.cols].map((c) => c.label).join(', '), '| мін', Math.min(...sd.grid.answerCounts));
   e1.close();
   e2.close();

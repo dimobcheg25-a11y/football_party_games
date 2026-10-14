@@ -1,5 +1,5 @@
 const { playerById, categoryById, matches } = require('./data');
-const { generateGrid, cellCandidates } = require('./grid');
+const { generateGrid, cellCandidates, isFamous } = require('./grid');
 const { BOARDS, segments } = require('./boards');
 
 const ALLOWED_TIMERS = [0, 15, 20, 30, 45, 60]; // 0 — без обмеження
@@ -424,6 +424,8 @@ class Room {
         cols: this.grid.cols.map(publicCategory),
         // скільки гравців ще можна поставити в кожну клітинку: ті, хто вже на полі, не рахуються
         answerCounts: cellCandidates(this.grid.rows, this.grid.cols, this.used).map((l) => l.length),
+        // з них відомих (див. isFamous) — щоб було видно, чи є в клітинці кого згадати
+        famousCounts: cellCandidates(this.grid.rows, this.grid.cols, this.used, isFamous).map((l) => l.length),
       };
     }
     return state;
