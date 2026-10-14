@@ -115,9 +115,9 @@ async function main() {
   for (const name of ['Lionel Messi', 'Andriy Shevchenko', 'Frank Lampard']) {
     assert.ok(poolFor('all', 'easy').some((x) => x.name === name), `${name} — на легкому рівні`);
   }
-  assert.deepStrictEqual(['easy', 'normal', 'fan', 'hard'].map((d) => poolFor('all', d).length), [120, 300, 700, 1500], 'розміри рівнів');
+  assert.deepStrictEqual(['easy', 'normal', 'fan', 'hard'].map((d) => poolFor('all', d).length), [400, 800, 1300, 1900], 'розміри рівнів');
   for (const era of ['all', 'modern', 'retired']) for (const d of ['easy', 'normal', 'fan', 'hard', 'expert']) assert.ok(poolFor(era, d).length >= 40, `є кого загадувати: ${era}/${d}`);
-  console.log('✓ рівні складності: топ-120/300/700/1500 за впізнаваністю; дель Боске й Вальверде — не на легких');
+  console.log('✓ рівні складності: топ-400/800/1300/1900 за впізнаваністю; дель Боске й Вальверде — не на легких');
 
   // ── кімната
   const a = io(GAME);

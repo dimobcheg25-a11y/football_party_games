@@ -39,7 +39,7 @@ function recognition(p) {
 }
 
 // Рівень = скільки найвпізнаваніших гравців загадувати (для «Сучасні» / «Завершили» — пропорційно менше, але не менше 40).
-const DIFFICULTIES = { easy: 120, normal: 300, fan: 700, hard: 1500, expert: Infinity };
+const DIFFICULTIES = { easy: 400, normal: 800, fan: 1300, hard: 1900, expert: Infinity };
 
 // Сучасні — ще грають (останній клуб без року завершення; для старших — дані просто неповні).
 function isActive(p) {
