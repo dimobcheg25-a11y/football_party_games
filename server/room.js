@@ -3,7 +3,7 @@ const { generateGrid, cellCandidates } = require('./grid');
 const { BOARDS, segments } = require('./boards');
 
 const ALLOWED_TIMERS = [0, 15, 20, 30, 45, 60]; // 0 — без обмеження
-const MODES = ['easy', 'normal', 'hard'];
+const MODES = ['easy', 'normal', 'fan', 'hard', 'mix'];
 const CLAIM_WIN_AFTER_MS = Number(process.env.CLAIM_WIN_MS) || 2 * 60 * 1000; // гравець офлайн стільки — можна виключити
 const MISSED_TURNS_TO_KICK = 2; // …але лише якщо зараз його хід або він уже пропустив стільки ходів поспіль
 

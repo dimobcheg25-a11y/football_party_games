@@ -580,3 +580,15 @@ input::placeholder { color: #6b8577; }
   .cell .count .w { display: none; }
   .board.big .cell .count { font-size: 8px; right: 2px; bottom: 1px; }
 }
+
+/* ── четвертий рівень «Фанат» */
+.dot.fan { background: #b48bff; }
+.mode-badge.fan { color: #c9b0ff; }
+.mode[data-mode="fan"].active { border-color: #b48bff; background: rgba(180,139,255,0.1); box-shadow: 0 0 0 2px rgba(180,139,255,0.22); }
+.modes { grid-template-columns: repeat(2, 1fr); }
+
+/* ── п'ятий режим «Мікс» */
+.dot.mix { background: conic-gradient(#4ade80, #e8c45a, #b48bff, #ff6b6b, #4ade80); }
+.mode-badge.mix { color: #9ff0dc; }
+.mode[data-mode="mix"].active { border-color: #5ad1b8; background: rgba(90,209,184,0.1); box-shadow: 0 0 0 2px rgba(90,209,184,0.22); }
+.modes .mode[data-mode="mix"] { grid-column: 1 / -1; }

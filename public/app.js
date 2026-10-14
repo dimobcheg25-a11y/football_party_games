@@ -165,7 +165,9 @@
     $('#players-hint').textContent = max === 2
       ? 'Класика — лише вдвох. Утрьох і вчотирьох — на великих полях.'
       : `Можна грати вдвох, утрьох або вчотирьох. ${SYMBOLS.join(' ')} — у кожного свій колір.`;
-    $('#mode-chips').innerHTML = Object.entries(MODES)
+    // порядок: від легкого до складного, «Мікс» — окремим рядком унизу
+    $('#mode-chips').innerHTML = ['easy', 'normal', 'fan', 'hard', 'mix']
+      .map((key) => [key, MODES[key]])
       .map(([key, m]) => `<button type="button" class="mode ${key === setup.mode ? 'active' : ''}" data-mode="${key}" role="radio" aria-checked="${key === setup.mode}">
           <b><i class="dot ${m.dot}"></i>${m.label}</b><small>${m.short}</small>
         </button>`)

@@ -68,6 +68,8 @@
   "CO_KLO": "/img/categories/co_klo.jpg",
   "CO_ANC": "/img/categories/co_anc.jpg",
   "CO_WEN": "/img/categories/co_wen.jpg",
-  "CO_SIM": "/img/categories/co_sim.jpg",
-  "CO_LOB": "/img/categories/co_lob.jpg"
+  "CO_LUE": "/img/categories/co_lue.jpg",
+  "CO_LOB": "/img/categories/co_lob.jpg",
+  "AC_SCP": "/img/categories/ac_scp.png",
+  "AC_OL": "/img/categories/ac_ol.png"
 }

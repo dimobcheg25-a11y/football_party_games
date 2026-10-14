@@ -4,7 +4,7 @@
 //            для збірних — файл прапора з Wikimedia Commons; imageOf — взяти картинку іншої категорії
 //   short  — коротший підпис для великих полів (5×5, 6×6), де клітинки вузькі
 //   colors — запасні кольори значка, поки немає картинки
-//   level  — з якого режиму категорія з'являється: без поля — у всіх (легкий+), 'normal' — звичайний і складний, 'hard' — лише складний
+//   level  — з якого режиму категорія з'являється: без поля — у всіх (легкий+), 'normal' — звичайний+, 'fan' — фанат і складний, 'hard' — лише складний
 
 const clubs = [
   { id: 'RMA', label: 'Реал Мадрид', qid: 'Q8682', image: 'Real Madrid CF', colors: ['#ffffff', '#febe10'] },
@@ -62,9 +62,9 @@ const leagues = [
   { id: 'L_LL', label: 'Грав у Ла Лізі', image: 'La Liga', icon: '🇪🇸' },
   { id: 'L_BL', label: 'Грав у Бундеслізі', image: 'Bundesliga', icon: '🇩🇪' },
   { id: 'L_L1', label: 'Грав у Лізі 1', image: 'Ligue 1', icon: '🇫🇷' },
-  { id: 'L_MLS', level: 'normal', label: 'Грав в МЛС (США)', short: 'Грав в МЛС', image: 'Major League Soccer', icon: '🇺🇸' },
-  { id: 'L_CSL', level: 'normal', label: 'Грав у Суперлізі Китаю', short: 'Грав у Китаї', image: 'Chinese Super League', icon: '🇨🇳' },
-  { id: 'L_UAE', level: 'normal', label: 'Грав у Про-лізі ОАЕ', short: 'Грав в ОАЕ', image: 'UAE Pro League', icon: '🇦🇪' },
+  { id: 'L_MLS', level: 'fan', label: 'Грав в МЛС (США)', short: 'Грав в МЛС', image: 'Major League Soccer', icon: '🇺🇸' },
+  { id: 'L_CSL', level: 'fan', label: 'Грав у Суперлізі Китаю', short: 'Грав у Китаї', image: 'Chinese Super League', icon: '🇨🇳' },
+  { id: 'L_UAE', level: 'fan', label: 'Грав у Про-лізі ОАЕ', short: 'Грав в ОАЕ', image: 'UAE Pro League', icon: '🇦🇪' },
 ].map((c) => ({ ...c, type: 'league', colors: ['#3a4a5c', '#1c2530'] }));
 
 const awards = [
@@ -79,10 +79,14 @@ const awards = [
   { id: 'CH_IT', level: 'normal', label: 'Чемпіон Італії', image: 'Scudetto', icon: '🛡️' },
   { id: 'CH_ES', level: 'normal', label: 'Чемпіон Іспанії', image: 'File:Trofeo de La Liga 9900.jpg', icon: '🏆' },
   { id: 'CH_DE', level: 'normal', label: 'Чемпіон Німеччини', image: 'Meisterschale', icon: '🥏' },
-  // кращий бомбардир сезону в АПЛ, Ла Лізі, Серії А, Бундеслізі або Лізі 1
-  { id: 'TOPSC', level: 'normal', label: 'Кращий бомбардир топ-ліги', short: 'Кращий бомбардир', icon: '🎯' },
+  // кращий бомбардир сезону — окремо для кожної ліги
+  { id: 'TS_EPL', level: 'fan', label: 'Кращий бомбардир АПЛ', short: 'Бомбардир АПЛ', icon: '🎯' },
+  { id: 'TS_SA', level: 'fan', label: 'Кращий бомбардир Серії А', short: 'Бомбардир Серії А', icon: '🎯' },
+  { id: 'TS_LL', level: 'fan', label: 'Кращий бомбардир Ла Ліги', short: 'Бомбардир Ла Ліги', icon: '🎯' },
+  { id: 'TS_BL', level: 'fan', label: 'Кращий бомбардир Бундесліги', short: 'Бомбардир Бундесліги', icon: '🎯' },
+  { id: 'TS_L1', level: 'fan', label: 'Кращий бомбардир Ліги 1', short: 'Бомбардир Ліги 1', icon: '🎯' },
   // Golden Boy — нагорода кращому молодому (до 21) гравцю Європи; у статті головне фото — гравець, тому лише значок
-  { id: 'GBOY', level: 'normal', label: 'Golden Boy', icon: '🌟' },
+  { id: 'GBOY', level: 'fan', label: 'Golden Boy', icon: '🌟' },
 ].map((c) => ({ ...c, type: 'award', colors: ['#d4af37', '#8a6d1d'] }));
 
 const stats = [
@@ -90,10 +94,10 @@ const stats = [
   { id: 'G50N', level: 'normal', label: '50+ голів за збірну', icon: '🥅' },
   { id: 'CAPS100', level: 'normal', label: '100+ матчів за збірну', icon: '👕' },
   { id: 'A100', level: 'hard', label: '100+ гольових передач', short: '100+ передач', icon: '🎯' },
-  { id: 'T100', level: 'normal', label: 'Трансфер за 100+ млн', short: 'Трансфер 100+ млн', icon: '💰' },
+  { id: 'T100', level: 'fan', label: 'Трансфер за 100+ млн', short: 'Трансфер 100+ млн', icon: '💰' },
 ].map((c) => ({ ...c, type: 'stat', colors: ['#5ad1b8', '#1d6b5c'] }));
 
-// Грав під керівництвом тренера (клубні каденції з Wikidata, перетин ≥ 3 місяців)
+// Грав під керівництвом тренера (каденції з Wikidata: клуби + завершені у збірних; перетин ≥ 3 місяців)
 const coaches = [
   { id: 'CO_GUA', label: 'Грав у Гвардіоли', coachQid: 'Q164038', image: 'Pep Guardiola' },
   { id: 'CO_FER', label: 'Грав у Фергюсона', coachQid: 'Q44980', image: 'Alex Ferguson' },
@@ -102,9 +106,9 @@ const coaches = [
   { id: 'CO_KLO', label: 'Грав у Клоппа', coachQid: 'Q83106', image: 'Jürgen Klopp' },
   { id: 'CO_ANC', label: 'Грав в Анчелотті', coachQid: 'Q174614', image: 'Carlo Ancelotti' },
   { id: 'CO_WEN', label: 'Грав у Венгера', coachQid: 'Q47576', image: 'Arsène Wenger' },
-  { id: 'CO_SIM', label: 'Грав у Сімеоне', coachQid: 'Q258115', image: 'Diego Simeone' },
+  { id: 'CO_LUE', label: 'Грав у Луїса Енріке', short: 'У Луїса Енріке', coachQid: 'Q222789', image: 'Luis Enrique' },
   { id: 'CO_LOB', label: 'Грав у Лобановського', short: 'У Лобановського', coachQid: 'Q324484', image: 'Valeriy Lobanovskyi' },
-].map((c) => ({ ...c, type: 'coach', level: 'normal', colors: ['#c9a227', '#3a2f0b'], icon: '📋' }));
+].map((c) => ({ ...c, type: 'coach', level: 'fan', colors: ['#c9a227', '#3a2f0b'], icon: '📋' }));
 
 // Вихованець академії: дубль/молодіжні команди (Wikidata P831, категорії en.wikipedia) + ручний список
 const academies = [
@@ -113,7 +117,11 @@ const academies = [
   { id: 'AC_AJX', label: 'Вихованець Аякса', short: 'Академія Аякса', clubQid: 'Q81888', imageOf: 'AJX' },
   { id: 'AC_MUN', label: 'Вихованець Манчестер Юнайтед', short: 'Академія МЮ', clubQid: 'Q18656', imageOf: 'MUN' },
   { id: 'AC_DYN', label: 'Вихованець Динамо Київ', short: 'Академія Динамо', clubQid: 'Q179075', imageOf: 'DYN' },
-].map((c) => ({ ...c, type: 'academy', level: 'normal', colors: ['#2f6f4f', '#123322'], icon: '🎓' }));
+  { id: 'AC_BEN', label: 'Вихованець Бенфіки', short: 'Академія Бенфіки', clubQid: 'Q131499', imageOf: 'BEN' },
+  { id: 'AC_SCP', label: 'Вихованець Спортінга', short: 'Академія Спортінга', clubQid: 'Q75729', image: 'Sporting CP' },
+  { id: 'AC_OL', label: 'Вихованець Ліона', short: 'Академія Ліона', clubQid: 'Q704', image: 'Olympique Lyonnais' },
+  { id: 'AC_BAY', label: 'Вихованець Баварії', short: 'Академія Баварії', clubQid: 'Q15789', imageOf: 'BAY' },
+].map((c) => ({ ...c, type: 'academy', level: 'fan', colors: ['#2f6f4f', '#123322'], icon: '🎓' }));
 
 const positions = [
   { id: 'GK', label: 'Воротар', positionQid: 'Q201330', icon: '🧤' },

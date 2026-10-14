@@ -78,12 +78,30 @@ const MODES = {
     minTotal: 10,
   },
   normal: {
-    categories: categories.filter((c) => c.level !== 'hard').map((c) => c.id),
+    categories: categories.filter((c) => !c.level || c.level === 'normal').map((c) => c.id),
     pool: players.filter(isFamous),
     minAnswers: 4, // відомих гравців у клітинці
     minTotal: 6, // усіх правильних відповідей у клітинці
     uaMinAnswers: 3,
     uaMinTotal: 4,
+  },
+  // fan — усе зі звичайного + тренери, академії, бомбардири ліг, Golden Boy, трансфери, МЛС/Китай/ОАЕ
+  fan: {
+    categories: categories.filter((c) => c.level !== 'hard').map((c) => c.id),
+    pool: players.filter((p) => p.fame >= 40 || (p.fame >= 25 && UA_TAGS.some((t) => p.tags.has(t)))),
+    minAnswers: 3,
+    minTotal: 4,
+    uaMinAnswers: 2,
+    uaMinTotal: 3,
+  },
+  // mix — справді всі категорії без обмежень «очевидності»: максимальна різноманітність сіток
+  mix: {
+    categories: categories.map((c) => c.id),
+    pool: players.filter((p) => p.fame >= 40 || (p.fame >= 25 && UA_TAGS.some((t) => p.tags.has(t)))),
+    minAnswers: 3,
+    minTotal: 4,
+    uaMinAnswers: 2,
+    uaMinTotal: 3,
   },
   hard: {
     categories: categories.map((c) => c.id),

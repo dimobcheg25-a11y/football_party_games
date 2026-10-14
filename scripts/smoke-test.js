@@ -241,6 +241,23 @@ async function main() {
   e1.close();
   e2.close();
 
+  // «Фанат» і «Мікс» — нові рівні
+  for (const mode of ['fan', 'mix']) {
+    const m1 = io(URL);
+    const m2 = io(URL);
+    const mr = await emit(m1, 'create', { name: 'Режим', turnSeconds: 30, mode });
+    w = nextState(m1, (s) => s.status === 'playing');
+    await emit(m2, 'join', { code: mr.code, name: 'Гість' });
+    sd = await w;
+    assert.strictEqual(sd.mode, mode);
+    const allowed = new Set(require('../server/grid').MODES[mode].categories);
+    assert.ok([...sd.grid.rows, ...sd.grid.cols].every((c) => allowed.has(c.id)), 'категорії режиму');
+    assert.ok(sd.grid.answerCounts.every((n) => n >= 3), 'у клітинках є відповіді');
+    console.log(`✓ режим ${mode}:`, [...sd.grid.rows, ...sd.grid.cols].map((c) => c.label).join(', '));
+    m1.close();
+    m2.close();
+  }
+
   // ── утрьох: «збір ліній» 6×6
   const t = [io(URL), io(URL), io(URL)];
   const tr = await emit(t[0], 'create', { name: 'Перший', turnSeconds: 0, mode: 'easy', board: 'lines', players: 3 });

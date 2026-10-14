@@ -31,6 +31,9 @@ const POSITION_CODES = Object.fromEntries(categories.filter((c) => c.type === 'p
 const CLUB_QIDS = categories.filter((c) => c.type === 'club').map((c) => c.qid);
 const NATION_QIDS = categories.filter((c) => c.type === 'nation').map((c) => c.qid);
 const UA_QIDS = ['Q179075', 'Q172969', 'Q207462', 'Q175687', 'Q170403']; // Динамо, Шахтар, Металіст, Дніпро, збірна України
+// Вінгерів у Wikidata записують по-різному: «winger» (підклас нападника — Ямаль, Азар) або «wing half»
+// (підклас півзахисника — Неймар, Куарежма, Фігу). Щоб не було суперечок, вінгер — і нападник, і півзахисник.
+const WINGER_POSITIONS = { Q11681748: ['FW', 'MF'], Q8025128: ['FW', 'MF'] };
 const COACH_CODES = Object.fromEntries(categories.filter((c) => c.type === 'coach').map((c) => [c.coachQid, c.id]));
 const ACADEMY_CODES = Object.fromEntries(categories.filter((c) => c.type === 'academy').map((c) => [c.clubQid, c.id]));
 
@@ -79,6 +82,9 @@ const WIKI_CATEGORIES = [
   ['en', 'Category:Jong Ajax players', 'AC_AJX'],
   ['en', 'Category:FC Dynamo-2 Kyiv players', 'AC_DYN'],
   ['en', 'Category:FC Dynamo-3 Kyiv players', 'AC_DYN'],
+  ['en', 'Category:S.L. Benfica B players', 'AC_BEN'],
+  ['en', 'Category:Sporting CP B players', 'AC_SCP'],
+  ['en', 'Category:FC Bayern Munich II players', 'AC_BAY'],
 ];
 
 // Чемпіон країни / кращий бомбардир ліги — лише якщо гравець справді грав у цій лізі
@@ -88,11 +94,11 @@ const REQUIRES_LEAGUE = { CH_IT: 'L_SA', CH_ES: 'L_LL', CH_DE: 'L_BL' };
 // sections — беремо лише ці розділи (у статтях про бомбардирів є ще таблиці «за весь час» / «100+ голів» — вони не підходять)
 const WIKI_LINK_PAGES = [
   ['List of Premier League winning players', 'APL', null, null],
-  ['Pichichi Trophy', 'TOPSC', 'L_LL', /^(Winners|Men|Wins by player)/],
-  ['Capocannoniere', 'TOPSC', 'L_SA', /^(Winners|Wins by player)/],
-  ['Premier League Golden Boot', 'TOPSC', 'L_EPL', /^(Winners|Multiple awards won by player)/],
-  ['List of Bundesliga top scorers by season', 'TOPSC', 'L_BL', /^(Winners|Multiple winners)/],
-  ['List of Ligue 1 top scorers', 'TOPSC', 'L_L1', /^(Top scorers by season|Wins by player)/],
+  ['Pichichi Trophy', 'TS_LL', 'L_LL', /^(Winners|Men|Wins by player)/],
+  ['Capocannoniere', 'TS_SA', 'L_SA', /^(Winners|Wins by player)/],
+  ['Premier League Golden Boot', 'TS_EPL', 'L_EPL', /^(Winners|Multiple awards won by player)/],
+  ['List of Bundesliga top scorers by season', 'TS_BL', 'L_BL', /^(Winners|Multiple winners)/],
+  ['List of Ligue 1 top scorers', 'TS_L1', 'L_L1', /^(Top scorers by season|Wins by player)/],
   ["List of men's footballers with 50 or more international goals", 'G50N', null, null],
   ['Golden Boy (award)', 'GBOY', null, null],
 ];
@@ -116,7 +122,16 @@ async function getJson(url, headers = {}, attempt = 0) {
     return getJson(url, headers, attempt + 1);
   }
   if (!res.ok) throw new Error(`HTTP ${res.status} ${url.slice(0, 120)}`);
-  const text = await res.text();
+  let text;
+  try {
+    text = await res.text();
+  } catch (e) {
+    // з'єднання обірвалось під час читання відповіді — повторюємо запит
+    if (attempt >= 6) throw e;
+    console.log(`  (обірвано під час читання: ${e.message}, повтор)`);
+    await sleep(4000 * (attempt + 1));
+    return getJson(url, headers, attempt + 1);
+  }
   if (text.startsWith('You are making too many requests') && attempt < 6) {
     console.log('  (ліміт запитів Вікіпедії, чекаю)');
     await sleep(5000 * (attempt + 1));
@@ -167,7 +182,7 @@ async function fetchDetails(qids, tenures) {
   const academyParents = Object.keys(ACADEMY_CODES);
   for (let i = 0; i < qids.length; i += 150) {
     const chunk = qids.slice(i, i + 150);
-    const [labels, teams, positions, spells] = [
+    const [labels, teams, positions, wingers, spells] = [
       await sparql(`SELECT ?p ?en ?ru ?uk ?enwiki ?ukwiki ?ruwiki ?dewiki ?born WHERE {
         VALUES ?p { ${values(chunk)} }
         OPTIONAL { ?p rdfs:label ?en FILTER(LANG(?en) = "en") }
@@ -184,10 +199,11 @@ async function fetchDetails(qids, tenures) {
       await sparql(`SELECT DISTINCT ?p ?base WHERE {
         VALUES ?p { ${values(chunk)} } VALUES ?base { ${values(Object.keys(POSITION_CODES))} }
         ?p p:P413/ps:P413 ?pos . ?pos wdt:P279* ?base . }`),
-      // усі клубні періоди з датами (без збірних) + «батьківський клуб» для дублів/молодіжок
+      await sparql(`SELECT DISTINCT ?p ?pos WHERE { VALUES ?p { ${values(chunk)} } VALUES ?pos { ${values(Object.keys(WINGER_POSITIONS))} }
+        ?p p:P413/ps:P413 ?pos . }`),
+      // усі періоди в командах з датами (клуби й збірні) + «батьківський клуб» для дублів/молодіжок
       await sparql(`SELECT ?p ?team ?start ?end ?parent WHERE { VALUES ?p { ${values(chunk)} }
         ?p p:P54 ?st . ?st ps:P54 ?team . FILTER NOT EXISTS { ?st wikibase:rank wikibase:DeprecatedRank }
-        FILTER NOT EXISTS { ?team wdt:P31 wd:Q6979593 }
         OPTIONAL { ?st pq:P580 ?start } OPTIONAL { ?st pq:P582 ?end } OPTIONAL { ?team wdt:P831 ?parent } }`),
     ];
     for (const r of labels) {
@@ -200,6 +216,7 @@ async function fetchDetails(qids, tenures) {
     }
     for (const r of teams) players.get(qidOf(r.p))?.tags.add(TEAM_CODES[qidOf(r.team)]);
     for (const r of positions) players.get(qidOf(r.p))?.tags.add(POSITION_CODES[qidOf(r.base)]);
+    for (const r of wingers) WINGER_POSITIONS[qidOf(r.pos)].forEach((t) => players.get(qidOf(r.p))?.tags.add(t));
     for (const r of spells) {
       const p = players.get(qidOf(r.p));
       if (!p) continue;
@@ -218,12 +235,21 @@ async function fetchDetails(qids, tenures) {
   return players;
 }
 
-// Клубні каденції тренерів (без збірних)
+// Каденції тренерів: клуби — усі; збірні — лише завершені. Поточну збірну (напр. Зідан — Франція з 2026) не беремо:
+// у Wikidata в багатьох гравців членство у збірній без дати кінця, і всі нинішні збірники «зараховувались» би новому тренеру.
+// Каденції, де тренер був асистентом, а не головним (у Wikidata ролі майже не позначені)
+const ASSISTANT_TENURES = [
+  ['Q174614', 'Q676899'], // Анчелотті — збірна Італії 1992–1995, асистент Саккі
+];
+
 async function fetchCoachTenures() {
-  const rows = await sparql(`SELECT ?c ?team ?start ?end WHERE { VALUES ?c { ${values(Object.keys(COACH_CODES))} }
-    ?c p:P6087 ?st . ?st ps:P6087 ?team . FILTER NOT EXISTS { ?team wdt:P31 wd:Q6979593 }
-    OPTIONAL { ?st pq:P580 ?start } OPTIONAL { ?st pq:P582 ?end } }`);
+  const rows = await sparql(`SELECT ?c ?team ?start ?end ?nt WHERE { VALUES ?c { ${values(Object.keys(COACH_CODES))} }
+    ?c p:P6087 ?st . ?st ps:P6087 ?team .
+    OPTIONAL { ?st pq:P580 ?start } OPTIONAL { ?st pq:P582 ?end }
+    BIND(EXISTS { ?team wdt:P31/wdt:P279* wd:Q6979593 } AS ?nt) }`);
   return rows
+    .filter((r) => r.nt !== 'true' || r.end)
+    .filter((r) => !ASSISTANT_TENURES.some(([c, t]) => c === qidOf(r.c) && t === qidOf(r.team)))
     .map((r) => ({ code: COACH_CODES[qidOf(r.c)], team: qidOf(r.team), s: toYear(r.start), e: toYear(r.end) ?? 2026.9 }))
     .filter((t) => t.s != null);
 }
@@ -288,7 +314,7 @@ async function main() {
 
   console.log('2/5 Клуби, збірні, позиції, тренери, академії…');
   const tenures = await fetchCoachTenures();
-  console.log(`  клубних каденцій тренерів: ${tenures.length}`);
+  console.log(`  каденцій тренерів (клуби + завершені у збірних): ${tenures.length}`);
   const players = await fetchDetails([...candidates.keys()], tenures);
 
   console.log('3/5 Категорії Вікіпедії…');
