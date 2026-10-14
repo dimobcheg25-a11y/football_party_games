@@ -39,6 +39,18 @@ const clubs = [
   { id: 'DNI', level: 'hard', label: 'Дніпро', qid: 'Q175687', image: 'FC Dnipro', colors: ['#1b4fa0', '#ffffff'] },
 ].map((c) => ({ ...c, type: 'club' }));
 
+// Клуби країни: на перетині зі своєю збірною не ставляться («Реал × Іспанія» — надто легко).
+// Українські пари (Динамо × Україна) свідомо лишаються — для своїх це не просто легка клітинка.
+const NATION_CLUBS = {
+  ESP: ['RMA', 'BAR', 'ATM', 'SEV', 'VAL'],
+  ENG: ['MUN', 'LIV', 'CHE', 'ARS', 'MCI', 'TOT', 'NEW', 'AVL'],
+  ITA: ['JUV', 'MIL', 'INT', 'NAP', 'ROM', 'LAZ', 'PAR'],
+  GER: ['BAY', 'BVB'],
+  FRA: ['PSG'],
+  NED: ['AJX'],
+  POR: ['BEN', 'FCP'],
+};
+
 const nations = [
   { id: 'ESP', label: 'Іспанія', qid: 'Q42267', image: 'File:Flag of Spain.svg', colors: ['#aa151b', '#f1bf00'] },
   { id: 'FRA', label: 'Франція', qid: 'Q47774', image: 'File:Flag of France.svg', colors: ['#002395', '#ed2939'] },
@@ -53,7 +65,7 @@ const nations = [
   { id: 'CRO', level: 'hard', label: 'Хорватія', qid: 'Q134479', image: 'File:Flag of Croatia.svg', colors: ['#ff0000', '#171796'] },
   { id: 'URU', level: 'hard', label: 'Уругвай', qid: 'Q134916', image: 'File:Flag of Uruguay.svg', colors: ['#ffffff', '#0038a8'] },
   { id: 'UKR', level: 'normal', label: 'Україна', qid: 'Q170403', image: 'File:Flag of Ukraine.svg', colors: ['#0057b7', '#ffd700'] },
-].map((c) => ({ ...c, type: 'nation' }));
+].map((c) => ({ ...c, type: 'nation', home: NATION_CLUBS[c.id] }));
 
 // Грав у лізі (будь-коли в кар'єрі). Китай, ОАЕ й МЛС — щоб зірки, які туди поїхали, з'являлися ще й через ці ліги.
 //   home — збірна й клуби цієї ліги: на перетині з лігою вони не ставляться («Ла Ліга × Барселона» — завжди так, «× Іспанія» — надто легко).

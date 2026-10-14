@@ -155,7 +155,7 @@ function thresholds(mode, a, b) {
 
 const typeOf = (id) => categoryById.get(id).type;
 
-// Ліга × своя збірна чи свій клуб — надто легко (або взагалі завжди так): таких перетинів не буває.
+// Ліга × своя збірна чи свій клуб, клуб × збірна своєї країни — надто легко (або взагалі завжди так): таких перетинів не буває.
 const isHome = (a, b) => !!categoryById.get(a).home?.includes(b) || !!categoryById.get(b).home?.includes(a);
 
 function pickCompatible(mode, mustMatch, taken, count) {
