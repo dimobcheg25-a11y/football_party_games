@@ -1,5 +1,5 @@
-// «Вгадай гравця»: профіль футболіста (збірна, позиція, рік, клуби, голи, трофеї) і порівняння спроби із загаданим.
-// Кожна клітинка: green — збіг, yellow — близько / колись перетиналися, grey — мимо; arrow — у загаданого більше (up) чи менше (down).
+// «Вгадай гравця»: профіль футболіста (збірна, позиція, рік, клуби, голи, вартість, трофеї) і порівняння спроби із загаданим.
+// Кожна клітинка: green — збіг, yellow — близько / колись перетиналися, grey — мимо; note — пояснення словами (чому жовта, у кого більше).
 const { careerOf, team, teams, POSITIONS } = require('../path/careers');
 
 // Британські збірні у Wikidata — окремі команди, але країна в усіх «Сполучене Королівство».
@@ -35,17 +35,52 @@ const CONF_LABELS = { UEFA: 'Європа', CONMEBOL: 'Півд. Америка'
 const confOf = new Map();
 for (const [conf, list] of Object.entries(CONFEDERATIONS)) for (const c of list.split(' ')) confOf.set(c.replace(/_/g, ' '), conf);
 
+// Головні трофеї — текстом (значки без підпису незрозумілі).
 const TROPHIES = [
-  { id: 'BALLON', icon: '🥇', label: "Золотий м'яч" },
-  { id: 'WC', icon: '🏆', label: 'Чемпіон світу' },
-  { id: 'UCL', icon: '⭐', label: 'Ліга чемпіонів' },
-  { id: 'EURO', icon: '🏅', label: 'Чемпіон Європи' },
-  { id: 'COPA', icon: '🌎', label: 'Кубок Америки' },
-  { id: 'UEL', icon: '🟠', label: 'Ліга Європи' },
+  { id: 'BALLON', label: "Золотий м'яч" },
+  { id: 'WC', label: 'Чемпіон світу' },
+  { id: 'EURO', label: 'Чемпіон Європи' },
+  { id: 'COPA', label: 'Кубок Америки' },
+  { id: 'UCL', label: 'Ліга чемпіонів' },
+  { id: 'UEL', label: 'Ліга Європи' },
 ];
+
+// Основна позиція — з Transfermarkt (точніша за перелік у Wikidata); група — для «близько»: та сама лінія на полі.
+const TM_POSITIONS = {
+  Goalkeeper: ['Воротар', 'GK'],
+  'Centre-Back': ['Центральний захисник', 'DEF'],
+  'Left-Back': ['Лівий захисник', 'DEF'],
+  'Right-Back': ['Правий захисник', 'DEF'],
+  'Defensive Midfield': ['Опорний півзахисник', 'MID'],
+  'Central Midfield': ['Центральний півзахисник', 'MID'],
+  'Attacking Midfield': ['Атакувальний півзахисник', 'MID'],
+  'Left Midfield': ['Лівий півзахисник', 'WING'],
+  'Right Midfield': ['Правий півзахисник', 'WING'],
+  'Left Winger': ['Лівий вінгер', 'WING'],
+  'Right Winger': ['Правий вінгер', 'WING'],
+  'Second Striker': ['Другий нападник', 'FWD'],
+  'Centre-Forward': ['Центральний нападник', 'FWD'],
+};
+const GROUPS = { GK: 'воротар', DEF: 'захисник', MID: 'центр поля', WING: 'фланг', FWD: 'нападник' };
+// Запасний варіант (немає в Transfermarkt — зазвичай ветерани): позиції з Wikidata.
+const TAG_GROUPS = { GK: 'GK', DF: 'DEF', MF: 'MID', FW: 'FWD' };
+
+let transfers = {};
+try {
+  transfers = require('../../data/transfers.json');
+} catch {
+  // трансфери ще не зібрані (npm run build-transfers) — без вартості й точних позицій
+}
 
 const NOW = new Date().getFullYear();
 const profiles = new Map();
+
+function positionOf(p) {
+  const tm = TM_POSITIONS[transfers[p.id]?.pos];
+  if (tm) return { label: tm[0], groups: [tm[1]] };
+  const tags = ['GK', 'DF', 'MF', 'FW'].filter((t) => p.tags.has(t));
+  return { label: tags.length ? tags.map((t) => POSITIONS[t]).join(' / ') : '?', groups: tags.map((t) => TAG_GROUPS[t]) };
+}
 
 function profileOf(p) {
   if (profiles.has(p.id)) return profiles.get(p.id);
@@ -66,7 +101,7 @@ function profileOf(p) {
   const clubs = c.clubs.map((x) => ({ t: x.t, s: x.s ?? x.e ?? NOW, e: x.e ?? NOW, ...team(x.t) }));
   const profile = {
     nation,
-    positions: ['GK', 'DF', 'MF', 'FW'].filter((t) => p.tags.has(t)),
+    position: positionOf(p),
     born: p.born || null,
     last: { t: last.t, ...team(last.t), current: last.e == null },
     country: shortCountry(team(last.t).country),
@@ -74,6 +109,8 @@ function profileOf(p) {
     clubs,
     goals: c.clubs.reduce((s, x) => s + (x.g || 0), 0),
     caps: c.nation?.a || 0,
+    natGoals: c.nation?.g || 0,
+    value: transfers[p.id]?.maxValue || null,
     trophies: TROPHIES.filter((t) => p.tags.has(t.id)).map((t) => t.id),
   };
   profiles.set(p.id, profile);
@@ -95,11 +132,15 @@ function sharedClubs(a, b) {
 }
 
 // Близькість чисел: відносно загаданого, але не менше абсолютного порогу (щоб 0 і 2 гола були «близько»).
+// note — словами, у кого більше (самі стрілки незрозумілі).
 function numberCell(guess, target, { green, yellow }) {
   const d = Math.abs(guess - target);
   const color = d === 0 || d <= Math.max(green[0], target * green[1]) ? 'green' : d <= Math.max(yellow[0], target * yellow[1]) ? 'yellow' : 'grey';
-  return { color, arrow: guess === target ? null : target > guess ? 'up' : 'down' };
+  if (guess === target) return { color, note: 'точно' };
+  return { color, arrow: target > guess ? 'up' : 'down', note: target > guess ? 'у загаданого більше' : 'у загаданого менше' };
 }
+
+const money = (v) => (v >= 1e6 ? `€${Number((v / 1e6).toFixed(v < 1e7 ? 1 : 0))} млн` : `€${Math.round(v / 1e3)} тис.`);
 
 const COLUMNS = [
   { id: 'nation', label: 'Збірна' },
@@ -107,10 +148,12 @@ const COLUMNS = [
   { id: 'born', label: 'Рік народження' },
   { id: 'last', label: 'Останній клуб' },
   { id: 'league', label: 'Чемпіонат' },
-  { id: 'shared', label: 'Спільні клуби' },
   { id: 'goals', label: 'Голи в чемпіонатах' },
   { id: 'caps', label: 'Матчі за збірну' },
+  { id: 'natGoals', label: 'Голи за збірну' },
+  { id: 'value', label: 'Макс. вартість' },
   { id: 'trophies', label: 'Трофеї' },
+  { id: 'shared', label: 'Спільні клуби' },
 ];
 
 // Рядок клітинок для спроби g проти загаданого t (обидва — профілі).
@@ -121,19 +164,22 @@ function compare(g, t) {
   else {
     const same = t.nation && g.nation.name === t.nation.name;
     const near = t.nation && g.nation.conf && g.nation.conf === t.nation.conf;
-    cells.nation = { text: g.nation.name, img: g.nation.img, color: same ? 'green' : near ? 'yellow' : 'grey', note: near && !same ? CONF_LABELS[g.nation.conf] : null };
+    cells.nation = { text: g.nation.name, img: g.nation.img, color: same ? 'green' : near ? 'yellow' : 'grey', note: near && !same ? `теж ${CONF_LABELS[g.nation.conf]}` : null };
   }
 
-  const gp = g.positions, tp = new Set(t.positions);
-  const samePos = gp.length === tp.size && gp.every((x) => tp.has(x));
-  cells.position = {
-    text: gp.length ? gp.map((x) => POSITIONS[x]).join(' / ') : '?',
-    color: samePos ? 'green' : gp.some((x) => tp.has(x)) ? 'yellow' : 'grey',
-  };
+  // зелена — та сама позиція; жовта — та сама лінія (обидва захисники, обидва на фланзі…), пояснюємо словами
+  const gp = g.position, tp = t.position;
+  const common = gp.groups.find((x) => tp.groups.includes(x));
+  const samePos = gp.label === tp.label;
+  cells.position = { text: gp.label, color: samePos ? 'green' : common ? 'yellow' : 'grey', note: !samePos && common ? `теж ${GROUPS[common]}` : null };
 
   if (g.born && t.born) {
     const d = Math.abs(g.born - t.born);
-    cells.born = { text: String(g.born), color: d === 0 ? 'green' : d <= 2 ? 'yellow' : 'grey', arrow: d === 0 ? null : t.born > g.born ? 'up' : 'down' };
+    cells.born = {
+      text: String(g.born),
+      color: d === 0 ? 'green' : d <= 2 ? 'yellow' : 'grey',
+      note: d === 0 ? 'однолітки' : t.born > g.born ? 'загаданий молодший' : 'загаданий старший',
+    };
   } else cells.born = { text: g.born ? String(g.born) : '?', color: 'grey' };
 
   const playedThere = t.clubs.some((x) => x.t === g.last.t);
@@ -141,35 +187,43 @@ function compare(g, t) {
     text: g.last.name,
     img: g.last.img,
     color: g.last.t === t.last.t ? 'green' : playedThere ? 'yellow' : 'grey',
-    note: g.last.t !== t.last.t && playedThere ? 'грав там' : g.last.current ? 'зараз' : 'завершив тут',
+    note: g.last.t !== t.last.t && playedThere ? 'загаданий грав тут' : g.last.current ? 'зараз' : 'завершив тут',
   };
 
   cells.league = {
     text: g.country || '?',
     color: g.country && g.country === t.country ? 'green' : g.country && t.countries.has(g.country) ? 'yellow' : 'grey',
-    note: g.country && g.country !== t.country && t.countries.has(g.country) ? 'грав там' : null,
-  };
-
-  const shared = sharedClubs(g, t);
-  cells.shared = {
-    text: shared.length ? shared.map((x) => `${x.together ? '🤝 ' : ''}${x.name}`).join(', ') : 'немає',
-    clubs: shared,
-    color: shared.length ? 'yellow' : 'grey',
-    note: shared.some((x) => x.together) ? 'грали разом' : null,
+    note: g.country && g.country !== t.country && t.countries.has(g.country) ? 'загаданий грав тут' : null,
   };
 
   cells.goals = { text: String(g.goals), ...numberCell(g.goals, t.goals, { green: [3, 0.1], yellow: [15, 0.25] }) };
   cells.caps = { text: String(g.caps), ...numberCell(g.caps, t.caps, { green: [3, 0.1], yellow: [10, 0.3] }) };
+  cells.natGoals = { text: String(g.natGoals), ...numberCell(g.natGoals, t.natGoals, { green: [1, 0.1], yellow: [5, 0.3] }) };
 
+  if (!g.value) cells.value = { text: '?', color: 'grey', note: 'немає даних' };
+  else if (!t.value) cells.value = { text: money(g.value), color: 'grey', note: 'про загаданого немає даних' };
+  else cells.value = { text: money(g.value), ...numberCell(g.value, t.value, { green: [1e6, 0.1], yellow: [3e6, 0.35] }) };
+
+  // трофеї — списком; ті, що є й у загаданого, позначені (match)
   const tt = new Set(t.trophies);
   const sameTrophies = g.trophies.length === tt.size && g.trophies.every((x) => tt.has(x));
+  const someTrophies = g.trophies.some((x) => tt.has(x));
   cells.trophies = {
-    text: g.trophies.length ? g.trophies.map((id) => TROPHIES.find((x) => x.id === id).icon).join(' ') : '—',
-    title: g.trophies.map((id) => TROPHIES.find((x) => x.id === id).label).join(', '),
-    color: sameTrophies ? 'green' : g.trophies.some((x) => tt.has(x)) ? 'yellow' : 'grey',
+    text: g.trophies.length ? '' : 'немає великих',
+    items: g.trophies.map((id) => ({ label: TROPHIES.find((x) => x.id === id).label, match: tt.has(id) })),
+    color: sameTrophies ? 'green' : someTrophies ? 'yellow' : 'grey',
+    note: !sameTrophies && someTrophies ? '✓ — є і в загаданого' : null,
+  };
+
+  const shared = sharedClubs(g, t);
+  cells.shared = {
+    text: shared.length ? '' : 'немає',
+    clubs: shared,
+    color: shared.length ? 'yellow' : 'grey',
+    note: shared.some((x) => x.together) ? '🤝 — грали разом' : null,
   };
 
   return COLUMNS.map((c) => ({ id: c.id, ...cells[c.id] }));
 }
 
-module.exports = { profileOf, compare, COLUMNS, TROPHIES };
+module.exports = { profileOf, compare, COLUMNS, TROPHIES, money };

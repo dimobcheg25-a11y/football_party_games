@@ -49,7 +49,15 @@ async function main() {
   assert.ok(shared.clubs.some((x) => x.name === 'Барселона' && x.together), 'разом у Барселоні');
   assert.ok(shared.clubs.some((x) => x.name === 'ПСЖ' && x.together), 'разом у ПСЖ');
   assert.strictEqual(cell('lionel-messi', 'neymar', 'nation').color, 'yellow', 'Аргентина й Бразилія — один континент');
-  assert.strictEqual(cell('lionel-messi', 'neymar', 'born').arrow, 'up', 'Неймар молодший');
+  assert.strictEqual(cell('lionel-messi', 'neymar', 'born').note, 'загаданий молодший', 'Неймар молодший — словами');
+  assert.strictEqual(cell('arda-turan', 'neymar', 'position').text, 'Лівий вінгер', 'основна позиція з Transfermarkt');
+  const pos = cell('mykhailo-mudryk', 'lionel-messi', 'position');
+  assert.ok(pos.color === 'yellow' && pos.note === 'теж фланг', 'жовта позиція пояснена');
+  const trophies = cell('lionel-messi', 'neymar', 'trophies');
+  assert.ok(trophies.items.some((x) => x.label === 'Ліга чемпіонів' && x.match), 'трофеї текстом, спільні позначені');
+  const value = cell('neymar', 'kylian-mbappe', 'value');
+  assert.ok(/^€\d+ млн$/.test(value.text) && value.note === 'у загаданого більше', 'макс. вартість: ' + value.text);
+  assert.ok(cell('lionel-messi', 'neymar', 'caps').text !== '100', 'матчі за збірну не обрізані на 100');
   assert.strictEqual(cell('neymar', 'neymar', 'last').color, 'green');
   assert.strictEqual(cell('andriy-shevchenko', 'neymar', 'shared').color, 'grey');
   const eng = cell('david-beckham', 'wayne-rooney', 'nation');
@@ -57,7 +65,7 @@ async function main() {
   // у кожного, кого можна загадати, є профіль
   const { poolFor, careerOf } = require('../server/games/path/careers');
   assert.ok(poolFor('all', 'expert').every((p) => profileOf(p)), 'профілі для всього пулу');
-  console.log('✓ порівняння: Мессі → Неймар —', shared.text, '| збірна:', cell('lionel-messi', 'neymar', 'nation').note);
+  console.log('✓ порівняння: Мессі → Неймар —', shared.clubs.map((x) => (x.together ? '🤝 ' : '') + x.name).join(', '), '| збірна:', cell('lionel-messi', 'neymar', 'nation').note);
 
   // ── соло
   const solo = io(GAME);
@@ -71,7 +79,7 @@ async function main() {
   const [w1, w2] = wrongIds(st, 2);
   ({ res, st } = await act(solo, 'guess', { playerId: w1 }, (x) => x.myTries.length === 1));
   assert.strictEqual(res.correct, false);
-  assert.strictEqual(st.myTries[0].cells.length, 9, '9 клітинок');
+  assert.strictEqual(st.myTries[0].cells.length, 11, '11 клітинок');
   assert.strictEqual(st.potential, st.points[1]);
   assert.ok((await emit(solo, 'guess', { playerId: w1 })).error, 'того самого гравця двічі не можна');
   ({ st } = await act(solo, 'guess', { playerId: w2 }, (x) => x.myTries.length === 2));
@@ -120,7 +128,7 @@ async function main() {
   await act(a, 'guess', { playerId: wrongIds(st, 1)[0] }, (x) => x.myTries.length === 1);
   const bView = await bSees;
   assert.strictEqual(bView.myTries.length, 0, 'чужих спроб з іменами не видно');
-  assert.strictEqual(bView.progress[0].colors[0].length, 9);
+  assert.strictEqual(bView.progress[0].colors[0].length, 11);
   assert.ok(!JSON.stringify(bView.progress).includes(wrongIds(st, 1)[0]), 'імені в спільному стані немає');
   // А вгадує — раунд ще йде, бо Б думає
   ({ st } = await act(a, 'guess', { playerId: st.testAnswer }, (x) => x.progress[0].solved));

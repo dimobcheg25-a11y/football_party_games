@@ -96,7 +96,8 @@ function infoboxParams(text) {
 
 const stripRefs = (v) => String(v || '').replace(/<ref[^>]*\/>/g, '').replace(/<ref[\s\S]*?<\/ref>/g, '').replace(/<!--[\s\S]*?-->/g, '');
 function cleanNum(v) {
-  const m = stripRefs(v).replace(/\{\{[^}]*\}\}/g, '').match(/-?\d+/);
+  // посилання — лише підпис: «[[List of … 100 or more caps|208]]» → 208 (а не 100 з назви статті)
+  const m = stripRefs(v).replace(/\[\[(?:[^\]|]*\|)?([^\]]*)\]\]/g, '$1').replace(/\{\{[^}]*\}\}/g, '').match(/-?\d+/);
   return m ? Math.abs(Number(m[0])) : null;
 }
 function parseYears(v) {

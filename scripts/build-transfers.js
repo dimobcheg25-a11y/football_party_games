@@ -1,5 +1,6 @@
 // Трансфери й ринкова вартість з відкритого набору transfermarkt-datasets (CC0, github.com/dcaribou/transfermarkt-datasets)
-// → server/data/transfers.json: { [id гравця]: { maxValue, value, topFee, topFrom, topTo, topSeason, totalFees, paid } } (євро).
+// → server/data/transfers.json: { [id гравця]: { maxValue, value, topFee, topFrom, topTo, topSeason, totalFees, paid, pos } } (євро;
+//   pos — основна позиція з Transfermarkt англійською, напр. «Left Winger»: точніша за перелік позицій у Wikidata).
 // Гравців зіставляємо за ID Transfermarkt у Wikidata (P2446), запасний варіант — ім'я + рік народження.
 // Покриття: ті, хто грав у відстежуваних лігах приблизно з 2012 р.; легенди 90-х здебільшого без даних.
 // Запуск: npm run build-transfers (після build-players).
@@ -93,6 +94,7 @@ async function main() {
       value: Number(tm.last_season) >= 2025 ? num(tm.market_value_in_eur) || null : null,
       totalFees: list.reduce((s, t) => s + num(t.transfer_fee), 0),
       paid: list.length,
+      pos: tm.sub_position || null,
     };
     if (top) Object.assign(entry, { topFee: num(top.transfer_fee), topFrom: top.from_club_name, topTo: top.to_club_name, topSeason: top.transfer_season });
     if (entry.maxValue || entry.paid) result[p.id] = entry;

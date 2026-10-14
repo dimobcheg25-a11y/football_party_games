@@ -29,10 +29,16 @@ function shuffle(list) {
   return a;
 }
 
-// Рядок самого загаданого: усе зелене, замість спільних клубів — уся його кар'єра.
+// Рядок самого загаданого (відповідь або правильна спроба): усе зелене, без пояснень-порівнянь;
+// замість спільних клубів — уся його кар'єра.
 function answerCells(target) {
-  return compare(target, target).map((c) =>
-    c.id === 'shared' ? { ...c, clubs: c.clubs.map((x) => ({ ...x, together: false })), color: 'green', note: "усі клуби кар'єри" } : c);
+  return compare(target, target).map((c) => {
+    const cell = { ...c, color: 'green', arrow: null, note: null };
+    if (c.items) cell.items = c.items.map((x) => ({ ...x, match: false }));
+    if (c.id === 'shared') Object.assign(cell, { clubs: c.clubs.map((x) => ({ ...x, together: false })), note: "уся кар'єра" });
+    if (c.id === 'last') cell.note = c.note;
+    return cell;
+  });
 }
 
 class GuessRoom extends BaseRoom {
@@ -148,8 +154,8 @@ class GuessRoom extends BaseRoom {
     const mine = this.tries.get(seat) || [];
     if (mine.some((t) => t.playerId === player.id)) return { error: 'Цього гравця ти вже називав' };
     const correct = player.id === this.answer.id;
-    const cells = compare(profile, this.target);
-    mine.push({ playerId: player.id, cells: correct ? cells.map((c) => ({ ...c, color: 'green', arrow: null })) : cells, correct });
+    const cells = correct ? null : compare(profile, this.target);
+    mine.push({ playerId: player.id, cells: correct ? answerCells(this.target) : cells, correct });
     this.tries.set(seat, mine);
     this.touch();
     if (correct) {

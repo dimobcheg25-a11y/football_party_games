@@ -236,14 +236,18 @@
   });
 
   // ── гра
+  // Клітинка: значення + пояснення словами (note). Клуби й трофеї — списком (переносяться, не вилазять за рамку).
   function cellHtml(c, label) {
     const img = c.img ? `<img src="${c.img}" alt="" loading="lazy" />` : '';
     const arrow = c.arrow ? `<span class="arrow">${ARROWS[c.arrow]}</span>` : '';
-    const clubs = c.id === 'shared' && c.clubs?.length
-      ? `<span class="clubs">${c.clubs.map((x) => `<span title="${escapeHtml(x.name)}${x.together ? ' — грали разом' : ''}">${x.img ? `<img src="${x.img}" alt="" loading="lazy" />` : ''}${x.together ? '🤝' : ''}<em>${escapeHtml(x.name)}</em></span>`).join('')}</span>`
-      : `<b>${escapeHtml(c.text)}</b>`;
-    return `<div class="cell ${c.color} c-${c.id}" ${c.title ? `title="${escapeHtml(c.title)}"` : ''}>
-      <span class="lbl">${escapeHtml(label)}</span>${img}${clubs}${arrow}${c.note ? `<small>${escapeHtml(c.note)}</small>` : ''}</div>`;
+    let body = `<b>${escapeHtml(c.text)}</b>`;
+    if (c.clubs?.length) {
+      body = `<span class="list">${c.clubs.map((x) => `<span class="item" title="${escapeHtml(x.name)}${x.together ? ' — грали разом' : ''}">${x.img ? `<img src="${x.img}" alt="" loading="lazy" />` : ''}${x.together ? '🤝 ' : ''}${escapeHtml(x.name)}</span>`).join('')}</span>`;
+    } else if (c.items?.length) {
+      body = `<span class="list">${c.items.map((x) => `<span class="item ${x.match ? 'match' : ''}">${x.match ? '✓ ' : ''}${escapeHtml(x.label)}</span>`).join('')}</span>`;
+    }
+    return `<div class="cell ${c.color} c-${c.id}">
+      <span class="lbl">${escapeHtml(label)}</span>${img}${body}${arrow}${c.note ? `<small>${escapeHtml(c.note)}</small>` : ''}</div>`;
   }
 
   function rowHtml(player, cells, extraClass = '') {

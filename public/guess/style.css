@@ -1,9 +1,15 @@
 /* Вгадай гравця. Лобі, таблиця, відповідь, підсумок — з /path/style.css; тут — дошка спроб. */
 
-.guess-game { max-width: 1180px; }
-.guess-game .game-layout { grid-template-columns: minmax(0, 1fr) 230px; }
+/* дошка широка (11 клітинок), тому таблиця рахунку — смужкою над нею, а не збоку */
+.guess-game { max-width: 1440px; }
+.guess-game .game-layout { grid-template-columns: 1fr; }
+.guess-game .side-col { order: -1; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.guess-game .table-card { flex: 1; padding: 8px; }
+.guess-game .table-title { margin-bottom: 6px; }
+.guess-game .scoreboard { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 5px; }
+.guess-game .scoreboard li { display: grid; gap: 4px; padding: 6px 10px; }
 .board-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-.board-col .answer-box { margin-top: 0; }
+.board-col .answer-box { margin-top: 0; max-width: 720px; }
 .board-col .reveal { order: 0; margin-bottom: 0; }
 .reveal-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
 
@@ -14,18 +20,19 @@
 .sw.yellow { background: var(--g-yellow); }
 .sw.grey { background: var(--g-grey); border: 1px solid var(--line); }
 
-/* дошка: рядок = гравець + 9 клітинок */
+/* дошка: рядок = гравець + 11 клітинок; трофеї й спільні клуби ширші — там списки */
 .board { display: grid; gap: 6px; }
 .board-empty { color: var(--muted); text-align: center; margin: 10px 0; }
-/* «Спільні клуби» ширша: там кілька назв */
-.g-row { display: grid; grid-template-columns: 150px repeat(5, minmax(0, 1fr)) minmax(0, 1.7fr) repeat(3, minmax(0, 1fr)); gap: 5px; align-items: stretch; }
+.g-row {
+  display: grid; gap: 5px; align-items: stretch;
+  grid-template-columns: 130px repeat(9, minmax(0, 1fr)) minmax(0, 1.4fr) minmax(0, 1.6fr);
+}
 .g-row.fresh .cell { animation: flip .45s ease-out both; }
-.g-row.fresh .cell:nth-child(3) { animation-delay: .04s; } .g-row.fresh .cell:nth-child(4) { animation-delay: .08s; }
-.g-row.fresh .cell:nth-child(5) { animation-delay: .12s; } .g-row.fresh .cell:nth-child(6) { animation-delay: .16s; }
-.g-row.fresh .cell:nth-child(7) { animation-delay: .2s; }  .g-row.fresh .cell:nth-child(8) { animation-delay: .24s; }
-.g-row.fresh .cell:nth-child(9) { animation-delay: .28s; } .g-row.fresh .cell:nth-child(10) { animation-delay: .32s; }
+.g-row.fresh .cell:nth-child(n+3) { animation-delay: .05s; } .g-row.fresh .cell:nth-child(n+5) { animation-delay: .1s; }
+.g-row.fresh .cell:nth-child(n+7) { animation-delay: .15s; } .g-row.fresh .cell:nth-child(n+9) { animation-delay: .2s; }
+.g-row.fresh .cell:nth-child(n+11) { animation-delay: .25s; }
 @keyframes flip { from { transform: rotateX(90deg); opacity: 0; } to { transform: none; opacity: 1; } }
-.g-head .cell-h { font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; text-align: center; align-self: end; line-height: 1.2; }
+.g-head .cell-h { font-size: 10.5px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; text-align: center; align-self: end; line-height: 1.2; }
 
 .g-player { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .g-photo {
@@ -37,45 +44,52 @@
 .g-row.win .g-name { color: var(--accent); }
 
 .cell {
-  position: relative; min-height: 64px; padding: 6px 4px; border-radius: 10px; text-align: center;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  position: relative; min-width: 0; min-height: 66px; padding: 6px 5px; border-radius: 10px; text-align: center;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
   background: var(--g-grey); border: 1px solid var(--line); font-size: 13px; line-height: 1.15;
-  min-width: 0; overflow: hidden;
 }
 .cell.green { background: var(--g-green); border-color: transparent; }
 .cell.yellow { background: var(--g-yellow); border-color: transparent; color: #1b1606; }
-.cell b { font-weight: 800; overflow-wrap: anywhere; }
-.cell small { font-size: 10.5px; font-weight: 700; opacity: .85; }
+.cell b { font-weight: 800; overflow-wrap: anywhere; hyphens: auto; }
+.cell small { font-size: 10.5px; font-weight: 700; opacity: .85; line-height: 1.15; }
 .cell > img { width: 24px; height: 18px; object-fit: contain; }
 .cell.c-last > img { width: 26px; height: 26px; background: #e8efe9; border-radius: 6px; padding: 2px; }
-.cell .arrow { position: absolute; top: 3px; right: 6px; font-size: 16px; font-weight: 900; }
+.cell .arrow { position: absolute; top: 3px; right: 6px; font-size: 15px; font-weight: 900; }
 .cell .lbl { display: none; }
-.cell.c-trophies b { font-size: 15px; letter-spacing: 1px; }
-.cell.c-goals b, .cell.c-caps b, .cell.c-born b { font-family: var(--display); font-size: 16px; }
-.clubs { display: flex; flex-wrap: wrap; gap: 3px 6px; justify-content: center; max-width: 100%; }
-.clubs > span { display: inline-flex; align-items: center; gap: 3px; font-size: 11.5px; font-weight: 800; min-width: 0; max-width: 100%; }
-.clubs img { width: 18px; height: 18px; object-fit: contain; background: #e8efe9; border-radius: 4px; padding: 1px; }
-.clubs em { font-style: normal; overflow-wrap: anywhere; text-align: left; }
-.clubs img { flex: none; }
+.cell.c-goals b, .cell.c-caps b, .cell.c-natGoals b, .cell.c-born b { font-family: var(--display); font-size: 16px; }
+.cell.c-value b { font-size: 14px; }
+
+/* списки (клуби, трофеї): кожен пункт — окремий рядок-чип, довгі назви переносяться */
+.cell .list { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; max-width: 100%; }
+.cell .item {
+  display: inline-flex; align-items: center; gap: 4px; max-width: 100%; min-width: 0;
+  font-size: 11.5px; font-weight: 800; line-height: 1.15; overflow-wrap: anywhere; text-align: left;
+  padding: 2px 6px; border-radius: 6px; background: rgba(0,0,0,0.18);
+}
+.cell .item img { width: 16px; height: 16px; flex: none; object-fit: contain; background: #e8efe9; border-radius: 4px; padding: 1px; }
+.cell .item.match { background: rgba(0,0,0,0.38); color: #fff; }
 
 /* таблиця: кольори чужих спроб */
-.guess-game .scoreboard li { display: grid; gap: 4px; }
 .sb-line { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .mini { display: grid; gap: 2px; padding-left: 4px; }
 .mini > span { display: flex; gap: 2px; }
-.mini i { width: 9px; height: 9px; border-radius: 2px; background: var(--g-grey); border: 1px solid var(--line); }
+.mini i { width: 8px; height: 8px; border-radius: 2px; background: var(--g-grey); border: 1px solid var(--line); }
 .mini i.green { background: var(--g-green); border: 0; }
 .mini i.yellow { background: var(--g-yellow); border: 0; }
 
-/* вузький екран: рядок — гравець зверху, клітинки 3×3 з підписами */
-@media (max-width: 980px) {
+/* вужчий екран: рядок — картка: гравець зверху, клітинки 3 в ряд з підписами, трофеї й клуби — на всю ширину */
+@media (max-width: 1150px) {
   .g-head { display: none; }
   .g-row { grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 8px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); }
   .g-player { grid-column: 1 / -1; }
-  .cell { min-height: 58px; padding-top: 16px; }
+  .cell { min-height: 60px; padding-top: 17px; }
+  .cell.c-trophies, .cell.c-shared { grid-column: 1 / -1; min-height: 0; padding-bottom: 8px; }
   .cell .lbl { display: block; position: absolute; top: 3px; left: 6px; right: 18px; text-align: left; font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; opacity: .7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }
+@media (min-width: 700px) and (max-width: 1150px) {
+  .g-row { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .cell.c-trophies, .cell.c-shared { grid-column: span 5; }
+}
 @media (max-width: 760px) {
-  .guess-game .game-layout { grid-template-columns: 1fr; }
   .mini { display: none; }
 }
