@@ -524,7 +524,7 @@
           // велике число — відомі гравці, мале — усі, кого зарахує гра
           const cnt = grid.answerCounts[i];
           const fam = grid.famousCounts?.[i] ?? cnt;
-          const count = `<span class="count ${fam <= 2 ? 'few' : ''}" title="Відомих гравців: ${fam}, усього правильних відповідей: ${cnt}"><b>${fam}</b><span class="w"> ${plural(fam, 'відомий', 'відомі', 'відомих')}</span><span class="all"> / ${cnt}</span></span>`;
+          const count = `<span class="count" title="Відомих гравців: ${fam}, усього правильних відповідей: ${cnt}"><b>${fam}</b><span class="w"> ${plural(fam, 'відомий', 'відомі', 'відомих')}</span><span class="all"> / ${cnt}</span></span>`;
           html += `<button class="cell ${myTurn ? 'playable' : ''}" data-cell="${i}" ${myTurn ? '' : 'disabled'} aria-label="Клітинка ${r + 1}×${c + 1}">
             <span class="plus">+</span>${count}
           </button>`;

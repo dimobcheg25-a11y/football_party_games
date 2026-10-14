@@ -514,7 +514,6 @@ input::placeholder { color: #6b8577; }
 .cat-coach .cat-label { color: #f3dd8f; }
 .cat-academy .cat-label { color: #b8f5c9; }
 
-.cell .count.few { color: var(--gold); font-weight: 700; }
 
 /* ── «Останній хід» і щойно зайнята клітинка */
 .last-move {
@@ -581,7 +580,6 @@ input::placeholder { color: #6b8577; }
 .cell .count .all { opacity: .6; font-weight: 400; }
 .board-legend { margin: 10px 4px 0; font-size: 12px; line-height: 1.5; color: var(--muted); text-align: center; }
 .board-legend .ex { display: inline-block; padding: 0 6px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line); color: var(--text); white-space: nowrap; }
-.board-legend .ex.few b { color: var(--gold); }
 @media (min-width: 900px) { .board.big .cell .count { font-size: 12px; right: 6px; bottom: 4px; } }
 .board.big .cell .count, .cell .count.compact { left: auto; right: 4px; bottom: 3px; font-size: 10px; }
 .board.big .cell .count .w { display: none; }
