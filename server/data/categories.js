@@ -80,11 +80,11 @@ const awards = [
   { id: 'CH_ES', level: 'normal', label: 'Чемпіон Іспанії', image: 'File:Trofeo de La Liga 9900.jpg', icon: '🏆' },
   { id: 'CH_DE', level: 'normal', label: 'Чемпіон Німеччини', image: 'Meisterschale', icon: '🥏' },
   // кращий бомбардир сезону — окремо для кожної ліги
-  { id: 'TS_EPL', level: 'fan', label: 'Кращий бомбардир АПЛ', short: 'Бомбардир АПЛ', icon: '🎯' },
-  { id: 'TS_SA', level: 'fan', label: 'Кращий бомбардир Серії А', short: 'Бомбардир Серії А', icon: '🎯' },
-  { id: 'TS_LL', level: 'fan', label: 'Кращий бомбардир Ла Ліги', short: 'Бомбардир Ла Ліги', icon: '🎯' },
-  { id: 'TS_BL', level: 'fan', label: 'Кращий бомбардир Бундесліги', short: 'Бомбардир Бундесліги', icon: '🎯' },
-  { id: 'TS_L1', level: 'fan', label: 'Кращий бомбардир Ліги 1', short: 'Бомбардир Ліги 1', icon: '🎯' },
+  { id: 'TS_EPL', level: 'fan', label: 'Найкращий бомбардир сезону АПЛ', short: 'Бомбардир №1 сезону АПЛ', icon: '🎯' },
+  { id: 'TS_SA', level: 'fan', label: 'Найкращий бомбардир сезону Серії А', short: 'Бомбардир №1 сезону Серії А', icon: '🎯' },
+  { id: 'TS_LL', level: 'fan', label: 'Найкращий бомбардир сезону Ла Ліги', short: 'Бомбардир №1 сезону Ла Ліги', icon: '🎯' },
+  { id: 'TS_BL', level: 'fan', label: 'Найкращий бомбардир сезону Бундесліги', short: 'Бомбардир №1 сезону Бундесліги', icon: '🎯' },
+  { id: 'TS_L1', level: 'fan', label: 'Найкращий бомбардир сезону Ліги 1', short: 'Бомбардир №1 сезону Ліги 1', icon: '🎯' },
   // Golden Boy — нагорода кращому молодому (до 21) гравцю Європи; у статті головне фото — гравець, тому лише значок
   { id: 'GBOY', level: 'fan', label: 'Golden Boy', icon: '🌟' },
 ].map((c) => ({ ...c, type: 'award', colors: ['#d4af37', '#8a6d1d'] }));
