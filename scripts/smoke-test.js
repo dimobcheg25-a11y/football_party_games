@@ -58,11 +58,22 @@ async function main() {
   assert.ok(!('answers' in st.grid), 'відповіді не відправляються клієнтам');
   console.log('✓ гра почалась:', st.grid.rows.map((r) => r.label).join(', '), '×', st.grid.cols.map((c) => c.label).join(', '));
 
+  // чат: повідомлення доходить до іншого гравця; порожні й надто часті — відхиляються
+  const got = new Promise((res) => b.once('chat', res));
+  assert.ok((await emit(a, 'chat', '  Привіт, <b>удачі</b>!  ')).ok);
+  const msg = await got;
+  assert.strictEqual(msg.text, 'Привіт, <b>удачі</b>!');
+  assert.strictEqual(msg.seat, 0);
+  assert.ok((await emit(a, 'chat', 'ще одне')).error, 'надто часто — відхилено');
+  assert.ok((await emit(b, 'chat', '   ')).error, 'порожнє — відхилено');
+  console.log('✓ чат працює');
+
   // хід не в свою чергу
   assert.ok((await emit(b, 'move', { cell: 0, playerId: answerFor(st, 0).id })).error, 'чужий хід відхилено');
 
   // правильний хід А в клітинку 0
   const p0 = answerFor(st, 0);
+  const countsBefore = st.grid.answerCounts;
   let wait = nextState(b, (s) => s.cells[0]);
   const r1 = await emit(a, 'move', { cell: 0, playerId: p0.id });
   assert.ok(r1.correct, 'правильна відповідь');
@@ -70,6 +81,13 @@ async function main() {
   assert.strictEqual(st.turn, 1);
   assert.ok('photo' in st.cells[0].player, 'клітинка містить поле фото');
   console.log('✓ А поставив', st.cells[0].player.uk);
+  // лічильник варіантів: поставлений гравець більше не рахується ні в цій, ні в інших клітинках, де він підходив
+  st.grid.answerCounts.forEach((n, i) => {
+    const r = st.grid.rows[Math.floor(i / 3)].id, c = st.grid.cols[i % 3].id;
+    const had = matches(players.find((x) => x.id === p0.id), r) && matches(players.find((x) => x.id === p0.id), c);
+    assert.strictEqual(n, countsBefore[i] - (had ? 1 : 0), `клітинка ${i}: лічильник оновився`);
+  });
+  console.log('✓ лічильники варіантів зменшились там, де підходив', st.cells[0].player.uk);
 
   // Б пробує того ж гравця в іншу клітинку — заборонено, хід не втрачається
   const r2 = await emit(b, 'move', { cell: 4, playerId: p0.id });
@@ -170,8 +188,13 @@ async function main() {
   assert.strictEqual(sd.seats[1].name, 'Іра');
   console.log('✓ новий суперник зайшов, гра почалась');
 
-  // Іра зникла → Вова забирає перемогу (у тесті поріг 1.5 с)
+  // Іра зникла → Вова забирає перемогу (у тесті поріг 1.5 с), але лише коли Іра заважає грі — зараз її хід
   assert.ok((await emit(c, 'claimWin')).error, 'поки суперник онлайн — не можна');
+  if (sd.turn === 0) {
+    w = nextState(c, (s) => s.turn === 1);
+    await emit(c, 'skip');
+    sd = await w;
+  }
   f.disconnect();
   await new Promise((r) => setTimeout(r, 1800));
   w = nextState(c, (s) => s.status === 'finished');

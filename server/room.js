@@ -4,7 +4,8 @@ const { BOARDS, segments } = require('./boards');
 
 const ALLOWED_TIMERS = [0, 15, 20, 30, 45, 60]; // 0 — без обмеження
 const MODES = ['easy', 'normal', 'hard'];
-const CLAIM_WIN_AFTER_MS = Number(process.env.CLAIM_WIN_MS) || 30 * 1000; // гравець офлайн стільки — можна виключити
+const CLAIM_WIN_AFTER_MS = Number(process.env.CLAIM_WIN_MS) || 2 * 60 * 1000; // гравець офлайн стільки — можна виключити
+const MISSED_TURNS_TO_KICK = 2; // …але лише якщо зараз його хід або він уже пропустив стільки ходів поспіль
 
 function publicCategory(id) {
   const c = categoryById.get(id);
@@ -33,6 +34,8 @@ class Room {
     this.notice = null; // { type: 'left', name } — показуємо тим, хто лишився
     this.lastActivity = Date.now();
     this.eventSeq = 0; // номер події — клієнт по ньому розуміє, що подія нова
+    this.chat = []; // останні повідомлення чату (живуть, поки існує кімната)
+    this.chatSeq = 0;
     this.resetGameState();
   }
 
@@ -43,6 +46,7 @@ class Room {
     this.used = new Set();
     this.out = new Set(); // місця, що вибули з поточної партії (здався / виключений / вийшов)
     this.points = Array(this.capacity).fill(0); // очки в режимі «збір ліній»
+    this.missed = Array(this.capacity).fill(0); // пропущені поспіль ходи (час вийшов)
     this.scoredLines = []; // [{ seat, cells }] — зібрані лінії (для підсвічування)
     this.turn = 0;
     this.deadline = null;
@@ -164,6 +168,7 @@ class Room {
 
   onTimeout(moveNo) {
     if (this.status !== 'playing' || moveNo !== this.moveNo) return;
+    this.missed[this.turn]++;
     this.event({ type: 'timeout', seat: this.turn });
     this.passTurn();
   }
@@ -194,6 +199,7 @@ class Room {
 
     this.touch();
     this.drawVotes.clear();
+    this.missed[seat] = 0;
     const row = this.grid.rows[Math.floor(cell / n)];
     const col = this.grid.cols[cell % n];
     const correct = matches(player, row) && matches(player, col);
@@ -230,6 +236,7 @@ class Room {
   skip(seat) {
     if (this.status !== 'playing' || seat !== this.turn) return { error: 'Зараз не ваш хід' };
     this.touch();
+    this.missed[seat] = 0;
     this.event({ type: 'skip', seat });
     this.passTurn();
     return { ok: true };
@@ -279,14 +286,19 @@ class Room {
     return { ok: true };
   }
 
-  // Хтось надовго зник — решта може не чекати: він вибуває з партії.
+  // Чи можна виключити гравця, що зник: офлайн щонайменше 2 хв І заважає грі
+  // (зараз його хід або він уже пропустив кілька ходів поспіль). Поки ходять інші — його відсутність нікому не шкодить.
+  canKick(i) {
+    const s = this.seats[i];
+    if (!s || s.connected || Date.now() - s.offlineSince < CLAIM_WIN_AFTER_MS) return false;
+    return this.turn === i || this.missed[i] >= MISSED_TURNS_TO_KICK;
+  }
+
+  // Хтось надовго зник і заважає грі — решта може не чекати: він вибуває з партії.
   claimWin(seat) {
     if (this.status !== 'playing') return { error: 'Гра не йде' };
-    const absent = this.activeSeats().filter((i) => {
-      const s = this.seats[i];
-      return i !== seat && !s.connected && Date.now() - s.offlineSince >= CLAIM_WIN_AFTER_MS;
-    });
-    if (!absent.length) return { error: 'Усі ще в грі' };
+    const absent = this.activeSeats().filter((i) => i !== seat && this.canKick(i));
+    if (!absent.length) return { error: 'Поки нікого не можна виключити' };
     absent.forEach((i) => this.out.add(i));
     const active = this.activeSeats();
     if (active.length < 2) {
@@ -334,6 +346,17 @@ class Room {
     return { ok: true };
   }
 
+  // ── чат
+  addChat(seat, text) {
+    const clean = String(text || '').replace(/\s+/g, ' ').trim().slice(0, 200);
+    if (!clean) return null;
+    const msg = { id: ++this.chatSeq, seat, name: this.seats[seat]?.name || 'Гравець', text: clean, t: Date.now() };
+    this.chat.push(msg);
+    if (this.chat.length > 100) this.chat.shift();
+    this.touch();
+    return msg;
+  }
+
   // ── сервісне
   touch() {
     this.lastActivity = Date.now();
@@ -360,6 +383,8 @@ class Room {
       ),
       out: [...this.out],
       claimWinAfterMs: CLAIM_WIN_AFTER_MS,
+      missed: this.missed,
+      missedToKick: MISSED_TURNS_TO_KICK,
       scores: this.scores,
       points: this.points,
       scoredLines: this.scoredLines,
@@ -383,7 +408,8 @@ class Room {
         size: this.cfg.size,
         rows: this.grid.rows.map(publicCategory),
         cols: this.grid.cols.map(publicCategory),
-        answerCounts: this.grid.answerCounts,
+        // скільки гравців ще можна поставити в кожну клітинку: ті, хто вже на полі, не рахуються
+        answerCounts: cellCandidates(this.grid.rows, this.grid.cols, this.used).map((l) => l.length),
       };
     }
     return state;

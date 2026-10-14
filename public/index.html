@@ -132,6 +132,8 @@
       <div class="turn-time" id="turn-time"></div>
     </section>
 
+    <button type="button" id="last-move" class="last-move hidden" aria-live="polite"></button>
+
     <div class="players" id="players"></div>
 
     <div id="banner" class="banner hidden" role="status"></div>
@@ -210,6 +212,17 @@
         <button class="btn btn-ghost" data-action="view-board">Подивитися поле</button>
       </div>
     </div>
+  </div>
+
+  <!-- ── Чат -->
+  <button id="chat-btn" class="chat-fab hidden" aria-label="Чат" aria-expanded="false">💬<span id="chat-badge" class="chat-badge hidden"></span></button>
+  <div id="chat-panel" class="chat-panel hidden" role="dialog" aria-label="Чат кімнати">
+    <div class="chat-head"><b>Чат кімнати</b><button class="icon-btn" data-action="close-chat" aria-label="Закрити чат">✕</button></div>
+    <ul id="chat-list" class="chat-list"><li class="chat-empty">Тут поки тихо. Напиши першим 🙂</li></ul>
+    <form id="chat-form" class="chat-form" autocomplete="off">
+      <input id="chat-input" maxlength="200" placeholder="Напиши повідомлення…" aria-label="Повідомлення" />
+      <button class="btn btn-primary btn-sm" type="submit" aria-label="Надіслати">➤</button>
+    </form>
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>

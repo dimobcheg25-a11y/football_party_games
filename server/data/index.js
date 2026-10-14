@@ -14,7 +14,7 @@ try {
 } catch {
   // картинки категорій ще не скачані (npm run fetch-category-images) — будуть кольорові значки
 }
-for (const c of categories) c.img = categoryImages[c.id] || null;
+for (const c of categories) c.img = categoryImages[c.id] || (c.imageOf && categoryImages[c.imageOf]) || null;
 
 // Приводимо ім'я до вигляду для пошуку: нижній регістр, без діакритики, ё→е, ґ→г.
 function normalize(s) {

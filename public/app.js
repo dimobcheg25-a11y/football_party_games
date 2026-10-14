@@ -86,6 +86,8 @@
 
   function showScreen(name) {
     for (const id of ['home', 'lobby', 'game']) $(`#screen-${id}`).classList.toggle('hidden', id !== name);
+    $('#chat-btn').classList.toggle('hidden', name === 'home');
+    if (name === 'home') $('#chat-panel').classList.add('hidden');
   }
 
   function toast(text, kind = '', ms = 2600) {
@@ -251,6 +253,8 @@
   }
 
   function goHome() {
+    chatMessages = [];
+    setUnread(0);
     session.code = null;
     session.token = null;
     state = null;
@@ -334,9 +338,33 @@
     renderBoard();
     renderActions();
     renderEvent();
+    renderLastMove();
     renderBanner();
     renderResult();
     tick();
+  }
+
+  // «Останній хід»: хто, куди (рядок × стовпець), кого поставив і чи вийшло — тримається до наступного ходу
+  function renderLastMove() {
+    const el = $('#last-move');
+    const ev = state.lastEvent;
+    const n = state.grid.size;
+    if (!ev || !['hit', 'miss', 'timeout', 'skip'].includes(ev.type)) {
+      el.classList.add('hidden');
+      return;
+    }
+    const who = `<span class="lm-sym seat-${ev.seat}">${SYMBOLS[ev.seat]}</span> <b>${escapeHtml(seatName(ev.seat))}</b>`;
+    const where = Number.isInteger(ev.cell)
+      ? `<span class="lm-where">${escapeHtml(state.grid.rows[Math.floor(ev.cell / n)].label)} × ${escapeHtml(state.grid.cols[ev.cell % n].label)}</span>`
+      : '';
+    let what = '';
+    if (ev.type === 'hit') what = `поставив <b>${escapeHtml(ev.player.uk)}</b>${ev.gained ? ` · +${ev.gained} ${plural(ev.gained, 'очко', 'очки', 'очок')}` : ''}`;
+    if (ev.type === 'miss') what = `<b>${escapeHtml(ev.player.uk)}</b> — <span class="lm-bad">не «${ev.failed.map(escapeHtml).join('» і не «')}»</span>`;
+    if (ev.type === 'timeout') what = '<span class="lm-bad">не встиг — час вийшов</span>';
+    if (ev.type === 'skip') what = 'пропустив хід';
+    el.className = `last-move ${ev.type === 'hit' ? 'ok' : 'bad'}`;
+    el.dataset.cell = Number.isInteger(ev.cell) ? ev.cell : '';
+    el.innerHTML = `<span class="lm-label">Останній хід</span><span class="lm-text">${who}: ${what}</span>${where}`;
   }
 
   function renderLobby() {
@@ -428,10 +456,10 @@
   }
 
   function categoryHtml(cat) {
-    const typeLabel = { club: 'клуб', nation: 'збірна', award: 'трофей', stat: 'рекорд', position: 'позиція' }[cat.type];
+    const typeLabel = { club: 'клуб', nation: 'збірна', award: 'трофей', stat: 'рекорд', position: 'позиція', league: 'ліга', coach: 'тренер', academy: 'академія' }[cat.type];
     let crest;
     if (cat.img) {
-      crest = `<div class="crest img ${cat.type}"><img src="${escapeHtml(cat.img)}" alt="" loading="lazy"></div>`;
+      crest = `<div class="crest img ${cat.type}"><img src="${escapeHtml(cat.img)}" alt="" loading="lazy">${cat.type === 'academy' ? '<i class="crest-badge">🎓</i>' : ''}</div>`;
     } else {
       const [c1, c2] = cat.colors;
       const bg = cat.type === 'nation'
@@ -477,15 +505,16 @@
             scored.has(i) ? 'scored' : '',
             i === justCell ? 'just' : '',
           ].join(' ');
+          const isNew = i === justCell ? '<span class="new-tag">НОВЕ</span>' : '';
           html += `<div class="cell filled seat-${b.seat} ${cls}" data-cell="${i}" title="${escapeHtml(b.player.uk)}">
             ${playerVisual(b.player)}
-            <div class="seat-badge">${SYMBOLS[b.seat]}</div>
+            <div class="seat-badge">${SYMBOLS[b.seat]}</div>${isNew}
             <div class="pname-tag">${escapeHtml(b.player.uk)}</div>
           </div>`;
         } else {
+          // скільки гравців ще доступно для цієї клітинки (зменшується, коли підходящого поставили деінде)
           const cnt = grid.answerCounts[i];
-          // у складному режимі кількість варіантів не показуємо
-          const count = state.mode === 'hard' ? '' : `<span class="count">${cnt} ${plural(cnt, 'варіант', 'варіанти', 'варіантів')}</span>`;
+          const count = `<span class="count ${cnt <= 2 ? 'few' : ''}" title="Ще можна поставити: ${cnt}"><b>${cnt}</b><span class="w"> ${plural(cnt, 'варіант', 'варіанти', 'варіантів')}</span></span>`;
           html += `<button class="cell ${myTurn ? 'playable' : ''}" data-cell="${i}" ${myTurn ? '' : 'disabled'} aria-label="Клітинка ${r + 1}×${c + 1}">
             <span class="plus">+</span>${count}
           </button>`;
@@ -533,14 +562,24 @@
              <button class="btn btn-secondary" data-action="decline-draw">Відхилити</button>
            </span>`;
     } else if (playing && absent.length && amActive()) {
+      // виключити можна лише того, хто офлайн ≥ 2 хв і заважає грі: зараз його хід або пропустив кілька ходів поспіль
       const now = Date.now() + clockOffset;
-      const left = Math.ceil(Math.min(...absent.map((i) => state.claimWinAfterMs - (now - (state.seats[i].offlineSince || now)))) / 1000);
+      const waitLeft = (i) => state.claimWinAfterMs - (now - (state.seats[i].offlineSince || now));
+      const blocking = (i) => state.turn === i || state.missed[i] >= state.missedToKick;
+      const kickable = absent.filter((i) => waitLeft(i) <= 0 && blocking(i));
       const names = absent.map((i) => `<b>${escapeHtml(state.seats[i].name)}</b>`).join(', ');
-      const label = totalActive - absent.length <= 1 ? 'Забрати перемогу' : 'Виключити з партії';
-      html = left > 0
-        ? `<span>📡 ${names} ${absent.length > 1 ? 'втратили' : 'втратив'} з'єднання. Чекаємо… ${left} с</span>`
-        : `<span>📡 ${names} не ${absent.length > 1 ? 'повертаються' : 'повертається'}</span>
+      const verb = absent.length > 1 ? 'втратили' : 'втратив';
+      if (kickable.length) {
+        const label = totalActive - kickable.length <= 1 ? 'Забрати перемогу' : 'Виключити з партії';
+        html = `<span>📡 ${kickable.map((i) => `<b>${escapeHtml(state.seats[i].name)}</b>`).join(', ')} не повертається і заважає грі</span>
            <span class="banner-actions"><button class="btn btn-primary" data-action="claim-win">${label}</button></span>`;
+      } else if (absent.some(blocking)) {
+        const sec = Math.max(1, Math.ceil(Math.min(...absent.filter(blocking).map(waitLeft)) / 1000));
+        const t = sec >= 60 ? `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}` : `${sec} с`;
+        html = `<span>📡 ${names} ${verb} з'єднання. Чекаємо… ${t}</span>`;
+      } else {
+        html = `<span>📡 ${names} ${verb} з'єднання — граємо далі, чекаємо, поки повернеться</span>`;
+      }
     } else if (state.status === 'finished' && resultDismissed) {
       html = `<span>Гру завершено</span>
         <span class="banner-actions"><button class="btn btn-primary" data-action="show-result">Реванш / вихід</button></span>`;
@@ -560,7 +599,7 @@
     switch (ev.type) {
       case 'miss': {
         const why = ev.failed?.length ? ` — не «${ev.failed.join('» і не «')}»` : ' не підходить';
-        toast(`✗ ${who}: ${ev.player.uk}${why}`, 'bad', 4500);
+        toast(`✗ ${who}: ${ev.player.uk}${why}`, 'bad', 8000);
         Sound.play('miss');
         document.querySelector(`[data-cell="${ev.cell}"]`)?.classList.add('flash-miss');
         break;
@@ -685,6 +724,85 @@
     tick.lastSec = sec;
   }
   setInterval(tick, 250);
+
+  // ── чат
+  const chatPanel = $('#chat-panel');
+  const chatList = $('#chat-list');
+  const chatBtn = $('#chat-btn');
+  let unread = 0;
+  let chatMessages = [];
+  const chatOpen = () => !chatPanel.classList.contains('hidden');
+
+  function renderChat() {
+    if (!chatMessages.length) {
+      chatList.innerHTML = '<li class="chat-empty">Тут поки тихо. Напиши першим 🙂</li>';
+      return;
+    }
+    chatList.innerHTML = chatMessages
+      .map((m) => `<li class="seat-${m.seat} ${m.seat === mySeat ? 'mine' : ''}">
+        <span class="chat-who"><span class="lm-sym">${SYMBOLS[m.seat] || ''}</span> ${escapeHtml(m.seat === mySeat ? 'Ти' : m.name)}</span>
+        <span class="chat-text">${escapeHtml(m.text)}</span></li>`)
+      .join('');
+    chatList.scrollTop = chatList.scrollHeight;
+  }
+  function setUnread(n) {
+    unread = n;
+    $('#chat-badge').textContent = n > 9 ? '9+' : n;
+    $('#chat-badge').classList.toggle('hidden', !n);
+  }
+  function toggleChat(open) {
+    chatPanel.classList.toggle('hidden', !open);
+    chatBtn.setAttribute('aria-expanded', open);
+    if (open) {
+      setUnread(0);
+      renderChat();
+      $('#chat-input').focus();
+    }
+  }
+  chatBtn.addEventListener('click', () => toggleChat(!chatOpen()));
+  socket.on('chatHistory', (list) => {
+    chatMessages = list;
+    renderChat();
+  });
+  socket.on('chat', (m) => {
+    chatMessages.push(m);
+    if (chatMessages.length > 100) chatMessages.shift();
+    if (chatOpen()) {
+      renderChat();
+    } else if (m.seat !== mySeat) {
+      setUnread(unread + 1);
+      toast(`💬 ${m.name}: ${m.text.length > 60 ? m.text.slice(0, 60) + '…' : m.text}`, '', 4000);
+      Sound.play('pop');
+    }
+  });
+  $('#chat-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const input = $('#chat-input');
+    const text = input.value.trim();
+    if (!text) return;
+    socket.emit('chat', text, (res) => {
+      if (res?.error) toast(res.error, 'bad');
+      else input.value = '';
+    });
+  });
+
+  // ── «Останній хід» → підсвітити клітинку
+  const lastMoveEl = $('#last-move');
+  const spot = (on) => {
+    const cell = lastMoveEl.dataset.cell;
+    if (cell === '') return;
+    document.querySelector(`#board [data-cell="${cell}"]`)?.classList.toggle('spot', on);
+  };
+  lastMoveEl.addEventListener('mouseenter', () => spot(true));
+  lastMoveEl.addEventListener('mouseleave', () => spot(false));
+  lastMoveEl.addEventListener('click', () => {
+    const cell = lastMoveEl.dataset.cell;
+    if (cell === '') return;
+    const el = document.querySelector(`#board [data-cell="${cell}"]`);
+    el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    spot(true);
+    setTimeout(() => spot(false), 1600);
+  });
 
   // ── реакції
   $('#reactions').addEventListener('click', (e) => {
@@ -816,6 +934,7 @@
     switch (action) {
       case 'close-picker': closePicker(); break;
       case 'close-rules': $('#rules-modal').classList.add('hidden'); break;
+      case 'close-chat': toggleChat(false); break;
       case 'rules': if (state) openRules(roomCfg()); break;
       case 'confirm-yes': closeConfirm(true); break;
       case 'confirm-no': closeConfirm(false); break;

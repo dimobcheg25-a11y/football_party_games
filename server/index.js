@@ -59,6 +59,7 @@ io.on('connection', (socket) => {
     socket.data = { code: room.code, token, seat: res.seat };
     cb?.({ ok: true, code: room.code, token, seat: res.seat });
     socket.emit('state', { ...room.publicState(), you: res.seat });
+    socket.emit('chatHistory', room.chat);
   }
 
   socket.on('create', ({ name, turnSeconds, mode, board, players } = {}, cb) => {
@@ -106,6 +107,21 @@ io.on('connection', (socket) => {
       }
     }
     socket.data = {};
+    cb?.({ ok: true });
+  });
+
+  // Чат кімнати: до 200 символів, не частіше ніж раз на 0,7 с.
+  let lastChat = 0;
+  socket.on('chat', (text, cb) => {
+    const room = currentRoom();
+    if (!room) return cb?.({ error: 'Ви не в кімнаті' });
+    const seat = room.seatOf(socket.data.token);
+    if (seat === -1) return cb?.({ error: 'Ви не гравець цієї кімнати' });
+    if (Date.now() - lastChat < 700) return cb?.({ error: 'Не так швидко 🙂' });
+    const msg = room.addChat(seat, text);
+    if (!msg) return cb?.({ error: 'Порожнє повідомлення' });
+    lastChat = Date.now();
+    io.to(room.code).emit('chat', msg);
     cb?.({ ok: true });
   });
 

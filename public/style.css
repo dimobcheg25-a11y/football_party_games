@@ -335,7 +335,7 @@ input::placeholder { color: #6b8577; }
 .plus { font-size: calc(var(--cell) * 0.24); color: var(--tc); opacity: .5; transition: opacity .15s; line-height: 1; }
 .board.waiting .plus { color: var(--muted); opacity: .25; }
 .cell .count { position: absolute; bottom: 5px; left: 0; right: 0; text-align: center; font-size: 11px; color: var(--muted); }
-.board.big .cell .count { display: none; }
+
 
 .cell.filled { cursor: default; border: 2px solid var(--pc); box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--pc) 20%, transparent); animation: pop .35s cubic-bezier(.2, 1.4, .4, 1); }
 .cell .photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 20%; }
@@ -358,7 +358,7 @@ input::placeholder { color: #6b8577; }
 .cell.win { animation: winpulse 1.2s ease-in-out infinite; z-index: 1; }
 .cell.scored { box-shadow: inset 0 0 0 3px var(--pc), 0 0 14px color-mix(in srgb, var(--pc) 50%, transparent); }
 .cell.flash-miss { animation: shake .4s; border-color: var(--danger); }
-.cell.just { outline: 3px solid #fff; outline-offset: -3px; }
+
 
 @keyframes pop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 @keyframes winpulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); box-shadow: 0 0 30px color-mix(in srgb, var(--pc) 70%, transparent); } }
@@ -465,7 +465,6 @@ input::placeholder { color: #6b8577; }
   .cat { border-radius: 8px; gap: 3px; padding: 2px; }
   .cat-type { display: none; }
   .cell { border-radius: 8px; }
-  .cell .count { display: none; }
   .board.big .cell .pname-tag { display: none; }
   .board.big .cell .seat-badge { width: 14px; height: 14px; font-size: 8px; top: 2px; right: 2px; }
   .board-wrap { padding: 6px; border-radius: 14px; }
@@ -494,4 +493,90 @@ input::placeholder { color: #6b8577; }
   .board.big .cat-nation .crest.img { height: auto; }
   .board.big .cat-label { font-size: 8px; -webkit-line-clamp: 3; overflow-wrap: normal; word-break: normal; hyphens: auto; }
   .board.big .crest.img.award { height: calc(var(--cell) * 0.4); }
+}
+
+/* ── нові типи категорій */
+.crest.img.coach { width: auto; aspect-ratio: 1; }
+.crest.img.coach img { width: 100%; height: 100%; object-fit: cover; object-position: center 20%; border-radius: 50%; border: 2px solid #c9a227; }
+.crest.img.league img { filter: drop-shadow(0 0 1px rgba(255,255,255,0.9)) drop-shadow(0 3px 8px rgba(0,0,0,0.45)); }
+.crest.img.league { background: radial-gradient(circle, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.08) 55%, transparent 72%) !important; }
+.crest.img.academy { position: relative; }
+.crest-badge {
+  position: absolute; right: -4px; bottom: -4px; font-style: normal; font-size: calc(var(--cell) * 0.13);
+  background: var(--surface-solid); border: 1px solid var(--line-strong); border-radius: 50%; padding: 1px 2px; line-height: 1;
+}
+.cat-league .cat-label { color: #cfe3ff; }
+.cat-coach .cat-label { color: #f3dd8f; }
+.cat-academy .cat-label { color: #b8f5c9; }
+
+.cell .count.few { color: var(--gold); font-weight: 700; }
+
+/* ── «Останній хід» і щойно зайнята клітинка */
+.last-move {
+  font: inherit; color: var(--text); text-align: left; cursor: pointer; width: 100%;
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin-top: 10px;
+  padding: 9px 14px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line);
+  border-left: 4px solid var(--accent); animation: rise .2s ease-out;
+}
+.last-move.bad { border-left-color: var(--danger); }
+.last-move:hover { border-color: var(--line-strong); }
+.lm-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.lm-text { font-size: 14px; }
+.lm-sym { font-weight: 800; color: var(--pc); }
+.lm-bad { color: var(--danger); font-weight: 700; }
+.lm-where { font-size: 12px; color: var(--muted); margin-left: auto; }
+
+.cell.just { z-index: 2; outline: 3px solid var(--pc); outline-offset: 2px; animation: pop .35s cubic-bezier(.2, 1.4, .4, 1), justpulse 1s ease-in-out .35s 3; }
+@keyframes justpulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--pc) 0%, transparent); }
+  50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--pc) 55%, transparent), 0 0 28px color-mix(in srgb, var(--pc) 70%, transparent); }
+}
+.new-tag {
+  position: absolute; top: 4px; left: 4px; z-index: 1; padding: 1px 5px; border-radius: 5px;
+  font-size: clamp(8px, calc(var(--cell) * 0.08), 11px); font-weight: 800; letter-spacing: .04em;
+  background: var(--pc); color: #0b1510; box-shadow: 0 2px 6px rgba(0,0,0,.5);
+}
+.cell.spot { outline: 3px solid #fff; outline-offset: 2px; transform: scale(1.06); z-index: 3; }
+@media (max-width: 560px) {
+  .lm-where { margin-left: 0; width: 100%; }
+  .board.big .new-tag { font-size: 7px; padding: 0 3px; top: 2px; left: 2px; }
+}
+
+/* ── чат */
+.chat-fab {
+  position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 44;
+  width: 54px; height: 54px; border-radius: 50%; font-size: 24px; cursor: pointer;
+  background: var(--surface-solid); border: 1px solid var(--line-strong); box-shadow: 0 10px 28px rgba(0,0,0,0.5);
+  transition: transform .1s, border-color .15s;
+}
+.chat-fab:hover { border-color: var(--accent); }
+.chat-fab:active { transform: scale(0.93); }
+.chat-badge {
+  position: absolute; top: -4px; right: -4px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px;
+  background: var(--danger); color: #fff; font-size: 11px; font-weight: 800; display: grid; place-items: center;
+}
+.chat-panel {
+  position: fixed; right: 16px; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); z-index: 44;
+  width: min(360px, calc(100vw - 32px)); height: min(460px, 60vh);
+  display: grid; grid-template-rows: auto 1fr auto; background: var(--surface-solid);
+  border: 1px solid var(--line-strong); border-radius: 18px; box-shadow: 0 24px 60px rgba(0,0,0,0.6); animation: rise .18s ease-out;
+}
+.chat-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.chat-list { list-style: none; margin: 0; padding: 10px 12px; overflow-y: auto; display: grid; align-content: start; gap: 8px; }
+.chat-list li { display: grid; gap: 1px; max-width: 85%; padding: 7px 11px; border-radius: 12px; background: rgba(255,255,255,0.06); border-left: 3px solid var(--pc); overflow-wrap: anywhere; }
+.chat-list li.mine { justify-self: end; background: color-mix(in srgb, var(--pc) 16%, var(--surface-solid)); }
+.chat-list li.chat-empty { max-width: none; border: 0; background: none; color: var(--muted); text-align: center; justify-self: center; }
+.chat-who { font-size: 11px; font-weight: 800; color: var(--muted); }
+.chat-text { font-size: 14px; }
+.chat-form { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--line); }
+.chat-form input { padding: 9px 12px; font-size: 15px; }
+
+/* лічильник варіантів: на великих полях і телефоні — лише число в кутку */
+.cell .count b { font-weight: 800; }
+.board.big .cell .count, .cell .count.compact { left: auto; right: 4px; bottom: 3px; font-size: 10px; }
+.board.big .cell .count .w { display: none; }
+@media (max-width: 560px) {
+  .cell .count { left: auto; right: 4px; bottom: 2px; font-size: 10px; }
+  .cell .count .w { display: none; }
+  .board.big .cell .count { font-size: 8px; right: 2px; bottom: 1px; }
 }
