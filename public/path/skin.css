@@ -1,0 +1,160 @@
+/* «Шлях футболіста» — оформлення гри: схема метро кар'єри. Єдина світла гра сайту.
+   Клуби — станції на червоній лінії (герб у колі станції), платний перехід — «пересадка» з ціною,
+   оренда — пунктир, ще не відкриті клуби — сірий пунктир до «примарної» станції. Очки — жовтий квиток.
+   Підключається лише в /path/index.html, бо /path/style.css — база й для інших ігор. */
+:root {
+  --bg: #e9ecf0; --bg-2: #f6f7f9;
+  --surface: rgba(255, 255, 255, 0.94); --surface-solid: #ffffff; --surface-2: #e2e6ec;
+  --line: rgba(20, 24, 31, 0.12); --line-strong: rgba(20, 24, 31, 0.24);
+  --text: #14181f; --muted: #5b6470;
+  --accent: #d8271c; --accent-ink: #ffffff;
+  --gold: #a86f00; --danger: #c3261d;
+  --radius: 10px;
+  --display: 'Oswald', 'Arial Narrow', 'Manrope', sans-serif;
+  --metro: #d8271c;      /* колір лінії */
+  --metro-ink: #14181f;  /* пересадки, квиток */
+  --ticket: #ffd200;
+  --wash: rgba(20, 24, 31, 0.05); /* замість rgba(255,255,255,…) у спільних стилях — на світлому */
+  color-scheme: light;
+}
+
+/* фон — папір транспортної схеми з ледь помітною сіткою кварталів */
+.pitch-bg {
+  background:
+    linear-gradient(rgba(20, 24, 31, 0.035) 1px, transparent 1px) 0 0 / 48px 48px,
+    linear-gradient(90deg, rgba(20, 24, 31, 0.035) 1px, transparent 1px) 0 0 / 48px 48px,
+    linear-gradient(180deg, var(--bg-2), var(--bg));
+}
+
+/* ── спільні компоненти на світлому (у ui.css вони під темний фон) */
+.card { box-shadow: 0 10px 30px rgba(20, 24, 31, 0.08); backdrop-filter: none; }
+input { background: #fff; }
+input::placeholder { color: #9aa1ab; }
+.btn-primary { background: var(--metro-ink); color: #fff; }
+.btn-secondary { background: #fff; }
+.btn-secondary:hover:not(:disabled) { background: var(--wash); }
+.chip { background: #fff; }
+.segmented { background: var(--wash); }
+.picker-title .tag, .standings li, .chat-list li, .opt-chips span, .lobby-players li,
+.facts span, .round-results li, .guess-feed li, .reactions button, .history li { background: var(--wash); }
+.chat-list li.mine { background: color-mix(in srgb, var(--pc) 14%, #fff); }
+.toast { background: var(--metro-ink); color: #fff; }
+.overlay-backdrop { background: rgba(20, 24, 31, 0.45); }
+.answer-box .suggestions, .popover, .chat-panel, .chat-fab, .sheet { box-shadow: 0 16px 40px rgba(20, 24, 31, 0.18); }
+.st-icon.crest, .cell .item img { background: #fff; }
+.room-code { color: var(--metro); }
+
+/* ── логотип: назва як табличка станції, під нею — лінія з трьома станціями */
+.metro-logo span { font-weight: 700; text-transform: uppercase; letter-spacing: 0.01em; }
+.metro-logo small { font-family: var(--display); color: var(--metro); font-weight: 600; }
+.metro-logo b {
+  display: inline-grid; place-items: center; width: 1.05em; height: 1.05em; margin-left: 0.06em; padding: 0;
+  border-radius: 50%; background: var(--metro); color: #fff; transform: none; font-size: 0.8em; vertical-align: 0.08em;
+}
+.metro-logo::after {
+  content: ""; width: 100%; height: 0.24em; margin-top: 0.06em;
+  background:
+    radial-gradient(circle, #fff 0 0.05em, var(--metro-ink) 0.05em 0.1em, transparent 0.1em) 0 50% / 33.3% 100% repeat-x,
+    linear-gradient(var(--metro), var(--metro)) 0 50% / 100% 0.09em no-repeat;
+}
+
+/* ── верх гри: смужка кар'єри — та сама лінія, відкриті станції червоні */
+.round-info b { text-transform: uppercase; letter-spacing: 0.02em; }
+.career-bar { gap: 0; align-items: center; height: 14px; }
+.career-bar span { height: 6px; border-radius: 0; background: var(--surface-2); position: relative; }
+.career-bar span.open, .career-bar span.now { background: var(--metro); box-shadow: none; }
+.career-bar span::after {
+  content: ""; position: absolute; right: -4px; top: 50%; width: 8px; height: 8px; margin-top: -4px; z-index: 1;
+  border-radius: 50%; background: #fff; border: 2px solid var(--surface-2); box-sizing: border-box;
+}
+.career-bar span.open::after { border-color: var(--metro); }
+.career-bar span.now::after { width: 12px; height: 12px; margin-top: -6px; right: -6px; border: 3px solid var(--metro-ink); }
+.timer { color: var(--metro-ink); }
+
+/* ── схема: станції вертикально, лінія через центри кружків */
+.path { gap: 0; --x: 76px; } /* x центру станції: 14 відступ + 26 номер + 12 проміжок + 24 пів кружка */
+.stage {
+  position: relative; background: transparent; border: 1px solid transparent; border-radius: 12px;
+  padding-block: 8px; animation: none;
+}
+.stage::before {
+  content: ""; position: absolute; left: calc(var(--x) - 4px); top: 0; bottom: 0; width: 8px; background: var(--metro);
+}
+.stage:first-child::before { top: 50%; }
+.stage:last-child::before { bottom: 50%; }
+.stage:only-child::before { display: none; }
+.stage.on-loan::before { background: repeating-linear-gradient(180deg, var(--metro) 0 8px, transparent 8px 13px); }
+
+.st-num { font-size: 15px; font-weight: 600; }
+.st-icon {
+  position: relative; z-index: 1; border-radius: 50%; background: #fff; border: 5px solid var(--metro);
+  box-shadow: 0 0 0 3px var(--bg-2);
+}
+.st-icon.crest { background: #fff; border-color: var(--metro); }
+.st-icon img { width: 28px; height: 28px; }
+.st-icon span { font-family: var(--display); font-size: 14px; color: var(--metro-ink); }
+.stage.transfer .st-icon { border-color: var(--metro-ink); } /* пересадка — чорне кільце, як на схемах */
+.st-body b { font-family: var(--display); font-weight: 600; font-size: 19px; text-transform: uppercase; letter-spacing: 0.01em; line-height: 1.15; }
+.st-body .fee {
+  display: inline-block; color: #fff; background: var(--metro-ink); font-family: var(--display); font-weight: 500;
+  padding: 0 6px; border-radius: 3px; letter-spacing: 0.02em;
+}
+.st-body .fee::before { content: "⇄ "; }
+.st-body .loan { color: var(--gold); }
+.st-stats { color: var(--metro); font-family: var(--display); font-weight: 500; font-size: 14px; letter-spacing: 0.02em; }
+
+/* поточна станція: «ви тут» — підсвічений рядок, лінія доростає згори, кільце пульсує */
+.stage.current { background: var(--surface-solid); border-color: var(--line); box-shadow: 0 6px 18px rgba(20, 24, 31, 0.08); }
+.stage.current::before { transform-origin: top; animation: metro-grow 0.7s ease-out both; }
+.stage.current .st-icon { animation: metro-arrive 0.45s 0.55s ease-out both; }
+.stage.current .st-icon::after {
+  content: ""; position: absolute; inset: -10px; border-radius: 50%; border: 2px solid var(--metro);
+  animation: metro-ping 1.8s 1s ease-out infinite; pointer-events: none;
+}
+@keyframes metro-grow { from { transform: scaleY(0); } }
+@keyframes metro-arrive { from { transform: scale(0.4); opacity: 0; } }
+@keyframes metro-ping { from { transform: scale(0.85); opacity: 0.8; } to { transform: scale(1.35); opacity: 0; } }
+
+/* ще не відкриті — сірий пунктир до «примарної» станції */
+.stage.locked { opacity: 1; border: 0; grid-template-columns: 26px 48px 1fr; }
+.stage.locked::before { background: repeating-linear-gradient(180deg, var(--line-strong) 0 6px, transparent 6px 12px); top: 0; bottom: 50%; }
+.st-icon.ghost { background: var(--bg-2); border: 4px dashed var(--line-strong); box-shadow: none; }
+.stage.locked b { font-family: var(--display); text-transform: uppercase; font-weight: 500; }
+
+/* ── очки — жовтий квиток з відривною лінією */
+.earn {
+  justify-self: start; background: var(--ticket); color: var(--metro-ink); padding: 8px 14px 8px 16px;
+  border-left: 3px dashed var(--metro-ink); border-radius: 2px 6px 6px 2px; transform: rotate(-0.8deg);
+  box-shadow: 0 3px 8px rgba(20, 24, 31, 0.12);
+}
+.earn b { color: var(--metro-ink); font-size: 22px; }
+.earn small, .earn .next { color: rgba(20, 24, 31, 0.7); }
+.hint-btn { background: #fff; }
+.my-hints li { background: color-mix(in srgb, var(--ticket) 22%, #fff); }
+
+/* ── відповідь: фото — у великому кружку-станції. Фото гравців тут більші (~1,5×), ніж у базовому стилі */
+.answer-card { background: var(--surface-solid); border: 2px solid var(--metro); }
+.answer-card h2 { text-transform: uppercase; font-size: 28px; }
+.answer-photo { width: 126px; height: 126px; border: 5px solid var(--metro); background: var(--surface-2); }
+.answer-box .suggestions .s-avatar { width: 64px; height: 64px; }
+.answer-box .suggestions li { gap: 12px; }
+
+/* ── підсумок */
+.final h2 { text-transform: uppercase; }
+.history .val { color: var(--metro); }
+
+@media (max-width: 560px) {
+  .path { --x: 60px; } /* 10 + 20 + 10 + 20 */
+  .stage.locked { grid-template-columns: 20px 40px 1fr; }
+  .st-icon { border-width: 4px; }
+  .st-icon img { width: 24px; height: 24px; }
+  .st-body b { font-size: 16px; }
+  .answer-card { gap: 12px; padding: 12px; }
+  .answer-photo { width: 96px; height: 96px; border-width: 4px; }
+  .answer-card h2 { font-size: 22px; }
+  .answer-box .suggestions .s-avatar { width: 54px; height: 54px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage.current::before, .stage.current .st-icon, .stage.current .st-icon::after { animation: none; }
+}

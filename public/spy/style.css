@@ -1,36 +1,113 @@
 /* Футбольний шпигун. Лобі, таблиця, підсумок — з /path/style.css; тут — картка ролі, етапи матчу, підказки. */
 
+/* ── Оформлення гри: досьє розвідки. Темний стіл, картонні теки «справ» (картка ролі й етап матчу),
+   друкарська машинка (PT Mono) у заголовках і підказках, червона печатка (Rubik Mono One). Свої токени поверх /shared/theme.css. */
+:root {
+  --bg: #17130f; --bg-2: #2a231c;
+  --surface: rgba(38, 32, 26, 0.92); --surface-solid: #2b241d; --surface-2: #3a3027;
+  --line: rgba(240, 220, 180, 0.12); --line-strong: rgba(240, 220, 180, 0.24);
+  --text: #f1e9da; --muted: #b3a690;
+  --accent: #d2352b; --accent-ink: #fff6ef;
+  --radius: 6px;
+  --display: 'PT Mono', 'Courier New', ui-monospace, monospace;
+  --stamp-font: 'Rubik Mono One', 'Arial Black', sans-serif;
+  /* тека */
+  --folder: #d9b979; --folder-2: #c49d58; --ink: #1f1a14; --ink-muted: #5d4d36; --redact: #121010;
+}
+.pitch-bg {
+  background:
+    radial-gradient(ellipse 60% 45% at 50% 0%, rgba(255, 214, 150, 0.13), transparent 70%), /* лампа над столом */
+    repeating-linear-gradient(93deg, transparent 0 22px, rgba(0, 0, 0, 0.06) 22px 24px, transparent 24px 61px), /* дерево */
+    linear-gradient(180deg, var(--bg-2), var(--bg));
+}
+input::placeholder { color: var(--muted); }
+
+/* логотип: «У» закреслено смугою цензури, «Н» — печатка */
+.dossier-logo { font-family: var(--stamp-font); font-weight: 400; }
+.dossier-logo small { font-family: var(--display); letter-spacing: .45em; }
+.dossier-logo .bar { font-style: normal; background: var(--redact); color: transparent; border-radius: 2px; margin: 0 .03em; box-shadow: 0 0 0 1px rgba(255,255,255,.1); }
+.dossier-logo b { background: transparent; color: var(--accent); border: .07em solid var(--accent); border-radius: .08em; padding: 0 .08em; transform: rotate(-8deg); }
+
+/* теки: картонна поверхня з власними «чорнильними» токенами — кнопки, поля й текст усередині беруть їх */
+.role-card.open, .stage-box {
+  --text: var(--ink); --muted: var(--ink-muted);
+  --line: rgba(60, 40, 10, 0.2); --line-strong: rgba(60, 40, 10, 0.34);
+  --surface-solid: #efdcae; --surface-2: #c49d58;
+  color: var(--ink);
+  background-color: var(--folder);
+  background-image: repeating-linear-gradient(0deg, rgba(0,0,0,0.025) 0 1px, transparent 1px 4px),
+    radial-gradient(ellipse at 20% 0%, rgba(255,255,255,0.25), transparent 60%);
+  border: 0; border-radius: 4px 14px 6px 6px;
+  box-shadow: 0 14px 34px rgba(0,0,0,0.5), inset 0 -3px 0 var(--folder-2);
+}
+.stage-box input { background: rgba(255, 252, 240, 0.65); color: var(--ink); }
+.stage-box .btn-secondary, .stage-box .vote-btn, .stage-box .vote-results li { background: rgba(255, 250, 235, 0.35); }
+.stage-box .btn-secondary:hover:not(:disabled) { background: rgba(255, 250, 235, 0.6); }
+.stage-box .btn-ghost { color: var(--ink-muted); }
+.stage-box .btn-ghost:hover:not(:disabled) { color: var(--ink); }
+.stage-box .pc { filter: brightness(0.62) saturate(1.3); } /* кольори гравців — темніші, щоб читалися на картоні */
+.stage-box p { font-family: var(--display); }
+
 .spy-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .pc { color: var(--pc); }
-.notice { margin: 0; padding: 10px 14px; border-radius: 12px; font-weight: 700; background: rgba(255,107,107,0.1); border: 1px solid rgba(255,107,107,0.4); }
+.notice { margin: 0; padding: 10px 14px; border-radius: 4px; font-family: var(--display); font-weight: 700; background: rgba(255,107,107,0.1); border: 1px solid rgba(255,107,107,0.4); }
 
-/* картка ролі: закрита — «сорочка», відкрита — футболіст або шпигун */
+/* картка ролі — тека «справи»: закрита — картон зі зворотного боку, відкрита — футболіст на скріпці або смуга цензури */
 .role-card {
-  display: flex; align-items: center; gap: 16px; width: 100%; padding: 16px; text-align: left; cursor: pointer;
-  font: inherit; color: var(--text); border-radius: var(--radius);
-  background: repeating-linear-gradient(135deg, rgba(255,255,255,0.04) 0 10px, rgba(255,255,255,0.07) 10px 20px);
-  border: 1px dashed var(--line-strong); transition: transform .15s;
+  position: relative; display: flex; align-items: center; gap: 18px; width: 100%; padding: 26px 18px 18px; margin-top: 16px;
+  text-align: left; cursor: pointer; font: inherit; color: var(--folder);
+  border-radius: 4px 14px 6px 6px; background: #3b2f22;
+  background-image: repeating-linear-gradient(135deg, rgba(0,0,0,0.10) 0 10px, transparent 10px 20px);
+  border: 1px solid rgba(217, 185, 121, 0.35); box-shadow: 0 14px 34px rgba(0,0,0,0.5); transition: transform .15s;
 }
-.role-card:hover { border-color: var(--accent); }
+.role-card:hover { border-color: var(--folder); }
 .role-card:active { transform: scale(0.99); }
-.role-card.open { background: rgba(182,243,106,0.08); border: 1px solid rgba(182,243,106,0.45); animation: rise .25s ease-out; }
-.role-card.open.spy { background: rgba(255,107,139,0.1); border-color: rgba(255,107,139,0.5); }
-.rc-closed, .rc-icon { font-size: 44px; line-height: 1; width: 84px; text-align: center; flex: none; }
-.rc-text { display: grid; gap: 2px; min-width: 0; }
-.rc-text b { font-family: var(--display); font-size: 22px; overflow-wrap: anywhere; }
-.rc-text small { color: var(--muted); }
-.role-card .answer-photo { width: 84px; height: 84px; }
+.role-card.open { animation: rise .25s ease-out; }
+.case-tab {
+  position: absolute; left: 0; top: -17px; padding: 3px 14px 2px; border-radius: 6px 6px 0 0;
+  font: 13px/1.2 var(--display); letter-spacing: .06em; color: var(--ink); background: var(--folder);
+}
+.role-card:not(.open) .case-tab { background: #3b2f22; color: var(--folder); border: 1px solid rgba(217, 185, 121, 0.35); border-bottom: 0; }
+.rc-closed, .rc-icon { font-size: 54px; line-height: 1; width: 126px; text-align: center; flex: none; }
+.rc-text { display: grid; gap: 3px; min-width: 0; padding-right: 96px; }
+.rc-text b { font-family: var(--stamp-font); font-weight: 400; font-size: 22px; line-height: 1.15; overflow-wrap: anywhere; }
+.rc-text small { color: var(--muted); font-family: var(--display); }
+.role-card:not(.open) .rc-text { padding-right: 0; }
+.role-card:not(.open) .rc-text small { color: #b9a57f; }
+.rc-text b.redacted { color: transparent; background: var(--redact); border-radius: 2px; width: fit-content; max-width: 100%; overflow: hidden; white-space: nowrap; user-select: none; }
+
+/* фото «на скріпці» — кольорове, з білою рамкою, як знімок у справі */
+.clipped { position: relative; flex: none; transform: rotate(-3deg); }
+.role-card .answer-photo, .stage-box .answer-photo {
+  width: 126px; height: 126px; border-radius: 2px; border: 6px solid #fbf7ee; background: #e9e1cf;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.35); color: var(--ink);
+}
+.clip {
+  position: absolute; left: 22px; top: -14px; width: 16px; height: 46px; border-radius: 8px;
+  border: 3px solid #a3a9ae; border-bottom-color: transparent; box-shadow: 1px 1px 0 rgba(0,0,0,0.25);
+}
+
+/* печатка: гупає, коли відкривається роль */
+.stamp {
+  position: absolute; right: 14px; top: 16px; padding: 6px 9px; border: 3px solid var(--accent); border-radius: 4px;
+  font: 13px/1.05 var(--stamp-font); color: var(--accent); text-align: center; letter-spacing: .02em;
+  transform: rotate(-12deg); opacity: .88; mix-blend-mode: multiply; pointer-events: none;
+  animation: stamp-in .45s cubic-bezier(.3, 1.6, .5, 1) .15s both;
+}
+@keyframes stamp-in { from { transform: rotate(-12deg) scale(2.6); opacity: 0; } }
 
 /* етап матчу */
-.stage-box { display: grid; gap: 12px; padding: 16px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line); animation: rise .25s ease-out; }
+.stage-box { display: grid; gap: 12px; padding: 18px; animation: rise .25s ease-out; }
 .stage-box p { margin: 0; }
-.stage-box.my-turn { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.stage-box.my-turn { box-shadow: 0 14px 34px rgba(0,0,0,0.5), inset 0 0 0 2px var(--accent); }
+.stage-box .answer-card { background: rgba(255, 250, 235, 0.35); border: 1px dashed var(--line-strong); gap: 20px; }
+.stage-box .answer-card h2 { font-family: var(--stamp-font); font-weight: 400; font-size: 22px; }
 .stage-box .row { display: flex; flex-wrap: wrap; gap: 8px; }
 .stage-box > .btn-ghost { justify-self: start; }
 .verdict { font-size: 16px; }
 
 .turn-order { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
-.turn-order li { display: flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 99px; font-size: 13px; font-weight: 700; background: rgba(255,255,255,0.05); border: 1px solid var(--line); }
+.turn-order li { display: flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 3px; font-size: 13px; font-weight: 700; background: rgba(255,250,235,0.35); border: 1px solid var(--line); }
 .turn-order li.now { border-color: var(--pc); background: color-mix(in srgb, var(--pc) 18%, transparent); }
 .turn-order li.offline { opacity: .45; }
 
@@ -39,37 +116,62 @@
 
 .vote-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
 .vote-btn {
-  display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-radius: 12px; cursor: pointer;
+  display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-radius: 4px; cursor: pointer;
   font: inherit; font-weight: 800; color: var(--text); background: rgba(255,255,255,0.05); border: 1px solid var(--line);
 }
 .vote-btn:hover:not(:disabled) { border-color: var(--pc); background: color-mix(in srgb, var(--pc) 14%, transparent); }
 .vote-btn:disabled { opacity: .45; cursor: default; }
 
 .vote-results { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
-.vote-results li { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 10px; background: rgba(255,255,255,0.04); border: 1px solid transparent; }
-.vote-results li.spy { border-color: rgba(255,107,139,0.5); background: rgba(255,107,139,0.08); }
+.vote-results li { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 4px; background: rgba(255,255,255,0.04); border: 1px solid transparent; }
+.vote-results li.spy { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
 .vote-results .nm { font-weight: 800; }
 .vote-results small { color: var(--muted); flex: 1; }
 .vote-results b { font-size: 13px; white-space: nowrap; }
-.vote-results .gain { min-width: 28px; text-align: right; font-weight: 800; color: var(--accent); }
+.vote-results .gain { min-width: 28px; text-align: right; font-weight: 800; color: #1d6b34; }
 
 .stage-box .search { position: relative; }
 .stage-box .suggestions {
   position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 10; margin: 0;
-  background: var(--surface-solid); border: 1px solid var(--line-strong); border-radius: 14px; padding: 6px;
+  background: var(--surface-solid); border: 1px solid var(--line-strong); border-radius: 6px; padding: 6px;
   box-shadow: 0 20px 50px rgba(0,0,0,0.5);
 }
 .stage-box .suggestions .s-text { display: grid; }
+.stage-box .s-avatar { width: 60px; height: 60px; border-radius: 4px; } /* фото в підказках — більші */
 .reveal-actions { display: flex; justify-content: flex-end; }
 
-/* стрічка підказок */
-.clues-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; }
+/* стрічка підказок — аркуш з друкарської машинки */
+.clues-card {
+  --muted: var(--ink-muted); --line: rgba(60, 40, 10, 0.18);
+  background: #f3ecdc; color: var(--ink); border-radius: 2px; padding: 14px; box-shadow: 0 10px 26px rgba(0,0,0,0.45);
+}
+.clues-card .table-title { color: var(--ink-muted); font-family: var(--display); }
 .clues { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; max-height: 320px; overflow-y: auto; }
-.clues li { display: flex; align-items: baseline; gap: 8px; padding: 6px 10px; border-radius: 10px; background: rgba(255,255,255,0.04); font-size: 14px; }
+.clues li { display: flex; align-items: baseline; gap: 8px; padding: 5px 8px; border-left: 3px solid var(--pc, var(--ink)); background: rgba(0,0,0,0.03); font: 14px/1.4 var(--display); }
 .clues li .dot-p { align-self: center; }
-.clues .nm { font-weight: 800; color: var(--pc); white-space: nowrap; }
+.clues .nm { font-weight: 700; color: var(--pc); filter: brightness(0.62) saturate(1.3); white-space: nowrap; }
 .clues .clue-text { overflow-wrap: anywhere; }
-.clues li.empty { color: var(--muted); justify-content: center; }
+.clues li.empty { color: var(--muted); justify-content: center; border-left: 0; }
 
 .host-tools { display: grid; gap: 4px; }
 .host-tools.hidden { display: none; }
+
+@media (max-width: 520px) {
+  .role-card { gap: 12px; padding: 24px 12px 14px; }
+  .rc-closed, .rc-icon { width: 96px; font-size: 44px; }
+  .role-card .answer-photo, .stage-box .answer-photo { width: 112px; height: 112px; border-width: 5px; }
+  .rc-closed, .rc-icon { width: 112px; }
+  .stage-box .answer-card { gap: 14px; padding: 12px; }
+  .stage-box .answer-card h2 { font-size: 18px; overflow-wrap: anywhere; }
+  .role-card.open .rc-text { padding-right: 0; padding-top: 34px; }
+  .rc-text b { font-size: 18px; }
+  .stamp { font-size: 11px; right: 8px; top: 10px; }
+  .stage-box .s-avatar { width: 52px; height: 52px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stamp, .role-card.open, .stage-box { animation: none; }
+}
+
+/* бали в таблиці й підсумку — кольором теки, не червоним (червоне тут — печатка й шпигун) */
+.scoreboard .gain, .scoreboard b.bump, .history .val { color: var(--folder); }

@@ -1,5 +1,53 @@
 /* Топ-10. Лобі, таблиця, поле відповіді, підсумок — з /path/style.css; тут — тема, дошка топу, вибір теми. */
 
+/* ── Оформлення гри: вечірнє телешоу. Темно-синя студія з неоновим світлом, жовті скошені плашки,
+   Russo One для теми, місць і цифр. Скіс робимо clip-path / псевдоелементом — текст лишається рівним. */
+:root {
+  --bg: #0c0628; --bg-2: #1a0d48;
+  --surface: rgba(30, 20, 84, 0.9); --surface-solid: #1e1454; --surface-2: #2b1f6e;
+  --line: rgba(200, 190, 255, 0.14); --line-strong: rgba(200, 190, 255, 0.28);
+  --text: #f6f3ff; --muted: #b4aadf;
+  --accent: #ffcc00; --accent-ink: #160b3d;
+  --gold: #ffcc00;
+  --neon-pink: #ff3aa0; --neon-cyan: #22d3ff;
+  --radius: 14px;
+  --display: 'Russo One', 'Manrope', system-ui, sans-serif;
+  --skew: 12px; /* наскільки скошені плашки */
+}
+.pitch-bg {
+  background:
+    radial-gradient(ellipse 60% 40% at 50% -8%, rgba(255, 58, 160, 0.42), transparent 70%),
+    radial-gradient(ellipse 45% 35% at 105% 105%, rgba(34, 211, 255, 0.22), transparent 70%),
+    radial-gradient(ellipse 40% 30% at -5% 90%, rgba(123, 44, 255, 0.28), transparent 70%),
+    conic-gradient(from 180deg at 50% -20%, transparent 0 168deg, rgba(255, 255, 255, 0.045) 172deg 176deg, transparent 180deg 184deg, rgba(255, 255, 255, 0.045) 188deg 192deg, transparent 196deg),
+    linear-gradient(180deg, var(--bg-2), var(--bg));
+}
+/* Russo One — одна насиченість; без штучного «жирного» */
+.logo, .room-code, .round-info b, .timer, .earn b, .scoreboard b, .scoreboard .place, .rules-card h3,
+.final h2, .slot .place, .slot .val, .topic h2 { font-weight: 400; }
+.timer { color: var(--accent); }
+
+/* логотип: «ТОП» неоном, «10» — на жовтій скошеній плашці */
+.logo.show small { font-family: var(--display); font-weight: 400; color: var(--neon-pink); text-shadow: 0 0 12px rgba(255, 58, 160, 0.7); }
+.logo.show span {
+  display: inline-block; padding: 0.08em 0.35em; color: var(--accent-ink); background: var(--accent);
+  clip-path: polygon(0.18em 0, 100% 0, calc(100% - 0.18em) 100%, 0 100%);
+  animation: tv-flip .6s ease-out both;
+}
+.logo.show b { color: var(--neon-pink); background: none; transform: none; padding: 0; margin: 0; }
+
+/* тема раунду — жовта скошена плашка */
+.topic h2 {
+  position: relative; display: inline-block; isolation: isolate; padding: 8px 18px; margin-left: 6px;
+  color: var(--accent-ink); font-size: 21px;
+}
+.topic h2::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; background: var(--accent);
+  transform: skewX(-10deg); box-shadow: 0 0 24px rgba(255, 204, 0, 0.25);
+}
+.topic small { margin-left: 6px; }
+.lives { color: var(--neon-pink); font-family: var(--display); font-size: 18px; letter-spacing: 3px; text-shadow: 0 0 10px rgba(255, 58, 160, 0.6); }
+
 .top-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 #round-box { display: flex; flex-direction: column; gap: 12px; }
 #round-box.hidden { display: none; }
@@ -14,29 +62,46 @@
 .lives { margin-right: auto; font-size: 14px; letter-spacing: 1px; }
 
 /* дошка: рядок = місце, фото, гравець, значення, очки за місце */
-.top-board { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
+.top-board { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; perspective: 900px; }
+/* рядок — скошена плашка студійної дошки: жовтий номер зліва, сама плашка темно-фіолетова */
 .slot {
-  display: grid; grid-template-columns: 28px 40px minmax(0, 1fr) auto auto auto; align-items: center; gap: 10px;
-  min-height: 52px; padding: 6px 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line);
+  display: grid; grid-template-columns: 40px 60px minmax(0, 1fr) auto auto auto; align-items: center; gap: 10px;
+  min-height: 70px; padding: 5px calc(var(--skew) + 10px) 5px 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.07), transparent 55%), var(--surface-2);
+  clip-path: polygon(var(--skew) 0, 100% 0, calc(100% - var(--skew)) 100%, 0 100%);
 }
-.slot .place { font-family: var(--display); font-weight: 800; color: var(--muted); text-align: center; }
+.slot .place {
+  align-self: stretch; margin: -5px 0; display: grid; place-items: center;
+  font-family: var(--display); font-size: 20px; color: var(--accent-ink); background: var(--accent);
+}
 .slot .pts { font-size: 12px; font-weight: 800; color: var(--gold); white-space: nowrap; }
-.empty-slot { grid-template-columns: 28px minmax(0, 1fr) auto; border-style: dashed; }
-.empty-slot .blank { color: var(--muted); opacity: .5; font-weight: 800; }
-.slot.got { border-color: rgba(182,243,106,0.45); background: rgba(182,243,106,0.07); }
+.empty-slot { grid-template-columns: 40px minmax(0, 1fr) auto; min-height: 50px; background: var(--surface); }
+.empty-slot .place { background: color-mix(in srgb, var(--accent) 70%, var(--bg)); }
+.empty-slot .blank { color: var(--muted); opacity: .5; font-family: var(--display); padding-left: 6px; }
+/* відкрита плашка — неоновий градієнт студії */
+.slot:not(.empty-slot):not(.missing):not(.missed) { background: linear-gradient(180deg, rgba(255,255,255,0.12), transparent 55%), linear-gradient(90deg, #c92684, #5f27cc); }
 .slot.missed { opacity: .6; }
-.slot.missing { border-style: dashed; opacity: .75; }
+.slot.missing { background: repeating-linear-gradient(-45deg, var(--surface-2) 0 10px, var(--surface) 10px 20px); opacity: .85; }
 .slot .miss-note { color: var(--gold); font-weight: 700; }
-.slot.fresh { animation: rise .35s ease-out; }
+/* фірмова мить: плашка перевертається, як на дошці телешоу */
+.slot.fresh { animation: tv-flip .55s cubic-bezier(.3, 1.4, .5, 1) both; }
+@keyframes tv-flip {
+  0% { transform: rotateX(90deg); filter: brightness(1.8); }
+  100% { transform: none; filter: none; }
+}
 .g-photo {
-  width: 40px; height: 40px; border-radius: 50%; overflow: hidden; display: grid; place-items: center;
-  background: #1d3a2a; border: 1px solid var(--line); font-weight: 800; font-size: 13px;
+  width: 60px; height: 60px; border-radius: 50%; overflow: hidden; display: grid; place-items: center;
+  background: var(--surface-2); border: 1px solid var(--line); font-weight: 800; font-size: 13px;
 }
 .g-photo img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
 .slot .who { display: grid; min-width: 0; }
 .slot .who b { font-size: 15px; overflow-wrap: anywhere; }
 .slot .who small { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
-.slot .val { font-family: var(--display); font-weight: 800; font-size: 14px; color: var(--accent); white-space: nowrap; text-align: right; }
+.slot .who small { color: rgba(255,255,255,0.75); }
+.slot .val { font-family: var(--display); font-size: 16px; color: var(--accent); white-space: nowrap; text-align: right; text-shadow: 0 1px 0 rgba(0,0,0,0.4); }
+.slot .g-photo { border: 2px solid rgba(255,255,255,0.55); }
+/* підказки пошуку — фото більші */
+.s-avatar { width: 60px; height: 60px; }
 .slot .by { display: flex; gap: 2px; }
 .slot .by .dot-p { width: 8px; height: 8px; }
 
@@ -45,7 +110,7 @@
 .misses .field-label { margin-right: 4px; }
 .miss { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 700; padding: 3px 9px; border-radius: 99px; background: rgba(255,107,107,0.08); border: 1px solid rgba(255,107,107,0.3); text-decoration: line-through; text-decoration-color: rgba(255,107,107,0.6); }
 
-.reveal-bar { display: grid; gap: 10px; padding: 14px; border-radius: var(--radius); background: rgba(182,243,106,0.06); border: 1px solid rgba(182,243,106,0.35); animation: rise .3s ease-out; }
+.reveal-bar { display: grid; gap: 10px; padding: 14px; border-radius: var(--radius); background: color-mix(in srgb, var(--accent) 6%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); animation: rise .3s ease-out; }
 .reveal-bar.hidden { display: none; }
 .reveal-bar .verdict { margin: 0; font-size: 17px; }
 .reveal-actions { display: flex; justify-content: flex-end; }
@@ -70,12 +135,20 @@
   display: inline-flex; gap: 6px; align-items: center; font: inherit; font-size: 14px; font-weight: 700; color: var(--text); cursor: pointer;
   padding: 8px 12px; border-radius: 10px; background: rgba(255,255,255,0.04); border: 1px solid var(--line); text-align: left;
 }
-.t-item:hover { border-color: var(--accent); background: rgba(182,243,106,0.08); }
+.t-item:hover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
 .t-item .lvl { font-style: normal; font-size: 10px; margin-left: 2px; }
 
 @media (max-width: 560px) {
-  .slot { grid-template-columns: 22px 34px minmax(0, 1fr) auto; gap: 8px; padding: 6px 8px; }
-  .empty-slot { grid-template-columns: 22px minmax(0, 1fr) auto; }
+  :root { --skew: 8px; }
+  .slot { grid-template-columns: 30px 50px minmax(0, 1fr) auto; gap: 8px; min-height: 60px; }
+  .slot .place { font-size: 16px; }
+  .empty-slot { grid-template-columns: 30px minmax(0, 1fr) auto; min-height: 44px; }
   .slot .by, .slot:not(.empty-slot) .pts { display: none; }
-  .g-photo { width: 34px; height: 34px; }
+  .g-photo { width: 50px; height: 50px; }
+  .s-avatar { width: 52px; height: 52px; }
+  .topic h2 { font-size: 18px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slot.fresh, .logo.show span { animation: none; }
 }

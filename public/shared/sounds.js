@@ -79,13 +79,35 @@ window.Sound = (() => {
       tone(N.A4, { dur: 0.3, vol: 0.1 });
       tone(N.C5, { start: 0.18, dur: 0.4, vol: 0.1 });
     },
+    // перекидне табло: короткі клацання з кроком, як перекидаються клітинки ('Вгадай гравця')
+    flap(count = 11, step = 0.06) {
+      for (let i = 0; i < count; i++) {
+        tone(1000 + Math.random() * 500, { start: i * step, dur: 0.03, type: 'square', vol: 0.04, slideTo: 500 });
+      }
+    },
+    // «Шлях»: нова станція — дзвіночок, як у метро
+    station() {
+      tone(N.E5, { dur: 0.22, type: 'sine', vol: 0.14 });
+      tone(N.C5, { start: 0.2, dur: 0.38, type: 'sine', vol: 0.12 });
+    },
+    // телешоу: «дзинь» відкриття плашки топу ('Топ-10')
+    ding() {
+      tone(1318.5, { dur: 0.5, type: 'triangle', vol: 0.14 });
+      tone(1975.5, { start: 0.04, dur: 0.6, type: 'sine', vol: 0.08 });
+      tone(2637, { start: 0.04, dur: 0.25, type: 'sine', vol: 0.04 });
+    },
+    // печатка на теці: глухий удар + короткий «шлепок» паперу ('Шпигун')
+    stamp() {
+      tone(140, { dur: 0.16, type: 'sine', vol: 0.3, slideTo: 60 });
+      tone(900, { dur: 0.04, type: 'square', vol: 0.05, slideTo: 300 });
+    },
     pop() {
       tone(600, { dur: 0.09, vol: 0.1, slideTo: 1100 });
     },
   };
 
-  function play(name) {
-    if (!muted) sounds[name]?.();
+  function play(name, ...args) {
+    if (!muted) sounds[name]?.(...args);
   }
 
   function setMuted(value) {

@@ -35,6 +35,7 @@
     if (!p) return;
     const was = p.progress[mySeat]?.solved, now = s.progress[mySeat]?.solved;
     if (now && !was) window.Sound.play('win');
+    else if (s.myTries?.length > (p.myTries?.length || 0) && p.round === s.round) window.Sound.play('flap', s.columns?.length || 11);
     if (s.phase === 'guess' && (p.phase !== 'guess' || p.round !== s.round)) window.Sound.play('whistle');
   }
 

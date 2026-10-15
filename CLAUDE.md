@@ -36,9 +36,9 @@ Node 18+, Express + Socket.IO, клієнт — чистий HTML/CSS/JS без 
   `derived-tags.js` — категорії з зібраних даних при завантаженні: A100 (+ асисти TM), UCL30, T80, JOURNEY (10+ різних клубів), і
   `cleanCareers` — прибирає з кар'єр клуби з 0 матчів, крім поточного; той самий об'єкт careers.json бачать усі ігри).
   Тег `UPL0014` — грав у чемпіонаті України 2000–2014 (у «Шляху» дає український бонус до відомості).
-- `public/index.html` + `hub.css` + `hub.js` — головна: картки з `/api/games` у двох групах — «можна самому» (`meta.solo`) і «тільки з друзями»;
-  на картці значки «🎮 Соло» і «👥 З друзями · `meta.friends`».
-- `public/shared/` — спільне для сторінок ігор: `theme.css` (токени, фон, `.back-link`), `ui.css` (кнопки, поля, чипи, вікна,
+- `public/index.html` + `hub.css` + `hub.js` — головна-альбом наліпок Panini: картки з `/api/games` у двох групах — «можна самому» (`meta.solo`) і «тільки з друзями»;
+  на наліпці значки «🎮 Соло» і «👥 З друзями · `meta.friends`»; стиль наліпки — клас `s-<id>` у hub.css + малюнок `ART[id]` у hub.js (немає — біла наліпка з emoji).
+- `public/shared/` — спільне для сторінок ігор: `theme.css` (базові токени й фон, які гра перевизначає — див. «Оформлення гри», `.back-link`), `ui.css` (кнопки, поля, чипи, вікна,
   підказки пошуку, тост, звук, чат), `players.js` (`window.Players.search` — автодоповнення імен), `sounds.js` (`window.Sound`),
   `room-client.js` (`RoomClient.create` — уся спільна логіка клієнта кімнатних ігор).
 - `public/<id>/` — сторінка гри (`crossroads/app.js` — ~1100 рядків, читати частинами через Grep).
@@ -70,9 +70,26 @@ easy/normal/hard = верхні 30% / наступні 40% / решта. Нов�
 1. `server/games/<id>/index.js` з `meta` (`id, title, description, solo, friends, emoji`) і `register` (свій простір імен `io.of('/<id>')`, свої `/api/<id>/...`).
    `solo: true` — гра є в групі «Можна грати самому» на головній; `friends` — скільки гравців у кімнаті ('2–8').
 2. Додати в `server/games/index.js`.
-3. `public/<id>/` — `index.html`, `app.js` на `RoomClient` (див. «Клієнт нової гри»), `style.css`.
+3. `public/<id>/` — `index.html`, `app.js` на `RoomClient` (див. «Клієнт нової гри»), `style.css` зі своїм світом (див. «Оформлення гри»).
 4. `scripts/smoke-<id>.js` — скопіювати `smoke-top.js` або `smoke-spy.js`, додати в `npm test` (package.json).
 5. Коротко описати гру в «Карті» вище (1–4 рядки: файли, фази, бали, що приватне).
+6. Наліпка на головній: клас `s-<id>` у `hub.css` + `ART[id]` у `hub.js`; сценарій у `scripts/ui-check.js`.
+
+### Оформлення гри — у кожної свій світ
+Спільний каркас (лобі, кнопки, чат, room-client, розкладка, Manrope для тексту, кольори гравців `--p0..--p3`) однаковий; кожна гра має
+**свій матеріал, шрифт заголовків/цифр, акцент і одну фірмову анімацію**, взяті з її механіки. Макет-погодження: https://claude.ai/artifact/5gTn9EM8Y5GpRY68MmakoZ
+- Перехрестя — крейдяна тактична дошка (Caveat, жовта крейда, ✕◯ «дописуються» — `chalkMark()`); Шлях — світла схема метро (Oswald, червона лінія,
+  клуби-станції з гербом, трансфер — пересадка, очки на «квитку»; стилі в `path/skin.css`, бо `path/style.css` — база для інших ігор);
+  Вгадай — перекидне табло Solari (JetBrains Mono, бурштин, клітинки перекидаються по черзі + звук `flap`); Шпигун — досьє (PT Mono / Rubik Mono One,
+  тека, фото на скріпці, печатка «ЦІЛКОМ ТАЄМНО» + звук `stamp`); Топ-10 — телешоу (Russo One, неон, скошені плашки, звук `ding`).
+  Нова гра — новий світ, не повторювати ці.
+- Як: у `public/<id>/style.css` на початку `:root { --bg --bg-2 --surface --surface-solid --surface-2 --line --line-strong --text --muted --accent --accent-ink --radius --display }`
+  + свій `.pitch-bg`; шрифт — Google Fonts з кирилицею в `index.html` (і `theme-color`); логотип `.logo` — у стилі світу.
+  У спільних файлах кольори — лише через токени (`color-mix(in srgb, var(--accent) N%, transparent)`, `var(--surface-2)`), без вшитих rgba лайму.
+  Світла гра — свій `skin.css` з перевизначенням того, що в ui.css зроблено на `rgba(255,255,255,…)`, і `color-scheme: light`.
+- **Фото гравців, герби клубів, прапори — завжди лишаються** (світ їх обрамлює, а не ховає); фото — великі (~60 px у списках, 120+ у картці відповіді).
+- Анімацію, що перемальовується зі станом, запускати лише для нового (ключ, як `cardKey` у spy), і вимикати в `prefers-reduced-motion`.
+- Звук гри — функція в `shared/sounds.js` (`flap`, `station`, `stamp`, `ding` — приклади), виклик у `playSounds` гри.
 
 ### Клієнт нової гри
 Усе спільне — `public/shared/room-client.js` (`RoomClient.create(cfg)`; опис `cfg` і того, що повертає, — у коментарі на початку файлу):
@@ -83,7 +100,7 @@ easy/normal/hard = верхні 30% / наступні 40% / решта. Нов�
   `/shared/sounds.js`, `/shared/room-client.js`, `/<id>/app.js`. Без `#solo-btn` — гра лише для кімнати (як `spy`).
 - `app.js` — за зразком `public/guess/app.js` (~240 рядків, найкоротший) або `public/spy/app.js` (кімната з ролями/чергою/голосуванням;
   `#stage` перемальовується лише коли змінився ключ етапу — щоб не збивати введення). Автодоповнення гравця — функції `renderSuggestions/choose` з guess/top.
-- Стилі: `/shared/theme.css`, `/shared/ui.css`, `/path/style.css` (лобі, таблиця, поле відповіді, `.answer-card`, підсумок) + свій `/<id>/style.css`.
+- Стилі: `/shared/theme.css`, `/shared/ui.css`, `/path/style.css` (лобі, таблиця, поле відповіді, `.answer-card`, підсумок) + свій `/<id>/style.css` (токени світу — «Оформлення гри»).
   Готові класи в `spy/style.css` (`.stage-box`, `.vote-grid`, `.vote-results`, `.turn-order`) і `top/style.css` (`.slot`, `.topic-list`, `.misses`).
 - «Перехрестя» (`public/crossroads/app.js`) — старий окремий клієнт без room-client, не брати за зразок.
 
@@ -118,7 +135,7 @@ actions: { start, guess, ... : (room, seat, payload) => ({ ok } | { error }) }, 
 - `npm test` — прогін усіх перевірок (~3 хв). Обов'язково перед комітом; запускати у фоні, вивід — у файл і `grep ПРОЙШЛИ|✗`.
 - Оновити базу: `npm run build-players` (≈15 хв) → `npm run build-careers` (≈10 хв; кар'єри з таблиць en.wikipedia) → `npm run fetch-photos`; `npm run build-transfers` (≈1 хв); `npm run build-tournaments` (≈1 хв); `npm run build-stats` (≈2 хв, після build-transfers); `npm run build-coaches` (≈1 хв).
 - `npm run dev` — локальний сервер з перезапуском.
-- `npm run ui-check -- [hub|top|spy|guess|path] [--mobile]` — справжній Chrome без вікна (playwright-core + встановлений Chrome; окремий процес,
+- `npm run ui-check -- [hub|top|spy|guess|path|crossroads] [--mobile]` — справжній Chrome без вікна (playwright-core + встановлений Chrome; окремий процес,
   браузер користувача не чіпає): проходить основні екрани, ловить помилки JS, знімки — у `.shots/` (не в git). Перед пушем UI-змін запускати
   для зміненої гри й дивитися (Read) лише нові/змінені екрани — 3–5 знімків (~1–1,5 тис. токенів кожен). Нова гра — додати сценарій у `scenarios`.
 - Деплой: push у `main` → Render сам деплоїть (~2–3 хв). Перевірити https://football-party-games.onrender.com.

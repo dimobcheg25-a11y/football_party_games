@@ -1,5 +1,46 @@
 /* Вгадай гравця. Лобі, таблиця, відповідь, підсумок — з /path/style.css; тут — дошка спроб. */
 
+/* ── Оформлення гри: перекидне табло вокзалу (Solari). Свої токени поверх /shared/theme.css:
+   чорні плитки з розрізом посередині, бурштинові написи, моноширинний шрифт для цифр і заголовків. */
+:root {
+  --bg: #0d0d0f; --bg-2: #18181c;
+  --surface: rgba(26, 26, 30, 0.92); --surface-solid: #1a1a1e; --surface-2: #26262b;
+  --line: rgba(255, 236, 200, 0.10); --line-strong: rgba(255, 236, 200, 0.22);
+  --text: #f3efe6; --muted: #a29d92;
+  --accent: #ffb000; --accent-ink: #1d1400;
+  --radius: 12px;
+  --display: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+  --flap-split: rgba(0, 0, 0, 0.55);
+}
+.pitch-bg {
+  background:
+    radial-gradient(ellipse 70% 45% at 50% -10%, rgba(255, 176, 0, 0.10), transparent 70%),
+    repeating-linear-gradient(0deg, transparent 0 3px, rgba(255, 255, 255, 0.012) 3px 4px),
+    linear-gradient(180deg, var(--bg-2), var(--bg));
+}
+.timer { color: var(--accent); }
+
+/* логотип — літери на плитках табло, що перекидаються при відкритті */
+.logo.flaps { gap: 0.3em; perspective: 600px; }
+.logo.flaps small { font-family: var(--display); color: var(--accent); }
+.logo.flaps span { display: inline-flex; gap: 0.08em; letter-spacing: 0; }
+.logo.flaps i {
+  position: relative; display: grid; place-items: center; width: 0.82em; height: 1.1em; font-style: normal;
+  border-radius: 0.1em; color: var(--text); box-shadow: 0 0.05em 0 rgba(0, 0, 0, 0.6);
+  background: linear-gradient(180deg, #2c2c32 50%, #222227 50%);
+  animation: flap-in 0.6s ease-out both;
+}
+.logo.flaps i::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 0.03em; background: var(--flap-split); }
+.logo.flaps i.hot { background: linear-gradient(180deg, #ffbb22 50%, #f2a700 50%); color: var(--accent-ink); }
+.logo.flaps i:nth-child(2) { animation-delay: 0.08s; } .logo.flaps i:nth-child(3) { animation-delay: 0.16s; }
+.logo.flaps i:nth-child(4) { animation-delay: 0.24s; } .logo.flaps i:nth-child(5) { animation-delay: 0.32s; }
+.logo.flaps i:nth-child(6) { animation-delay: 0.4s; }
+@keyframes flap-in {
+  0% { transform: rotateX(90deg); filter: brightness(1.8); }
+  70% { transform: rotateX(-14deg); }
+  100% { transform: none; }
+}
+
 /* дошка широка (11 клітинок), тому таблиця рахунку — смужкою над нею, а не збоку */
 .guess-game { max-width: 1440px; }
 .guess-game .game-layout { grid-template-columns: 1fr; }
@@ -14,7 +55,7 @@
 .reveal-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
 
 /* кольори клітинок — і в правилах */
-:root { --g-green: #3fa864; --g-yellow: #c9a227; --g-grey: rgba(255,255,255,0.07); }
+:root { --g-green: #1f8f4a; --g-yellow: #d39a00; --g-grey: #232328; }
 .sw { display: inline-block; width: 14px; height: 14px; border-radius: 4px; vertical-align: -2px; }
 .sw.green { background: var(--g-green); }
 .sw.yellow { background: var(--g-yellow); }
@@ -26,31 +67,46 @@
 .g-row {
   display: grid; gap: 5px; align-items: stretch;
   /* --n — скільки звичайних клітинок (без трофеїв і клубів): 9 або 10 з асистами; ставить app.js */
-  grid-template-columns: 130px repeat(var(--n, 9), minmax(0, 1fr)) minmax(0, 1.4fr) minmax(0, 1.6fr);
+  grid-template-columns: 170px repeat(var(--n, 9), minmax(0, 1fr)) minmax(0, 1.4fr) minmax(0, 1.6fr);
 }
-.g-row.fresh .cell { animation: flip .45s ease-out both; }
-.g-row.fresh .cell:nth-child(n+3) { animation-delay: .05s; } .g-row.fresh .cell:nth-child(n+5) { animation-delay: .1s; }
-.g-row.fresh .cell:nth-child(n+7) { animation-delay: .15s; } .g-row.fresh .cell:nth-child(n+9) { animation-delay: .2s; }
-.g-row.fresh .cell:nth-child(n+11) { animation-delay: .25s; }
-@keyframes flip { from { transform: rotateX(90deg); opacity: 0; } to { transform: none; opacity: 1; } }
-.g-head .cell-h { font-size: 10.5px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; text-align: center; align-self: end; line-height: 1.2; }
+/* нова спроба: клітинки перекидаються по черзі зліва направо, як табло (звук — 'flap', той самий крок) */
+.g-row { perspective: 700px; }
+.g-row.fresh .cell { animation: flap-in .5s ease-out both; }
+.g-row.fresh .cell:nth-child(3) { animation-delay: .06s; } .g-row.fresh .cell:nth-child(4) { animation-delay: .12s; }
+.g-row.fresh .cell:nth-child(5) { animation-delay: .18s; } .g-row.fresh .cell:nth-child(6) { animation-delay: .24s; }
+.g-row.fresh .cell:nth-child(7) { animation-delay: .3s; } .g-row.fresh .cell:nth-child(8) { animation-delay: .36s; }
+.g-row.fresh .cell:nth-child(9) { animation-delay: .42s; } .g-row.fresh .cell:nth-child(10) { animation-delay: .48s; }
+.g-row.fresh .cell:nth-child(11) { animation-delay: .54s; } .g-row.fresh .cell:nth-child(12) { animation-delay: .6s; }
+.g-row.fresh .cell:nth-child(13) { animation-delay: .66s; }
+.g-head .cell-h { font-family: var(--display); font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .02em; text-align: center; align-self: end; line-height: 1.2; }
 
 .g-player { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .g-photo {
-  width: 40px; height: 40px; flex: none; border-radius: 50%; overflow: hidden; display: grid; place-items: center;
-  background: #1d3a2a; border: 1px solid var(--line); font-weight: 800; font-size: 13px;
+  width: 60px; height: 60px; flex: none; border-radius: 10px; overflow: hidden; display: grid; place-items: center;
+  background: var(--surface-2); border: 1px solid var(--line); font-weight: 800; font-size: 13px;
 }
 .g-photo img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
-.g-name { font-weight: 800; font-size: 14px; line-height: 1.2; overflow-wrap: anywhere; }
+.g-name { font-family: var(--display); font-weight: 800; font-size: 12.5px; line-height: 1.2; text-transform: uppercase; overflow-wrap: anywhere; }
 .g-row.win .g-name { color: var(--accent); }
+.g-row.win .g-photo { border: 2px solid var(--accent); }
+/* фото більші: у підказках пошуку й у картці відповіді */
+.s-avatar { width: 56px; height: 56px; border-radius: 10px; }
+.answer-photo { width: 120px; height: 120px; border-radius: 14px; }
+@media (max-width: 520px) { .answer-photo { width: 96px; height: 96px; } }
 
 .cell {
   position: relative; min-width: 0; min-height: 66px; padding: 6px 5px; border-radius: 10px; text-align: center;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-  background: var(--g-grey); border: 1px solid var(--line); font-size: 13px; line-height: 1.15;
+  background-color: var(--g-grey); border: 1px solid var(--line); font-size: 13px; line-height: 1.15;
+  /* плитка табло: верхня половина світліша, посередині розріз */
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.05) 50%, rgba(0,0,0,0.10) 50%);
+  box-shadow: 0 2px 0 rgba(0,0,0,0.45);
 }
-.cell.green { background: var(--g-green); border-color: transparent; }
-.cell.yellow { background: var(--g-yellow); border-color: transparent; color: #1b1606; }
+.cell::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: var(--flap-split); opacity: .5; pointer-events: none; }
+.cell.c-trophies, .cell.c-shared { background-image: none; } /* списки — без розрізу, інакше він ріже рядок чипів */
+.cell.c-trophies::after, .cell.c-shared::after { display: none; }
+.cell.green { background-color: var(--g-green); border-color: transparent; }
+.cell.yellow { background-color: var(--g-yellow); border-color: transparent; color: #1b1606; }
 .cell b { font-weight: 800; overflow-wrap: anywhere; hyphens: auto; }
 .cell small { font-size: 10.5px; font-weight: 700; opacity: .85; line-height: 1.15; }
 .cell > img { width: 24px; height: 18px; object-fit: contain; }
@@ -93,4 +149,8 @@
 }
 @media (max-width: 760px) {
   .mini { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo.flaps i, .g-row.fresh .cell { animation: none; }
 }

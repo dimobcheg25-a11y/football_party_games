@@ -37,7 +37,7 @@
     if (!p) return;
     const mineNow = s.solved[mySeat];
     if (mineNow && !p.solved[mySeat]) window.Sound.play('win');
-    if (s.phase === 'guess' && p.phase === 'guess' && s.stage > p.stage) window.Sound.play('pop');
+    if (s.phase === 'guess' && p.phase === 'guess' && s.stage > p.stage) window.Sound.play('station');
     if (s.phase === 'guess' && (p.phase !== 'guess' || p.round !== s.round)) window.Sound.play('whistle');
   }
 
@@ -53,7 +53,8 @@
     const title = escapeHtml(st.name);
     const sub = [st.country, st.years].filter(Boolean).map(escapeHtml).join(' · ') + (st.loan ? ' · <span class="loan">оренда</span>' : '')
       + (st.fee ? ` · <span class="fee">перехід за ${escapeHtml(st.fee)}</span>` : '');
-    return `<li class="stage ${st.kind} ${current ? 'current' : ''}">
+    // transfer/on-loan — для схеми метро: платний перехід = «пересадка», оренда — пунктир лінії
+    return `<li class="stage ${st.kind} ${current ? 'current' : ''} ${st.fee ? 'transfer' : ''} ${st.loan ? 'on-loan' : ''}">
       <div class="st-num">${i + 1}</div>
       <div class="st-icon ${st.img ? 'crest' : ''}">${icon}</div>
       <div class="st-body"><b>${title}</b>${sub ? `<small>${sub}</small>` : ''}${stats}</div>
@@ -72,7 +73,7 @@
     const shown = s.stages.map((st, i) => stageHtml(st, i, !reveal && i === s.stage)).join('');
     const left = s.totalStages - s.stages.length;
     const hidden = left > 0
-      ? `<li class="stage locked"><div class="st-num">…</div><div class="st-body"><b>Ще ${left} ${plural(left, 'клуб', 'клуби', 'клубів')} попереду</b></div></li>`
+      ? `<li class="stage locked"><div class="st-num">…</div><div class="st-icon ghost"></div><div class="st-body"><b>Ще ${left} ${plural(left, 'клуб', 'клуби', 'клубів')} попереду</b></div></li>`
       : '';
     $('#path').innerHTML = shown + hidden;
 

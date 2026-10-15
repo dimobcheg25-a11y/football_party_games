@@ -1,46 +1,187 @@
-/* Головна сторінка — каталог ігор. Токени й фон — у /shared/theme.css. */
-.hub { max-width: 640px; margin: 0 auto; padding: 48px 16px 40px; }
-.hub-hero { text-align: center; margin-bottom: 32px; }
+/* Головна — альбом наліпок. Сторінка — сірий картон з надрукованим полем і пунктирними місцями під наліпки;
+   кожна гра — наліпка у стилі свого світу (s-<id>): білий край, номер, легкий нахил, загнутий кутик,
+   під наведенням «відклеюється». Свідомо одна (світла) тема; токени /shared/theme.css тут перевизначено. */
+:root {
+  --bg: #c9cec8; --bg-2: #d6dad4;
+  --text: #1d231f; --muted: #59625b;
+  --line: rgba(29, 35, 31, 0.18); --line-strong: rgba(29, 35, 31, 0.32);
+  --accent: #c8102e; --accent-ink: #fff;
+  --print: rgba(255, 255, 255, 0.55); /* «надруковані» лінії поля на картоні */
+  color-scheme: light;
+}
+/* фон — на body, щоб «друк» прокручувався разом зі сторінкою (а не стояв під наліпками) */
+.pitch-bg { display: none; }
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 50% 150px, transparent 128px, var(--print) 129px 131px, transparent 132px),
+    linear-gradient(var(--print), var(--print)) 50% 150px / 100% 2px no-repeat,
+    radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.07) 1px, transparent 0) 0 0 / 6px 6px,
+    linear-gradient(180deg, var(--bg-2), var(--bg));
+  background-color: var(--bg);
+}
+
+.hub { max-width: 1040px; margin: 0 auto; padding: 40px max(16px, env(safe-area-inset-right)) 56px max(16px, env(safe-area-inset-left)); }
+
+/* ── шапка: смуга альбому, назва-наліпка */
+.hub-hero { text-align: center; margin-bottom: 40px; display: grid; justify-items: center; gap: 14px; }
+.album-band {
+  margin: 0; padding: 5px 14px; background: var(--text); color: var(--bg-2);
+  font: 800 12px/1 'Manrope', system-ui, sans-serif; letter-spacing: 0.22em; text-transform: uppercase;
+}
 .hub-title {
-  font-family: var(--display); font-weight: 800; line-height: 1.05; margin: 0;
-  font-size: clamp(32px, 8vw, 56px); letter-spacing: -0.02em;
+  margin: 0; display: inline-flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 0.12em 0.3em;
+  font-family: var(--display); font-weight: 800; line-height: 1; letter-spacing: -0.02em;
+  font-size: clamp(34px, 8vw, 60px); text-wrap: balance;
 }
 .hub-title b {
-  color: var(--accent-ink); background: var(--accent); border-radius: 0.18em;
-  padding: 0 0.15em; display: inline-block; transform: rotate(-3deg);
+  color: #fff; background: var(--accent); padding: 0.08em 0.22em 0.12em; border: 0.08em solid #fff;
+  border-radius: 0.1em; transform: rotate(-4deg); display: inline-block;
+  box-shadow: 0 0.06em 0 rgba(0, 0, 0, 0.2), 0 0.2em 0.4em rgba(0, 0, 0, 0.18);
 }
-.hub-tagline { color: var(--muted); max-width: 440px; margin: 16px auto 0; }
+.hub-tagline { color: var(--muted); max-width: 460px; margin: 0; font-weight: 600; }
+.hub-count { margin: 0; font: 700 13px/1 'JetBrains Mono', ui-monospace, monospace; color: var(--muted); letter-spacing: 0.04em; }
+.hub-count b { color: var(--text); }
 
-.hub-games { display: grid; gap: 34px; }
-.hub-group { display: grid; gap: 12px; }
+/* ── групи */
+.hub-games { display: grid; gap: 44px; }
+.hub-group { display: grid; gap: 18px; }
 .group-title {
-  display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; margin: 0;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; margin: 0; padding-bottom: 10px;
+  border-bottom: 2px solid var(--text);
   font-family: var(--display); font-weight: 800; font-size: 20px;
 }
-.group-title small { font-family: 'Manrope', system-ui, sans-serif; font-weight: 600; font-size: 13px; color: var(--muted); }
-.group-icon {
-  width: 36px; height: 36px; display: grid; place-items: center; font-size: 20px;
-  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
-}
-.group-list { display: grid; gap: 12px; }
-.game-card {
-  display: flex; align-items: center; gap: 18px; padding: 20px 22px;
-  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
-  backdrop-filter: blur(10px); box-shadow: 0 20px 50px rgba(0,0,0,0.35);
-  color: var(--text); text-decoration: none;
-  transition: border-color .15s, transform .15s;
-}
-a.game-card:hover { border-color: var(--accent); transform: translateY(-2px); }
-.game-icon {
-  flex: none; width: 56px; height: 56px; display: grid; place-items: center;
-  font-family: var(--display); font-weight: 800; font-size: 28px;
-  color: var(--accent-ink); background: var(--accent); border-radius: 14px; transform: rotate(-6deg);
-}
-.game-body { display: grid; gap: 4px; min-width: 0; }
-.game-body b { font-family: var(--display); font-weight: 600; font-size: 18px; }
-.game-body span { color: var(--muted); }
-.game-modes { display: flex; flex-wrap: wrap; gap: 6px; }
-.mode { font-size: 12px; font-weight: 800; padding: 3px 9px; border-radius: 99px; white-space: nowrap; }
-.game-body .mode.solo { color: var(--accent-ink); background: var(--accent); }
-.game-body .mode.friends { color: var(--text); background: rgba(255,255,255,0.08); border: 1px solid var(--line-strong); }
+.group-title small { font-family: 'Manrope', system-ui, sans-serif; font-weight: 700; font-size: 13px; color: var(--muted); }
+.group-icon { font-size: 22px; }
+.group-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr)); gap: 30px 26px; }
 
+/* ── місце під наліпку: пунктир і номер, видно з-під нахиленої наліпки */
+.slot {
+  position: relative; border: 2px dashed var(--line-strong); border-radius: 12px;
+  background: rgba(255, 255, 255, 0.18);
+}
+.slot::before {
+  content: attr(data-no); position: absolute; right: 10px; bottom: -22px;
+  font: 700 12px/1 'JetBrains Mono', ui-monospace, monospace; color: var(--muted);
+}
+
+/* ── наліпка */
+.sticker {
+  --st-bg: #fff; --st-fg: #111; --st-muted: rgba(0, 0, 0, 0.6); --st-name: 800 20px/1.1 var(--display);
+  position: relative; display: grid; grid-template-rows: auto 112px auto 1fr; gap: 10px;
+  height: 100%; padding: 14px 16px 18px; border: 6px solid #fff; border-radius: 12px;
+  background: var(--st-bg); color: var(--st-fg); text-decoration: none; overflow: hidden;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.15), 0 10px 22px rgba(0, 0, 0, 0.18);
+  transform: rotate(var(--tilt, -1.5deg)); transform-origin: 30% 20%;
+  transition: transform .22s ease, box-shadow .22s ease;
+}
+.slot:nth-child(even) .sticker { --tilt: 1.2deg; }
+.slot:nth-child(3n) .sticker { --tilt: -0.6deg; }
+/* загнутий кутик */
+.sticker::after {
+  content: ""; position: absolute; right: -1px; bottom: -1px; width: 26px; height: 26px;
+  background: linear-gradient(135deg, transparent 50%, #e9ebe7 50%, #fff 75%);
+  box-shadow: -3px -3px 6px rgba(0, 0, 0, 0.14); border-top-left-radius: 6px;
+  transition: width .22s ease, height .22s ease;
+}
+.sticker:hover, .sticker:focus-visible {
+  transform: rotate(calc(var(--tilt, -1.5deg) * -1.6)) translate(-3px, -7px);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.12), 0 22px 34px rgba(0, 0, 0, 0.26);
+}
+.sticker:hover::after, .sticker:focus-visible::after { width: 44px; height: 44px; }
+.sticker:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+
+.st-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.st-no { font: 800 12px/1 'JetBrains Mono', ui-monospace, monospace; letter-spacing: 0.04em; color: var(--st-muted); }
+.game-modes { display: flex; flex-wrap: wrap; gap: 5px; }
+.mode { font: 800 11.5px/1 'Manrope', system-ui, sans-serif; padding: 4px 8px; border-radius: 99px; white-space: nowrap; }
+.mode.solo { background: var(--st-fg); color: var(--st-bg); }
+.mode.friends { border: 1.5px solid currentColor; color: var(--st-fg); opacity: .85; }
+.st-art { position: relative; display: grid; place-items: center; border-radius: 6px; overflow: hidden; }
+.st-name { font: var(--st-name); text-wrap: balance; }
+.st-desc { font: 600 14px/1.4 'Manrope', system-ui, sans-serif; color: var(--st-muted); }
+.a-emoji { font-size: 48px; }
+
+/* ── Перехрестя: тактична дошка, крейда */
+.s-crossroads {
+  --st-bg: #1f3a33; --st-fg: #f2f1e8; --st-muted: rgba(242, 241, 232, 0.72);
+  --st-name: 700 32px/0.95 'Caveat', cursive;
+  background-image: radial-gradient(ellipse at 30% 15%, rgba(255, 255, 255, 0.08), transparent 60%);
+}
+.s-crossroads .st-name { color: #f6e27a; transform: rotate(-2deg); }
+.a-grid { display: grid; grid-template-columns: repeat(3, 34px); grid-auto-rows: 34px; }
+.a-grid i {
+  display: grid; place-items: center; font: 700 30px/1 'Caveat', cursive; font-style: normal;
+  border-right: 2px solid rgba(242, 241, 232, 0.6); border-bottom: 2px solid rgba(242, 241, 232, 0.6);
+}
+.a-grid i:nth-child(3n) { border-right: 0; } .a-grid i:nth-child(n+7) { border-bottom: 0; }
+.a-grid i:nth-child(odd) { color: #9fd0ff; } .a-grid i:nth-child(3), .a-grid i:nth-child(7) { color: #ffb0a8; }
+
+/* ── Шлях: світла схема метро */
+.s-path { --st-bg: #f5f6f8; --st-fg: #111; --st-muted: #555; --st-name: 700 24px/1 'Oswald', sans-serif; }
+.s-path .st-name { text-transform: uppercase; letter-spacing: 0.01em; }
+.a-line { position: relative; display: flex; justify-content: space-between; width: 100%; padding: 0 10px; }
+.a-line::before { content: ""; position: absolute; left: 14px; right: 14px; top: 9px; height: 7px; border-radius: 4px; background: #d32f2f; }
+.a-line i { position: relative; display: grid; justify-items: center; gap: 8px; font-style: normal; }
+.a-line i::before { content: ""; width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 4px solid #d32f2f; }
+.a-line i.ch::before { border-color: #111; }
+.a-line em { font: 600 11px/1 'Oswald', sans-serif; font-style: normal; text-transform: uppercase; color: #333; }
+.a-line i:nth-child(even) em { margin-top: 0; }
+.a-line i.q em { background: #ffd400; padding: 3px 6px; color: #111; }
+
+/* ── Вгадай гравця: перекидне табло */
+.s-guess {
+  --st-bg: #111113; --st-fg: #f3efe6; --st-muted: #a29d92; --st-name: 800 19px/1.1 'JetBrains Mono', monospace;
+}
+.s-guess .st-name { color: #ffb000; text-transform: uppercase; }
+.s-guess .mode.solo { background: #ffb000; color: #1d1400; }
+.s-guess .st-art { gap: 10px; align-content: center; }
+.a-flaps { display: flex; gap: 4px; }
+.a-flaps i {
+  position: relative; width: 34px; height: 44px; display: grid; place-items: center; border-radius: 4px;
+  font: 800 24px/1 'JetBrains Mono', monospace; font-style: normal; color: #f3efe6;
+  background: linear-gradient(180deg, #2c2c32 50%, #222227 50%);
+}
+.a-flaps i::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: rgba(0, 0, 0, 0.6); }
+.a-flaps i.hot { background: linear-gradient(180deg, #ffbb22 50%, #f2a700 50%); color: #1d1400; }
+.a-dots { display: flex; gap: 4px; }
+.a-dots i { width: 14px; height: 14px; border-radius: 3px; background: #2c2c32; }
+.a-dots i.g { background: #1f8f4a; } .a-dots i.y { background: #d39a00; }
+
+/* ── Шпигун: картонна тека з печаткою */
+.s-spy {
+  --st-bg: #d8b878; --st-fg: #1c1a17; --st-muted: rgba(28, 26, 23, 0.72); --st-name: 17px/1.15 'Rubik Mono One', sans-serif;
+  background-image: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.03) 0 1px, transparent 1px 4px);
+}
+.s-spy .st-desc { font: 13.5px/1.45 'PT Mono', monospace; }
+.a-file { position: relative; display: grid; gap: 9px; width: 78%; padding: 14px; background: rgba(255, 255, 255, 0.4); border-left: 3px solid #1c1a17; }
+.a-bar { height: 11px; background: #111; border-radius: 2px; }
+.a-bar.short { width: 60%; }
+.a-stamp {
+  position: absolute; right: -6px; top: 50%; translate: 0 -50%; rotate: -12deg;
+  font: 15px/1 'Rubik Mono One', sans-serif; text-transform: uppercase; color: #b3201b;
+  border: 3px solid #b3201b; padding: 5px 8px; mix-blend-mode: multiply;
+}
+
+/* ── Топ-10: вечірнє телешоу */
+.s-top {
+  --st-bg: #120a35; --st-fg: #fff; --st-muted: #c9bff5; --st-name: 24px/1 'Russo One', sans-serif;
+  background-image: radial-gradient(ellipse at 50% -10%, rgba(255, 58, 160, 0.5), transparent 60%),
+    radial-gradient(ellipse at 100% 110%, rgba(0, 200, 255, 0.28), transparent 50%);
+}
+.s-top .st-name { color: #ffcc00; }
+.s-top .mode.solo { background: #ffcc00; color: #120a35; }
+.a-plates { display: grid; gap: 6px; width: 82%; }
+.a-plates i { display: flex; height: 26px; transform: skewX(-10deg); font-style: normal; }
+.a-plates b { width: 30px; display: grid; place-items: center; background: #ffcc00; color: #120a35; font: 16px/1 'Russo One', sans-serif; }
+.a-plates s { flex: 1; background: #2b1f6e; border: 1px solid rgba(255, 255, 255, 0.15); }
+.a-plates i:first-child s { background: linear-gradient(90deg, #ff3aa0, #7b2cff); }
+
+@media (prefers-reduced-motion: reduce) {
+  .sticker, .sticker::after { transition: none; }
+}
+@media (max-width: 520px) {
+  .hub { padding-top: 28px; }
+  .group-list { gap: 34px; }
+  .sticker { grid-template-rows: auto 106px auto 1fr; }
+}

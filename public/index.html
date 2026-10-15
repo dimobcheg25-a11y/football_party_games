@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Футбольні ігри</title>
   <meta name="description" content="Футбольні ігри онлайн — самому або з друзями: Футбольне перехрестя, Шлях футболіста, Вгадай гравця, Футбольний шпигун, Топ-10." />
-  <meta name="theme-color" content="#0a1a12" />
+  <meta name="theme-color" content="#c9cec8" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@600;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Unbounded:wght@600;800&family=Caveat:wght@700&family=Oswald:wght@600;700&family=JetBrains+Mono:wght@700;800&family=PT+Mono&family=Rubik+Mono+One&family=Russo+One&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/shared/theme.css" />
   <link rel="stylesheet" href="/hub.css" />
 </head>
@@ -17,8 +17,10 @@
   <div class="pitch-bg" aria-hidden="true"></div>
   <main class="hub">
     <header class="hub-hero">
-      <h1 class="hub-title">Футбольні <b>ігри</b></h1>
+      <p class="album-band">Альбом · сезон 2026</p>
+      <h1 class="hub-title"><span>Футбольні</span> <b>ігри</b></h1>
       <p class="hub-tagline">Грай сам або з друзями: для гри разом створи кімнату й надішли посилання.</p>
+      <p class="hub-count" id="hub-count">Колекція: <b>5</b> наліпок</p>
     </header>
     <div id="games" class="hub-games">
       <section class="hub-group" aria-labelledby="solo-title">
@@ -28,10 +30,13 @@
       <section class="hub-group" aria-labelledby="friends-title">
         <h2 class="group-title" id="friends-title"><span class="group-icon">👥</span>Тільки з друзями <small>потрібна компанія</small></h2>
         <div class="group-list" id="friends-games">
-          <a class="game-card" href="/crossroads/">
-            <span class="game-icon" aria-hidden="true">✕</span>
-            <span class="game-body"><b>Футбольне перехрестя</b><span>Хрестики-нулики футболістами.</span></span>
-          </a>
+          <div class="slot" data-no="№ 01">
+            <a class="game-card sticker s-crossroads" href="/crossroads/">
+              <span class="st-top"><span class="st-no">№ 01</span></span>
+              <span class="st-name">Футбольне перехрестя</span>
+              <span class="st-desc">Хрестики-нулики футболістами.</span>
+            </a>
+          </div>
         </div>
       </section>
     </div>

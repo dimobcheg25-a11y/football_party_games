@@ -45,6 +45,15 @@
   const roomLink = (code) => `${location.origin}${location.pathname}?room=${code}`;
   const seatName = (i) => (i === mySeat ? 'Ти' : state?.seats[i]?.name || 'Гравець');
   const symHtml = (i) => `<span class="sym seat-${i}">${SYMBOLS[i]}</span>`;
+  // Позначка гравця крейдою на зайнятій клітинці (✕ ◯ △ □); у щойно зайнятої — «дописується» (клас draw).
+  const CHALK = [
+    '<path pathLength="100" d="M8 8 L32 32"/><path pathLength="100" d="M32 8 L8 32"/>',
+    '<circle pathLength="100" cx="20" cy="20" r="13"/>',
+    '<path pathLength="100" d="M20 6 L34 32 L6 32 Z"/>',
+    '<path pathLength="100" d="M8 8 H32 V32 H8 Z"/>',
+  ];
+  const chalkMark = (seat, draw) =>
+    `<svg class="chalk-mark ${draw ? 'draw' : ''}" viewBox="0 0 40 40" aria-label="${SYMBOLS[seat]}">${CHALK[seat]}</svg>`;
 
   function showScreen(name) {
     for (const id of ['home', 'invite', 'lobby', 'game']) $(`#screen-${id}`).classList.toggle('hidden', id !== name);
@@ -478,7 +487,7 @@
           const isNew = i === justCell ? '<span class="new-tag">НОВЕ</span>' : '';
           html += `<div class="cell filled seat-${b.seat} ${cls}" data-cell="${i}" title="${escapeHtml(b.player.uk)}">
             ${playerVisual(b.player)}
-            <div class="seat-badge">${SYMBOLS[b.seat]}</div>${isNew}
+            <div class="seat-badge">${chalkMark(b.seat, i === justCell)}</div>${isNew}
             <div class="pname-tag">${escapeHtml(b.player.uk)}</div>
           </div>`;
         } else {

@@ -78,23 +78,30 @@
     $('#host-tools').classList.toggle('hidden', !isHost || s.phase !== 'clues');
   }
 
-  // Картка ролі: закрита за замовчуванням (щоб ніхто не підгледів), натиск — відкрити/закрити.
+  // Картка ролі — тека «справи»: закрита за замовчуванням (щоб ніхто не підгледів), натиск — відкрити/закрити.
+  // Перемальовуємо лише коли змінився вміст — інакше печатка «гупала» б на кожне оновлення стану.
+  let cardKey = '';
+  const STAMP = '<span class="stamp" aria-hidden="true">ЦІЛКОМ<br>ТАЄМНО</span>';
   function renderCard(playing) {
     const el = $('#role-card');
     el.classList.toggle('hidden', !playing);
-    if (!playing) return;
+    if (!playing) { cardKey = ''; return; }
     const spy = state.role === 'spy';
+    const key = JSON.stringify([cardOpen, spy, state.card?.id, state.match]);
+    if (key === cardKey) return;
+    cardKey = key;
     el.className = `role-card ${cardOpen ? 'open' : ''} ${cardOpen && spy ? 'spy' : ''}`;
+    const tab = `<span class="case-tab">СПРАВА № ${String(state.match).padStart(2, '0')}</span>`;
     if (!cardOpen) {
-      el.innerHTML = '<span class="rc-closed">🂠</span><span class="rc-text"><b>Твоя картка</b><small>Натисни, щоб подивитись (так, щоб ніхто не бачив)</small></span>';
+      el.innerHTML = `${tab}<span class="rc-closed">🗂</span><span class="rc-text"><b>Твоя справа</b><small>Натисни, щоб відкрити (так, щоб ніхто не бачив)</small></span>`;
     } else if (spy) {
-      el.innerHTML = '<span class="rc-icon">🕵️</span><span class="rc-text"><small>Твоя роль</small><b>Ти — шпигун</b><small>Слухай підказки, не видай себе й спробуй здогадатися, хто це</small></span>';
+      el.innerHTML = `${tab}${STAMP}<span class="rc-icon">🕵️</span><span class="rc-text"><small>Роль: шпигун</small><small>Об'єкт:</small><b class="redacted" aria-label="приховано">██████████</b><small>Слухай підказки, не видай себе й спробуй здогадатися, хто це</small></span>`;
     } else {
       const c = state.card;
-      el.innerHTML = `${photoHtml(c, 'answer-photo rc-photo')}<span class="rc-text"><small>Ти — агент. Футболіст:</small><b>${escapeHtml(c.uk || c.name)}</b>${c.uk && c.uk !== c.name ? `<small>${escapeHtml(c.name)}</small>` : ''}</span>`;
+      el.innerHTML = `${tab}${STAMP}<span class="clipped">${photoHtml(c, 'answer-photo rc-photo')}<span class="clip" aria-hidden="true"></span></span><span class="rc-text"><small>Роль: агент · об'єкт:</small><b>${escapeHtml(c.uk || c.name)}</b>${c.uk && c.uk !== c.name ? `<small>${escapeHtml(c.name)}</small>` : ''}</span>`;
     }
   }
-  $('#role-card').addEventListener('click', () => { cardOpen = !cardOpen; renderCard(true); });
+  $('#role-card').addEventListener('click', () => { cardOpen = !cardOpen; renderCard(true); if (cardOpen) window.Sound.play('stamp'); });
 
   let clueDraft = '';
   function renderClueStage(stage) {

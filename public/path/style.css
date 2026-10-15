@@ -114,10 +114,10 @@
 /* відповідь після раунду — над шляхом, щоб не гортати */
 .path-col { display: flex; flex-direction: column; }
 .reveal { order: -1; margin-bottom: 14px; display: grid; gap: 12px; animation: rise .3s ease-out; }
-.answer-card { display: flex; align-items: center; gap: 16px; padding: 16px; border-radius: var(--radius); background: rgba(182,243,106,0.08); border: 1px solid rgba(182,243,106,0.45); }
+.answer-card { display: flex; align-items: center; gap: 16px; padding: 16px; border-radius: var(--radius); background: color-mix(in srgb, var(--accent) 8%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); }
 .answer-card h2 { margin: 2px 0; font-family: var(--display); font-size: 24px; }
 .answer-card small { color: var(--muted); }
-.answer-photo { width: 84px; height: 84px; flex: none; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: #1d3a2a; border: 2px solid var(--accent); font-family: var(--display); font-weight: 800; font-size: 26px; }
+.answer-photo { width: 84px; height: 84px; flex: none; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: var(--surface-2); border: 2px solid var(--accent); font-family: var(--display); font-weight: 800; font-size: 26px; }
 .answer-photo img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
 .round-results { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 .round-results li { display: flex; align-items: center; gap: 8px; font-weight: 700; padding: 6px 10px; border-radius: 10px; background: rgba(255,255,255,0.04); }
@@ -149,7 +149,7 @@
 .guess-feed:empty { display: none; }
 .guess-feed li { padding: 5px 10px; border-radius: 8px; background: rgba(255,255,255,0.04); }
 .guess-feed li b { color: var(--pc); }
-.guess-feed li.good { background: rgba(182,243,106,0.1); }
+.guess-feed li.good { background: color-mix(in srgb, var(--accent) 10%, transparent); }
 .guess-feed small { color: var(--muted); }
 
 .reactions { display: flex; flex-wrap: wrap; gap: 4px; }

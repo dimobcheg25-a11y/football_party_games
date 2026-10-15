@@ -43,7 +43,7 @@ body {
 .pitch-bg {
   position: fixed; inset: 0; z-index: -1;
   background:
-    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(182, 243, 106, 0.14), transparent 70%),
+    radial-gradient(ellipse 80% 50% at 50% -10%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 70%),
     repeating-linear-gradient(90deg, transparent 0 90px, rgba(255,255,255,0.018) 90px 180px),
     linear-gradient(180deg, var(--bg-2), var(--bg));
 }

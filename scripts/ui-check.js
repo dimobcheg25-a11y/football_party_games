@@ -1,6 +1,6 @@
 // Перевірка інтерфейсу у справжньому Chrome (без вікна): проходить основні екрани ігор, ловить помилки JS
 // і зберігає знімки в .shots/ (їх дивиться Claude перед пушем — лише нові/змінені екрани, щоб не витрачати токени).
-// Запуск: npm run ui-check -- [hub|top|spy|guess|path ...] [--mobile]   (без назв — усе)
+// Запуск: npm run ui-check -- [hub|top|spy|guess|path|crossroads ...] [--mobile]   (без назв — усе)
 // Chrome: встановлений у системі (або шлях у змінній CHROME). Браузер не завантажується — лише playwright-core.
 
 const fs = require('fs');
@@ -33,7 +33,7 @@ const PHONE = { width: 390, height: 780 };
 async function startServer() {
   const server = spawn(process.execPath, [path.join(ROOT, 'server', 'index.js')], {
     cwd: ROOT,
-    env: { ...process.env, PORT, GUESS_REVEAL_MS: '300000' },
+    env: { ...process.env, PORT, GUESS_REVEAL_MS: '300000', FIXED_ORDER: '1' }, // FIXED_ORDER — у «Перехресті» першим ходить господар
     stdio: ['ignore', 'pipe', 'inherit'],
   });
   await new Promise((res) => server.stdout.on('data', (d) => d.toString().includes('запущено') && res()));
@@ -52,7 +52,7 @@ async function person(browser, label, viewport = DESKTOP) {
 
 async function shot(page, name, opts = {}) {
   const file = path.join(SHOTS, `${name}.png`);
-  await page.waitForTimeout(250); // анімації появи
+  await page.waitForTimeout(900); // анімації появи (перекидання табло ~0.7 с)
   await page.screenshot({ path: file, fullPage: !!opts.full });
   shots.push(path.relative(ROOT, file));
 }
@@ -167,6 +167,44 @@ const scenarios = {
     await p.waitForSelector('#board .g-row:not(.g-head)');
     await shot(p, 'guess-round');
     await phoneShot(browser, 'guess', '/guess/');
+    await p.context().close();
+  },
+
+  // Перехрестя: господар — у браузері, суперник — бот через сокет (від нього ж стан поля, щоб знайти правильну відповідь).
+  async crossroads(browser) {
+    const { io } = require('socket.io-client');
+    const { players, matches } = require('../server/data');
+    const viewport = mobile ? PHONE : DESKTOP;
+    const sfx = mobile ? '-phone' : '';
+    const p = await person(browser, 'crossroads', viewport);
+    await p.goto(`${URL}/crossroads/`);
+    await shot(p, `crossroads-home${sfx}`, { full: true });
+    await p.fill('#name-input', 'Хост');
+    await p.click('#create-btn');
+    await p.waitForSelector('#screen-lobby:not(.hidden)');
+    await p.waitForFunction(() => new URLSearchParams(location.search).get('room'));
+    const code = await p.evaluate(() => new URLSearchParams(location.search).get('room'));
+    const bot = io(`${URL}/crossroads`);
+    const st = await new Promise((res) => {
+      bot.on('state', (s) => s.status === 'playing' && res(s));
+      bot.emit('join', { code, name: 'Бот' }, () => {});
+    });
+    await p.waitForSelector('#board .cell.playable');
+    const answer = (cell) => {
+      const n = st.grid.size;
+      const r = st.grid.rows[Math.floor(cell / n)].id, c = st.grid.cols[cell % n].id;
+      return players.find((x) => matches(x, r) && matches(x, c) && x.photo);
+    };
+    const a = answer(0);
+    await p.click('#board [data-cell="0"]');
+    await p.waitForSelector('#picker:not(.hidden)');
+    await p.fill('#picker-input', a.uk);
+    await p.waitForSelector('#suggestions li[data-idx="0"]');
+    await shot(p, `crossroads-picker${sfx}`);
+    await p.click('#suggestions li[data-idx="0"]');
+    await p.waitForSelector('#board .cell.filled');
+    await shot(p, `crossroads-game${sfx}`, { full: true });
+    bot.close();
     await p.context().close();
   },
 

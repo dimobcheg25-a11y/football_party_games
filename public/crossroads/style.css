@@ -1,12 +1,13 @@
-/* Футбольне перехрестя. Токени й фон — /shared/theme.css, кнопки/поля/вікна/чат — /shared/ui.css. */
+/* Футбольне перехрестя. Токени й фон — /shared/theme.css, кнопки/поля/вікна/чат — /shared/ui.css;
+   оформлення гри (крейдяна тактична дошка) — блок «Оформлення» в кінці файлу. */
 
 .seat-0 { --pc: var(--p0); }
 .seat-1 { --pc: var(--p1); }
 .seat-2 { --pc: var(--p2); }
 .seat-3 { --pc: var(--p3); }
 
-.screen-game { max-width: 820px; padding-top: 16px; }
-.screen-game.wide { max-width: 1000px; }
+.screen-game { max-width: 960px; padding-top: 16px; }
+.screen-game.wide { max-width: 1200px; }
 
 .boards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .board-opt {
@@ -16,7 +17,7 @@
   border: 1px solid var(--line-strong); transition: border-color .15s, background .15s;
 }
 .board-opt:hover { border-color: var(--accent); }
-.board-opt.active { border-color: var(--accent); background: rgba(182,243,106,0.1); box-shadow: 0 0 0 2px rgba(182,243,106,0.2); }
+.board-opt.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent); }
 .board-opt .mini { grid-row: span 3; }
 .board-opt b { font-size: 15px; }
 .board-opt .sub { font-size: 12px; font-weight: 800; color: var(--accent); }
@@ -36,7 +37,7 @@
 .mode:hover { border-color: var(--accent); }
 .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; }
 .dot.easy { background: #4ade80; } .dot.normal { background: var(--gold); } .dot.hard { background: #ff6b6b; }
-.mode.active { border-color: var(--accent); background: rgba(182,243,106,0.1); box-shadow: 0 0 0 2px rgba(182,243,106,0.2); }
+.mode.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent); }
 
 
 .rules-card { max-width: 560px; margin: 18px auto 0; padding: 16px 22px; }
@@ -146,13 +147,13 @@
 }
 .board-wrap.idle { border-color: var(--line); background: transparent; }
 .board {
-  --n: 3; --cols: 4; --gap: 8px; --maxcell: 150px; --wrap: 820px;
+  --n: 3; --cols: 4; --gap: 8px; --maxcell: 215px; --wrap: 960px;
   --cell: min(var(--maxcell), calc((min(100vw, var(--wrap)) - 32px - 24px - (var(--cols) - 1) * var(--gap)) / var(--cols)));
   display: grid; gap: var(--gap);
   grid-template-columns: repeat(var(--cols), var(--cell));
   grid-template-rows: repeat(var(--cols), var(--cell));
 }
-.board.big { --gap: 5px; --maxcell: 108px; --wrap: 1000px; }
+.board.big { --gap: 5px; --maxcell: 160px; --wrap: 1200px; }
 .corner { display: grid; place-items: center; font-family: var(--display); font-weight: 800; color: var(--muted); font-size: 12px; text-align: center; }
 .cat {
   display: grid; justify-items: center; align-content: center; gap: 6px; text-align: center; padding: 4px;
@@ -362,3 +363,83 @@
 .invite-name input { font-size: 18px; padding: 14px 16px; }
 .invite-join { width: 100%; }
 .invite-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
+
+
+/* ═════ Оформлення гри: тактична дошка тренера ═════
+   Зелена крейдяна дошка з намальованим крейдою полем, рукописні написи (Caveat), жовта крейда — акцент.
+   Фірмова мить: позначка гравця (✕ ◯ △ □) на клітинці «дописується» крейдою. Фото, герби й прапори — як були. */
+:root {
+  --bg: #13241f; --bg-2: #1c3730;
+  --surface: rgba(30, 56, 48, 0.9); --surface-solid: #1f3b33; --surface-2: #2a4a41;
+  --line: rgba(242, 241, 232, 0.16); --line-strong: rgba(242, 241, 232, 0.32);
+  --text: #f2f1e8; --muted: #a9bbb0;
+  --accent: #f6e27a; --accent-ink: #232a12;
+  --chalk: 'Caveat', 'Segoe Print', 'Comic Sans MS', cursive;
+  --chalk-line: rgba(242, 241, 232, 0.07);
+}
+/* дошка: розводи стертої крейди + поле, намальоване крейдою (центральне коло й середня лінія) */
+.pitch-bg {
+  background:
+    radial-gradient(circle at 50% 46%, transparent 0 158px, var(--chalk-line) 159px 161px, transparent 162px),
+    linear-gradient(90deg, transparent calc(50% - 1px), var(--chalk-line) calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)),
+    radial-gradient(ellipse 60% 40% at 25% 15%, rgba(255, 255, 255, 0.06), transparent 70%),
+    radial-gradient(ellipse 50% 35% at 80% 75%, rgba(255, 255, 255, 0.04), transparent 70%),
+    repeating-linear-gradient(17deg, rgba(255, 255, 255, 0.012) 0 2px, transparent 2px 7px),
+    linear-gradient(180deg, var(--bg-2), var(--bg));
+}
+
+/* логотип — написаний крейдою, «Х» — жовтою крейдою, трохи навскіс */
+.logo { font-family: var(--chalk); font-weight: 700; font-size: clamp(48px, 13vw, 92px); gap: 0.1em; }
+.logo.small { font-size: 34px; gap: 0.05em; }
+.logo span { letter-spacing: 0.01em; }
+.logo b { background: none; color: var(--accent); padding: 0 0.02em; font-size: 1.15em; line-height: 0.8; transform: rotate(-8deg); }
+
+/* рукописні написи: категорії, підписи гравців, хто ходить, заголовки */
+.cat-label, .cell .pname-tag, .turn-title, .lobby-card h2, .invite-card h2, .rules-card summary, .rules-body h4, .corner {
+  font-family: var(--chalk); font-weight: 700; letter-spacing: 0.01em;
+}
+.cat-label { font-size: clamp(13px, calc(var(--cell) * 0.13), 22px); line-height: 1.05; }
+.board.big .cat-label { font-size: clamp(11px, calc(var(--cell) * 0.13), 19px); }
+.cell .pname-tag { font-size: clamp(12px, calc(var(--cell) * 0.12), 21px); line-height: 1.05; }
+.turn-title { font-size: clamp(24px, 5.6vw, 34px); line-height: 1.05; }
+.lobby-card h2, .invite-card h2 { font-size: 30px; }
+.rules-card summary { font-size: 24px; }
+.rules-body h4 { font-size: 20px; }
+.corner { font-size: 20px; color: var(--accent); }
+.room-code { font-family: var(--chalk); font-weight: 700; font-size: 58px; letter-spacing: 0.12em; }
+
+/* поле: категорії написані просто на дошці, клітинки — обведені крейдою (трохи нерівно) */
+.board-wrap { border-style: dashed; border-radius: 18px 12px 20px 14px; }
+.cat { background: transparent; border: 0; }
+.cell { background: rgba(0, 0, 0, 0.14); border: 2px solid rgba(242, 241, 232, 0.4); border-radius: 12px 7px 13px 8px; }
+.cell.playable { border: 2px dashed color-mix(in srgb, var(--tc) 70%, transparent); }
+.plus { font-family: var(--chalk); font-weight: 700; font-size: calc(var(--cell) * 0.34); }
+/* герби клубів — на «магніті», щоб не губились на темній дошці */
+.crest.img.club { background: radial-gradient(circle, rgba(242, 241, 232, 0.34) 0%, rgba(242, 241, 232, 0.12) 50%, transparent 72%) !important; }
+
+/* позначка гравця — крейдою його кольору на темному «магніті» в кутку фото */
+.cell .seat-badge {
+  width: clamp(22px, calc(var(--cell) * 0.24), 46px); height: clamp(22px, calc(var(--cell) * 0.24), 46px);
+  top: 4px; right: 4px; background: rgba(19, 36, 31, 0.82); border: 1.5px solid color-mix(in srgb, var(--pc) 70%, transparent);
+  padding: 3px;
+}
+.board.big .cell .seat-badge { width: clamp(16px, calc(var(--cell) * 0.24), 36px); height: clamp(16px, calc(var(--cell) * 0.24), 36px); padding: 2px; }
+.chalk-mark { width: 100%; height: 100%; overflow: visible; }
+.chalk-mark path, .chalk-mark circle {
+  fill: none; stroke: var(--pc); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; filter: url(#chalk-rough);
+}
+.chalk-mark.draw path, .chalk-mark.draw circle { stroke-dasharray: 100; stroke-dashoffset: 100; animation: chalk-draw .45s ease-out .15s forwards; }
+.chalk-mark.draw path + path { animation-delay: .5s; }
+@keyframes chalk-draw { to { stroke-dashoffset: 0; } }
+
+/* підказки пошуку — більші фото гравців */
+.suggestions .s-avatar { width: 64px; height: 64px; border-radius: 12px; }
+@media (max-width: 560px) {
+  .suggestions .s-avatar { width: 54px; height: 54px; }
+  .logo { font-size: clamp(44px, 14vw, 64px); }
+  .cell .seat-badge { padding: 2px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chalk-mark.draw path, .chalk-mark.draw circle { animation: none; stroke-dashoffset: 0; }
+}

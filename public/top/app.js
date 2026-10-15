@@ -37,7 +37,7 @@
     renderFinal,
   });
   const { $, emit, store, toast, escapeHtml, initials, plural, seatName, seatStyle } = g;
-  const hearts = (n) => (n == null ? '' : n ? '❤️'.repeat(n) : '💔');
+  const hearts = (n) => (n == null ? '' : n ? '♥'.repeat(n) : '💔'); // серця телешоу — колір з CSS
 
   function optionList(o, solo) {
     return [o.categories.map((c) => CATEGORY_LABELS[c]).join(' '), `Топ-${o.size}`, solo ? null : MODE_LABELS[o.mode],
@@ -343,7 +343,7 @@
     const res = await emit('guess', { playerId: p.id });
     if (res.error) return toast(res.error, 'bad');
     if (res.correct) {
-      window.Sound.play('win');
+      window.Sound.play('ding');
       toast(`${p.uk || p.name} — ${res.places.map((i) => `${i + 1}-е`).join(', ')} місце: +${res.points}`, 'good');
     } else {
       window.Sound.play('miss');
