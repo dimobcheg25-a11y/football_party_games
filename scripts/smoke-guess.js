@@ -58,7 +58,7 @@ async function main() {
   const pos = cell('mykhailo-mudryk', 'lionel-messi', 'position');
   assert.ok(pos.color === 'yellow' && pos.note === 'теж фланг', 'жовта позиція пояснена');
   const trophies = cell('lionel-messi', 'neymar', 'trophies');
-  assert.ok(trophies.items.some((x) => x.label === 'Ліга чемпіонів' && x.match), 'трофеї текстом, спільні позначені');
+  assert.ok(trophies.items.some((x) => x.label === 'Ліга чемпіонів ×4' && x.match), 'трофеї текстом з кількістю перемог, спільні позначені');
   const value = cell('neymar', 'kylian-mbappe', 'value');
   assert.ok(/^€\d+ млн$/.test(value.text) && /у загаданого (трохи )?більше$/.test(value.note), 'макс. вартість: ' + value.text);
   assert.ok(cell('lionel-messi', 'neymar', 'caps').text !== '100', 'матчі за збірну не обрізані на 100');
@@ -81,7 +81,7 @@ async function main() {
   assert.ok(cellEn('lionel-messi', 'neymar', 'shared').clubs.some((x) => x.name === 'Barcelona' && x.together), 'клуби англійською');
   assert.strictEqual(cellEn('david-beckham', 'wayne-rooney', 'nation').text, 'England');
   assert.ok(/^€\d+m$/.test(cellEn('neymar', 'kylian-mbappe', 'value').text), 'вартість англійською');
-  assert.ok(cellEn('lionel-messi', 'neymar', 'trophies').items.some((x) => x.label === 'Champions League'));
+  assert.ok(cellEn('lionel-messi', 'neymar', 'trophies').items.some((x) => x.label === 'Champions League ×4'));
   // у кожного, кого можна загадати, є профіль
   const { poolFor, careerOf } = require('../server/games/path/careers');
   assert.ok(poolFor('all', 'expert').every((p) => profileOf(p)), 'профілі для всього пулу');

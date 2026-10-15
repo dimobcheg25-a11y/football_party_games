@@ -17,6 +17,7 @@
     "build-coaches": "node scripts/build-coaches.js",
     "build-names-en": "node scripts/build-names-en.js",
     "build-facts": "node scripts/build-facts.js",
+    "build-honours": "node scripts/build-honours.js",
     "fetch-category-images": "node scripts/fetch-category-images.js"
   },
   "engines": {

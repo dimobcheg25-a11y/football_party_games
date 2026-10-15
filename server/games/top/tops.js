@@ -1,7 +1,8 @@
 // «Топ-10»: усі теми-топи, які можна загадати, будуються з нашої бази при старті.
 // Трансфери й вартість — server/data/transfers.json (Transfermarkt; legends до ~2012 — частково, див. manual-transfers.js),
 // голи й матчі — кар'єри з Вікіпедії (голи в чемпіонатах за кожен клуб, матчі й голи за збірну),
-// асисти, гол+пас, рекорди сезону, картки — stats.json (Transfermarkt, з 2012/13), бомбардири турнірів — tournaments.json.
+// асисти, гол+пас, рекорди сезону, картки — stats.json (Transfermarkt, з 2012/13), бомбардири турнірів — tournaments.json,
+// трофеї (скільки разів виграв) — honours.json (server/data/honours.js).
 // Топ = [{ p, value, text, detail }] за спаданням; гравець може бути в топі кілька разів (два великі трансфери, кілька сезонів) —
 // тоді, назвавши його, відкриваєш усі його рядки. p = null — гравця немає в базі: тоді є name, і рядок відкрито одразу (без очок).
 // Тексти тем — парами T(укр, англ) (server/core/i18n.js): гравець бачить свою мову.
@@ -10,6 +11,7 @@ const { careerOf, team, teams, poolFor, recognition } = require('../path/careers
 const compare = require('../guess/compare');
 const { T } = require('../../core/i18n');
 const { countryEn, teamEn } = require('../../data/names-en');
+const { honoursOf, nationTitles, summary, leaguesText, NATION_KEYS } = require('../../data/honours');
 
 // Назви країн / збірних тут — рядки-ключі (порівнюються, групуються), тому завжди українською; англійська — через countryEn.
 const leagueOf = (q) => { const x = compare.leagueOf(q); return x == null ? x : String(x); };
@@ -44,7 +46,7 @@ try {
 const SIZES = [5, 10, 20];
 const CATEGORIES = {
   transfers: T('Трансфери', 'Transfers'), goals: T('Голи', 'Goals'), assists: T('Асисти', 'Assists'),
-  apps: T('Матчі й кар’єра', 'Appearances & career'), cards: T('Картки', 'Cards'),
+  apps: T('Матчі й кар’єра', 'Appearances & career'), cards: T('Картки', 'Cards'), trophies: T('Трофеї', 'Trophies'),
 };
 // Скільки рядків топу можна відкрити одразу (гравців немає в базі): більше — тема для цього розміру не годиться.
 const MAX_MISSING = 0.25;
@@ -163,6 +165,7 @@ const NOTES = {
   goals: T('Голи в чемпіонатах (без кубків і єврокубків) — за таблицями кар’єри у Вікіпедії.', 'League goals (no cups or European competitions) — from Wikipedia career tables.'),
   apps: T('Матчі в чемпіонатах — за таблицями кар’єри у Вікіпедії.', 'League appearances — from Wikipedia career tables.'),
   nation: T('Офіційні матчі за збірну — за Вікіпедією.', 'Official international matches — per Wikipedia.'),
+  trophies: T('Скільки разів виграв — за розділом «Honours» статті гравця у Вікіпедії; трофеї тренером не рахуються.', 'Number of wins — per the Honours section of the player’s Wikipedia article; titles as a manager are not counted.'),
 };
 // Клуби, які стануть темами: зіставлені клуби Transfermarkt і відомі клуби з голами/матчами. Серед них шукаємо однакові назви.
 const knownClub = (qid, map) => teams[qid] && !teams[qid].national && !BANNED.has(leagueOf(qid))
@@ -334,6 +337,31 @@ for (const [qid, list] of byNation) {
   addTopic(`nation-caps:${qid}`, 'apps', T(`Найбільше матчів за збірну: ${name}`, `Most caps for ${en}`), list.map((x) => ({ p: x.p, value: x.a, text: capsT(x.a), detail: goalsT(x.g) })), NOTES.nation);
 }
 
+// ── трофеї: скільки разів виграв (усього, чемпіонати, ЛЧ, зі збірною, чемпіонати окремих країн)
+const titlesWord = (n) => (n % 10 === 1 && n % 100 !== 11 ? 'трофей' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 'трофеї' : 'трофеїв');
+const titlesT = (n) => T(`${n} ${titlesWord(n)}`, en1(n, 'trophy', 'trophies'));
+const timesWord = (n) => (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 'рази' : 'разів');
+const timesT = (n) => T(n === 1 ? '1 раз' : `${n} ${timesWord(n)}`, n === 1 ? 'once' : `${n} times`);
+const withHonours = players.filter((p) => honoursOf(p) && !BANNED.has(nationName(careerOf(p)?.nation?.t)));
+const honoursTopic = (id, title, value, text, detail, filter = () => true) => addTopic(id, 'trophies', title,
+  withHonours.filter(filter).map((p) => { const h = honoursOf(p), v = value(h); return { p, value: v, text: text(v), detail: detail(h) }; }), NOTES.trophies);
+honoursTopic('honours-total', T('Найбільше трофеїв за кар’єру', 'Most trophies in a career'), (h) => h.total || 0, titlesT, (h) => summary(h, ['league', 'ucl', 'wc', 'euro', 'copa']));
+honoursTopic('honours-ua', T('Українці з найбільшою кількістю трофеїв', 'Ukrainians with the most trophies'), (h) => h.total || 0, titlesT, (h) => summary(h, ['league', 'ucl', 'uel']), ukr);
+honoursTopic('honours-league', T('Найбільше чемпіонств', 'Most league titles'), (h) => h.league || 0, timesT, leaguesText);
+honoursTopic('honours-ucl', T('Найбільше перемог у Лізі чемпіонів', 'Most Champions League titles'), (h) => h.ucl || 0, timesT, (h) => summary(h, ['league', 'cwc']));
+honoursTopic('honours-nation', T('Найбільше трофеїв зі збірною', 'Most international trophies'), nationTitles, titlesT, (h) => summary(h, NATION_KEYS));
+// чемпіонства окремих країн: назви ліг у Вікіпедії (і старі назви тих самих чемпіонатів)
+const LEAGUE_TITLES = {
+  Англія: ['Premier League', 'Football League First Division'], Іспанія: ['La Liga'], Італія: ['Serie A'], Німеччина: ['Bundesliga'],
+  Франція: ['Ligue 1', 'French Division 1', 'Division 1 (French football)'], Україна: ['Ukrainian Premier League', 'Vyshcha Liha (Ukraine)'],
+  Нідерланди: ['Eredivisie'], Португалія: ['Primeira Liga'],
+};
+const LEAGUE_OF = { Англія: 'Англії', Іспанія: 'Іспанії', Італія: 'Італії', Німеччина: 'Німеччини', Франція: 'Франції', Україна: 'України', Нідерланди: 'Нідерландів', Португалія: 'Португалії' };
+for (const [country, names] of Object.entries(LEAGUE_TITLES)) {
+  const n = (h) => names.reduce((s, x) => s + (h.leagues?.[x] || 0), 0);
+  honoursTopic(`honours-league:${country}`, T(`Найбільше чемпіонств ${LEAGUE_OF[country]}`, `Most league titles: ${countryEn(country)}`), n, timesT, (h) => summary(h, ['ucl', 'uel']));
+}
+
 // Для вибору теми господарем: тип (загальні / клуб / ліга / збірна / турнір), країна й клуб — щоб фільтрувати список.
 const LEAGUE_COUNTRY = {
   GB1: 'Англія', ES1: 'Іспанія', IT1: 'Італія', L1: 'Німеччина', FR1: 'Франція', UKR1: 'Україна', PO1: 'Португалія', NL1: 'Нідерланди',
@@ -352,6 +380,7 @@ for (const t of topics) {
   else if (kind === 'club-goals' || kind === 'club-apps') Object.assign(t, { kind: 'club', country: leagueOf(key), club: clubTitle(key) });
   else if (kind === 'league-buys') Object.assign(t, { kind: 'league', country: LEAGUE_COUNTRY[key] });
   else if (kind === 'league-goals') Object.assign(t, { kind: 'league', country: key });
+  else if (kind === 'honours-league' && key) Object.assign(t, { kind: 'league', country: key });
   else if (kind.startsWith('nation')) Object.assign(t, { kind: 'nation', country: nationName(key) });
   else if (kind === 'tournament') t.kind = 'tournament';
   else t.kind = 'general';

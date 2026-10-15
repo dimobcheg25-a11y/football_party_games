@@ -17,7 +17,7 @@ Node 18+, Express + Socket.IO, клієнт — чистий HTML/CSS/JS без 
   відповіді лише гравцю). Дані — `server/data/careers.json` (кар'єри, герби/прапори посиланнями на Wikimedia).
 - `server/games/guess/` — «Вгадай гравця» (як Wordle): `compare.js` (профіль гравця й 11 клітинок порівняння: збірна/континент, позиція (Transfermarkt; «близько» = та сама лінія),
   рік (старший/молодший словами), останній клуб, чемпіонат, голи, матчі й голи за збірну, асисти (лише якщо загаданий почав з 2012 — `columnsFor`;
-  хто почав раніше — «—»), макс. вартість, трофеї текстом, спільні клуби з 🤝
+  хто почав раніше — «—»), макс. вартість, трофеї текстом (з кількістю перемог з `honours`: «Ліга чемпіонів ×2»), спільні клуби з 🤝
   «грали разом» за роками; кожна клітинка має `note` — пояснення словами), `room.js` (серія раундів, кожен
   вгадує у своєму темпі, очки 100→10 за номером спроби, чужі спроби — лише кольори). Пул загаданих — `poolFor` зі «Шляху» + є збірна.
 - `server/games/spy/` — «Футбольний шпигун» (3–10 гравців): `room.js` — турнір із матчів до 7/11/15 балів; у матчі шпигун (не двічі поспіль)
@@ -33,7 +33,7 @@ Node 18+, Express + Socket.IO, клієнт — чистий HTML/CSS/JS без 
   очки за місце 1→10 (нижчі — більше); режими `own` — кожен свій топ, `turns` — спільний по черзі з життями; життя й таймер (раунду/ходу)
   налаштовуються; тема випадкова або `pick` — обирає господар через `/api/top/topics`).
 - `server/games/duel/` — «Один на один»: `questions.js` (питання `{ id, group, title, unit, note, value(p), show(v, p), gap }` у 8 групах — особисте (вік, зріст з `facts.json`),
-  кар'єра, збірна, гроші, статистика з 2012 (`stats.json`, лише хто почав з 2012), трофеї (кількість тегів), популярність (`rawFame`, перегляди `facts.views`), Instagram
+  кар'єра, збірна, гроші, статистика з 2012 (`stats.json`, лише хто почав з 2012), трофеї (`honours`: усього, чемпіонати, ЛЧ; турніри зі збірною — теж звідти), популярність (`rawFame`, перегляди `facts.views`), Instagram
   (`manual-instagram.js`, пари лише ≥ ×1.3); без даних — питання/група недоступні (`/api/duel/categories`); пул — `poolFor` без росії/білорусі; `makePair` — рівні пар
   легко ≥ ×1.5 / складно ≤ 20 % (або свої абсолютні пороги), однакових значень немає), `room.js` (соло `streak` — переможець лишається, до кінця життів 1/3; соло `rounds` 10/20, +1;
   таймер 5/10/15 с або без нього (і в соло: не встиг — помилка); кімната 2–10 — одночасно, +1 і +1 найшвидшому правильному; числа (`values`) і чужий вибір — лише після `reveal`, свій — `privateState.myPick`).
@@ -55,6 +55,9 @@ Node 18+, Express + Socket.IO, клієнт — чистий HTML/CSS/JS без 
   приблизно з 2012 р., легенди здебільшого без даних — відомі пропуски дописуються в `server/data/manual-transfers.js`)
   і `transfer-clubs.json` (клуб TM → назва, ліга, наш qid — зіставлено за кар'єрами гравців);
   `scripts/build-tournaments.js` → `tournaments.json` (бомбардири ЧС, Євро, Копа, ЛЧ, ЛЄ з таблиць en.wikipedia; кого немає в базі — `null` + ім'я);
+  `scripts/build-honours.js` → `honours.json` (розділ «Honours» статей en.wikipedia: скільки разів виграв чемпіонат (з назвами ліг), ЛЧ, ЛЄ, кубки, ЧС, Євро…;
+  без молодіжних, особистих нагород і трофеїв тренером; доступ — `server/data/honours.js` (`honoursOf(p)`: null — розділу немає, невідомо);
+  у «Топ-10» — категорія `trophies`);
   `scripts/build-stats.js` → `stats.json` (з таблиці виходів transfermarkt-datasets, кожен матч з 2012/13: готові топи асистів, гол+пас,
   голів/асистів за сезон, карток — по лігах, ЛЧ/ЛЄ і клубах; `players[tm]` — підсумки гравців бази: `t` [голи, асисти, матчі, жовті] усі змагання, `c[клуб]` лише чемпіонат);
   `scripts/lib/wikidata.js` — запити до Wikidata з повторами.
@@ -67,7 +70,7 @@ Node 18+, Express + Socket.IO, клієнт — чистий HTML/CSS/JS без 
 easy/normal/hard = верхні 30% / наступні 40% / решта. Нова гра бере складність звідси ж, своїх порогів на fame не вигадувати.
 
 ## Не читати цілком
-`server/data/players.json`, `careers.json`, `photos.json`, `transfers.json`, `transfer-clubs.json`, `tournaments.json`, `stats.json` (десятки–сотні КБ), `package-lock.json` —
+`server/data/players.json`, `careers.json`, `honours.json`, `photos.json`, `transfers.json`, `transfer-clubs.json`, `tournaments.json`, `stats.json` (десятки–сотні КБ), `package-lock.json` —
 лише Grep або `node -e` по конкретному імені/ключу. Клієнти ігор (`public/<id>/app.js`, 240–320 рядків; crossroads — 1100) читати частинами: потрібне місце шукати Grep за назвою функції
 (`renderGame`, `renderFinal`, `renderScoreboard`…).
 
@@ -152,7 +155,7 @@ actions: { start, guess, ... : (room, seat, payload) => ({ ok } | { error }) }, 
 
 ## Команди
 - `npm test` — прогін усіх перевірок (~3 хв). Обов'язково перед комітом; запускати у фоні, вивід — у файл і `grep ПРОЙШЛИ|✗`.
-- Оновити базу: `npm run build-players` (≈15 хв) → `npm run build-careers` (≈10 хв; кар'єри з таблиць en.wikipedia) → `npm run fetch-photos`; `npm run build-transfers` (≈1 хв); `npm run build-tournaments` (≈1 хв); `npm run build-stats` (≈2 хв, після build-transfers); `npm run build-coaches` (≈1 хв); `npm run build-names-en` (≈5 хв, англійські назви клубів, після build-careers); `npm run build-facts` (≈10 хв: зріст, дата народження, перегляди Вікіпедії → `facts.json`). Instagram — вручну в `server/data/manual-instagram.js`.
+- Оновити базу: `npm run build-players` (≈15 хв) → `npm run build-careers` (≈10 хв; кар'єри з таблиць en.wikipedia) → `npm run fetch-photos`; `npm run build-transfers` (≈1 хв); `npm run build-tournaments` (≈1 хв); `npm run build-stats` (≈2 хв, після build-transfers); `npm run build-coaches` (≈1 хв); `npm run build-names-en` (≈5 хв, англійські назви клубів, після build-careers); `npm run build-honours` (≈4 хв, трофеї); `npm run build-facts` (≈10 хв: зріст, дата народження, перегляди Вікіпедії → `facts.json`). Instagram — вручну в `server/data/manual-instagram.js`.
 - `npm run dev` — локальний сервер з перезапуском.
 - `npm run ui-check -- [hub|top|spy|guess|duel|path|crossroads] [--mobile]` — справжній Chrome без вікна (playwright-core + встановлений Chrome; окремий процес,
   браузер користувача не чіпає): проходить основні екрани, ловить помилки JS, знімки — у `.shots/` (не в git). Перед пушем UI-змін запускати

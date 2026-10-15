@@ -5,6 +5,7 @@
   const CATEGORY_LABELS = {
     transfers: L('💶 Трансфери', '💶 Transfers'), goals: L('⚽ Голи', '⚽ Goals'), assists: L('🎯 Асисти', '🎯 Assists'),
     apps: L('👕 Матчі й кар’єра', '👕 Appearances & career'), cards: L('🟨 Картки', '🟨 Cards'),
+    trophies: L('🏆 Трофеї', '🏆 Trophies'),
   };
   const MODE_LABELS = { own: L('кожен свій топ', 'everyone their own top'), turns: L('спільний топ по черзі', 'one shared top, taking turns') };
   const LEVEL_LABELS = {

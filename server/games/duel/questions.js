@@ -8,6 +8,7 @@
 const { T } = require('../../core/i18n');
 const { careerOf, team } = require('../path/careers');
 const { teamEn } = require('../../data/names-en');
+const { honoursOf, count, nationTitles, summary, leaguesText, NATION_KEYS } = require('../../data/honours');
 
 const tryRequire = (file, fallback) => {
   try { return require(file); } catch { return fallback; }
@@ -26,13 +27,10 @@ const firstYear = (p) => { const c = careerOf(p); return c?.clubs[0] ? c.clubs[0
 const modern = (p) => (firstYear(p) ?? 0) >= STATS_FROM;
 const clubT = (q) => { const t = team(q); return T(t.name, teamEn(q, t) || t.name); };
 
-// Великі трофеї й нагороди (теги бази) — рахуємо, скільки різних має гравець.
-const TROPHIES = [
-  ['BALLON', "Золотий м'яч", "Ballon d'Or"], ['BOOT', 'Золота бутса', 'Golden Shoe'], ['GBOY', 'Golden Boy', 'Golden Boy'],
-  ['WC', 'Чемпіонат світу', 'World Cup'], ['EURO', 'Євро', 'Euro'], ['COPA', 'Кубок Америки', 'Copa América'],
-  ['UCL', 'Ліга чемпіонів', 'Champions League'], ['UEL', 'Ліга Європи', 'Europa League'],
-  ['APL', 'Чемпіон Англії', 'Premier League'], ['CH_ES', 'Чемпіон Іспанії', 'La Liga'], ['CH_IT', 'Чемпіон Італії', 'Serie A'], ['CH_DE', 'Чемпіон Німеччини', 'Bundesliga'],
-];
+// Трофеї — скільки разів виграв (server/data/honours.js); гравцям без розділу трофеїв у статті питання не ставимо.
+const HONOURS_SRC = T(' За розділом «Honours» статті гравця в англійській Вікіпедії; трофеї тренером не рахуються.',
+  ' Per the Honours section of the player’s English Wikipedia article; titles won as a manager are not counted.');
+const withSrc = (uk, en) => T(uk + HONOURS_SRC.uk, en + HONOURS_SRC.en);
 
 // Гроші: €180 млн / €180m; менше мільйона — тисячі.
 function money(v) {
@@ -136,12 +134,10 @@ const QUESTIONS = [
   {
     id: 'natTitles', group: 'nation',
     title: T('Хто виграв більше турнірів зі збірною?', 'Who won more tournaments with their country?'), unit: T('турнірів зі збірною', 'international titles'),
-    note: T('Чемпіонат світу, Євро, Кубок Америки — кожен рахується раз.', 'World Cup, Euro, Copa América — each counts once.'),
-    value: (p) => (careerOf(p)?.nation ? ['WC', 'EURO', 'COPA'].filter((t) => p.tags.has(t)).length : null),
-    show(v, p) {
-      const list = TROPHIES.filter(([id]) => ['WC', 'EURO', 'COPA'].includes(id) && p.tags.has(id));
-      return { num: v, dec: 0, detail: list.length ? T(list.map((t) => t[1]).join(', '), list.map((t) => t[2]).join(', ')) : T('жодного', 'none') };
-    },
+    note: withSrc('Скільки разів виграв з дорослою збірною ЧС, Євро, Копа Америка, Кубок Африки, Лігу націй, Кубок конфедерацій тощо.',
+      'How many times they won the World Cup, Euro, Copa América, AFCON, Nations League, Confederations Cup etc. with the senior team.'),
+    value: (p) => (careerOf(p)?.nation ? nationTitles(honoursOf(p)) : null),
+    show: (v, p) => ({ num: v, dec: 0, detail: summary(honoursOf(p), NATION_KEYS) }),
     gap: { kind: 'abs', easy: 2, hard: 1 },
   },
 
@@ -196,15 +192,28 @@ const QUESTIONS = [
   // ── трофеї
   {
     id: 'trophies', group: 'trophies',
-    title: T('У кого більше великих трофеїв?', 'Who has more major honours?'), unit: T('великих трофеїв', 'major honours'),
-    note: T(`Скільки різних великих трофеїв і нагород: ${TROPHIES.map((t) => t[1]).join(', ')}. Кожен рахується раз.`,
-      `How many different major honours: ${TROPHIES.map((t) => t[2]).join(', ')}. Each counts once.`),
-    value: (p) => TROPHIES.filter(([id]) => p.tags.has(id)).length,
-    show(v, p) {
-      const list = TROPHIES.filter(([id]) => p.tags.has(id));
-      return { num: v, dec: 0, detail: list.length ? T(list.map((t) => t[1]).join(', '), list.map((t) => t[2]).join(', ')) : T('жодного', 'none') };
-    },
-    gap: { kind: 'abs', easy: 3, hard: 1 },
+    title: T('У кого більше трофеїв?', 'Who has won more trophies?'), unit: T('трофеїв', 'trophies'),
+    note: withSrc('Усі командні трофеї, кожна перемога: чемпіонати, кубки й суперкубки, єврокубки, турніри збірних.',
+      'All team trophies, counting every win: leagues, cups and super cups, continental and international titles.'),
+    value: (p) => count(honoursOf(p), 'total'),
+    show: (v, p) => ({ num: v, dec: 0, detail: summary(honoursOf(p)) }),
+    gap: { kind: 'ratio', easy: 1.6, hard: 1.2 },
+  },
+  {
+    id: 'leagueTitles', group: 'trophies',
+    title: T('Хто виграв більше чемпіонатів?', 'Who has won more league titles?'), unit: T('чемпіонств', 'league titles'),
+    note: withSrc('Скільки разів ставав чемпіоном країни (вищий дивізіон будь-якої країни).', 'Top-flight league titles in any country.'),
+    value: (p) => count(honoursOf(p), 'league'),
+    show: (v, p) => ({ num: v, dec: 0, detail: leaguesText(honoursOf(p)) }),
+    gap: { kind: 'abs', easy: 4, hard: 1 },
+  },
+  {
+    id: 'uclTitles', group: 'trophies',
+    title: T('Хто більше разів виграв Лігу чемпіонів?', 'Who has won the Champions League more times?'), unit: T('Ліг чемпіонів', 'Champions League titles'),
+    note: withSrc('Кубок європейських чемпіонів і Ліга чемпіонів.', 'European Cup and Champions League.'),
+    value: (p) => count(honoursOf(p), 'ucl'),
+    show: plain,
+    gap: { kind: 'abs', easy: 2, hard: 1 },
   },
 
   // ── популярність

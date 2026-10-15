@@ -3,6 +3,7 @@
 const { careerOf, team, teams, POSITIONS } = require('../path/careers');
 const { T } = require('../../core/i18n');
 const { countryEn, teamEn } = require('../../data/names-en');
+const { honoursOf } = require('../../data/honours');
 
 // Британські збірні у Wikidata — окремі команди, але країна в усіх «Сполучене Королівство».
 const NATION_NAMES = { Q47762: 'Англія', Q34044: 'Шотландія', Q180857: 'Уельс', Q190978: 'Північна Ірландія' };
@@ -67,12 +68,13 @@ for (const [conf, list] of Object.entries(CONFEDERATIONS)) for (const c of list.
 
 // Головні трофеї — текстом (значки без підпису незрозумілі).
 const TROPHIES = [
+  // h — ключ у honours.json: звідти кількість перемог («Ліга чемпіонів ×2»); Золотий м'яч — лише тег
   { id: 'BALLON', label: "Золотий м'яч", en: "Ballon d'Or" },
-  { id: 'WC', label: 'Чемпіон світу', en: 'World Cup winner' },
-  { id: 'EURO', label: 'Чемпіон Європи', en: 'Euro winner' },
-  { id: 'COPA', label: 'Кубок Америки', en: 'Copa América' },
-  { id: 'UCL', label: 'Ліга чемпіонів', en: 'Champions League' },
-  { id: 'UEL', label: 'Ліга Європи', en: 'Europa League' },
+  { id: 'WC', label: 'Чемпіон світу', en: 'World Cup winner', h: 'wc' },
+  { id: 'EURO', label: 'Чемпіон Європи', en: 'Euro winner', h: 'euro' },
+  { id: 'COPA', label: 'Кубок Америки', en: 'Copa América', h: 'copa' },
+  { id: 'UCL', label: 'Ліга чемпіонів', en: 'Champions League', h: 'ucl' },
+  { id: 'UEL', label: 'Ліга Європи', en: 'Europa League', h: 'uel' },
 ];
 
 // Основна позиція — з Transfermarkt (точніша за перелік у Wikidata); група — для «близько»: та сама лінія на полі.
@@ -159,7 +161,9 @@ function profileOf(p) {
     modern: (c.clubs[0].s ?? c.clubs[0].e ?? 0) >= STATS_FROM,
     assists: stats?.players?.[transfers[p.id]?.tm]?.t[1] ?? null,
     value: transfers[p.id]?.maxValue || null,
-    trophies: TROPHIES.filter((t) => p.tags.has(t.id)).map((t) => t.id),
+    // трофей є, якщо є тег або перемога в honours; кількість — з honours (якщо є)
+    trophies: TROPHIES.filter((t) => p.tags.has(t.id) || (t.h && honoursOf(p)?.[t.h])).map((t) => t.id),
+    trophyCount: Object.fromEntries(TROPHIES.filter((t) => t.h && honoursOf(p)?.[t.h] > 1).map((t) => [t.id, honoursOf(p)[t.h]])),
   };
   profiles.set(p.id, profile);
   return profile;
@@ -282,7 +286,11 @@ function compare(g, t) {
   const someTrophies = g.trophies.some((x) => tt.has(x));
   cells.trophies = {
     text: g.trophies.length ? '' : T('немає великих', 'no major ones'),
-    items: g.trophies.map((id) => { const x = TROPHIES.find((y) => y.id === id); return { label: T(x.label, x.en), match: tt.has(id) }; }),
+    items: g.trophies.map((id) => {
+      const x = TROPHIES.find((y) => y.id === id);
+      const n = g.trophyCount[id] ? ` ×${g.trophyCount[id]}` : '';
+      return { label: T(x.label + n, x.en + n), match: tt.has(id) };
+    }),
     color: sameTrophies ? 'green' : someTrophies ? 'yellow' : 'grey',
     note: !sameTrophies && someTrophies ? T('✓ — є і в загаданого', '✓ — mystery player has it too') : null,
   };
