@@ -2,7 +2,8 @@
 //   { id, group, title: T(питання), unit: T(підпис під числом), note: T(звідки дані), value(p) → число | null,
 //     show(v, p) → { pre, num, dec, post, detail } — як показати (num крутиться лічильником на клієнті),
 //     gap: { kind: 'ratio' | 'abs', easy, hard } — наскільки різні значення в «легкій» і «складній» парі,
-//     minGap — менше не загадуємо (Instagram: числа приблизні), pairOk(a, b) — додаткова умова пари }.
+//     minGap — менше не загадуємо (Instagram: числа приблизні), maxGap — більше не загадуємо на жодному рівні
+//     (вік: гравці різних епох — надто очевидно), pairOk(a, b) — додаткова умова пари }.
 // Дані, яких може не бути (facts.json, manual-instagram.js збираються окремо), читаються через try — без них питання просто недоступні.
 const { T } = require('../../core/i18n');
 const { careerOf, team } = require('../path/careers');
@@ -66,6 +67,7 @@ const QUESTIONS = [
     },
     show(v, p) { const dob = factsOf(p).dob; return { num: dob ? Number(dob.slice(0, 4)) : p.born, dec: 0, detail: dob ? dateText(dob) : null }; },
     gap: { kind: 'abs', easy: 6, hard: 1.5 },
+    maxGap: 12,
     // з однаковим роком без точних дат не порівняти
     pairOk: (a, b) => a.born !== b.born || (!!factsOf(a).dob && !!factsOf(b).dob),
   },
@@ -172,21 +174,21 @@ const QUESTIONS = [
   {
     id: 'assists', group: 'stats',
     title: T('Хто віддав більше гольових передач?', 'Who has more assists?'), unit: T('асистів', 'assists'),
-    note: T('Усі змагання з сезону 2012/13 — за Transfermarkt; лише гравці, що почали кар’єру з 2012-го.', 'All competitions since 2012/13 — per Transfermarkt; only players who started their career in 2012 or later.'),
+    note: T('Усі клубні змагання (без збірної) з сезону 2012/13 — за Transfermarkt; лише гравці, що почали кар’єру з 2012-го.', 'All club competitions (no national team) since 2012/13 — per Transfermarkt; only players who started their career in 2012 or later.'),
     value: (p) => (modern(p) ? statsOf(p)?.t[1] ?? null : null),
     show: plain, gap: RATIO,
   },
   {
     id: 'ga', group: 'stats',
     title: T('У кого більше «гол + пас»?', 'Who has more goals + assists?'), unit: T('голів + асистів', 'goals + assists'),
-    note: T('Голи й асисти в усіх змаганнях з сезону 2012/13 — за Transfermarkt; лише гравці, що почали кар’єру з 2012-го.', 'Goals and assists, all competitions since 2012/13 — per Transfermarkt; only careers from 2012 on.'),
+    note: T('Голи й асисти в усіх клубних змаганнях (без збірної) з сезону 2012/13 — за Transfermarkt; лише гравці, що почали кар’єру з 2012-го.', 'Goals and assists, all club competitions (no national team) since 2012/13 — per Transfermarkt; only careers from 2012 on.'),
     value: (p) => { const s = modern(p) && statsOf(p); return s ? s.t[0] + s.t[1] : null; },
     show: plain, gap: RATIO,
   },
   {
     id: 'yellow', group: 'stats',
     title: T('У кого більше жовтих карток?', 'Who has more yellow cards?'), unit: T('жовтих карток', 'yellow cards'),
-    note: T('Жовті картки в усіх змаганнях з сезону 2012/13 — за Transfermarkt; лише гравці, що почали кар’єру з 2012-го.', 'Yellow cards, all competitions since 2012/13 — per Transfermarkt; only careers from 2012 on.'),
+    note: T('Жовті картки в усіх клубних змаганнях (без збірної) з сезону 2012/13 — за Transfermarkt; лише гравці, що почали кар’єру з 2012-го.', 'Yellow cards, all club competitions (no national team) since 2012/13 — per Transfermarkt; only careers from 2012 on.'),
     value: (p) => (modern(p) ? statsOf(p)?.t[3] ?? null : null),
     show: plain, gap: RATIO,
   },
@@ -275,6 +277,7 @@ function fitsLevel(q, a, b, level) {
   if (a === b) return false;
   const g = gapOf(q, a, b);
   if (q.minGap && g < q.minGap) return false;
+  if (q.maxGap && g > q.maxGap) return false;
   if (level === 'easy') return g >= q.gap.easy;
   if (level === 'hard') return g <= q.gap.hard;
   return true;

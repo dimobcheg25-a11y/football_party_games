@@ -80,7 +80,7 @@ async function main() {
     const comp = f[head.competition_id];
     const player = f[head.player_id];
     const d = { g: Number(f[head.goals]) || 0, a: Number(f[head.assists]) || 0, y: Number(f[head.yellow_cards]) || 0, r: Number(f[head.red_cards]) || 0 };
-    // підсумки гравців бази — з усіх змагань (ліги, кубки, єврокубки, турніри збірних)
+    // підсумки гравців бази — з усіх клубних змагань (ліги, кубки, єврокубки; матчів збірних у таблиці немає)
     if (ourTm.has(player)) {
       if (!perPlayer.has(player)) perPlayer.set(player, { t: [0, 0, 0, 0], c: {} });
       const pp = perPlayer.get(player);
