@@ -25,7 +25,8 @@
 .board-empty { color: var(--muted); text-align: center; margin: 10px 0; }
 .g-row {
   display: grid; gap: 5px; align-items: stretch;
-  grid-template-columns: 130px repeat(9, minmax(0, 1fr)) minmax(0, 1.4fr) minmax(0, 1.6fr);
+  /* --n — скільки звичайних клітинок (без трофеїв і клубів): 9 або 10 з асистами; ставить app.js */
+  grid-template-columns: 130px repeat(var(--n, 9), minmax(0, 1fr)) minmax(0, 1.4fr) minmax(0, 1.6fr);
 }
 .g-row.fresh .cell { animation: flip .45s ease-out both; }
 .g-row.fresh .cell:nth-child(n+3) { animation-delay: .05s; } .g-row.fresh .cell:nth-child(n+5) { animation-delay: .1s; }
@@ -56,7 +57,7 @@
 .cell.c-last > img { width: 26px; height: 26px; background: #e8efe9; border-radius: 6px; padding: 2px; }
 .cell .arrow { position: absolute; top: 3px; right: 6px; font-size: 15px; font-weight: 900; }
 .cell .lbl { display: none; }
-.cell.c-goals b, .cell.c-caps b, .cell.c-natGoals b, .cell.c-born b { font-family: var(--display); font-size: 16px; }
+.cell.c-goals b, .cell.c-caps b, .cell.c-natGoals b, .cell.c-assists b, .cell.c-born b { font-family: var(--display); font-size: 16px; }
 .cell.c-value b { font-size: 14px; }
 
 /* списки (клуби, трофеї): кожен пункт — окремий рядок-чип, довгі назви переносяться */

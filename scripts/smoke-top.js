@@ -88,6 +88,20 @@ async function main() {
   assert.strictEqual(st.topic.title, 'Найдорожчі трансфери в історії');
   assert.strictEqual(st.testAnswer[0], 'neymar');
   console.log('✓ господар обрав тему');
+  // наступна тема — Ліга Європи: Дітера Мюллера немає в базі — його рядок відкрито одразу, без очок
+  await emit(picker, 'giveUp');
+  await emit(picker, 'next');
+  st = await nextState(picker, (x) => x.phase === 'pick');
+  await emit(picker, 'pickTopic', { topicId: 'tournament:uel' });
+  st = await nextState(picker, (x) => x.phase === 'guess' && x.topic.id === 'tournament:uel');
+  const miss = st.slots.findIndex((x) => x.missing);
+  assert.ok(miss >= 0 && st.slots[miss].player.name && st.testAnswer[miss] === null, 'відсутній у базі — відкритий з іменем');
+  for (const id of new Set(st.testAnswer.filter(Boolean))) await emit(picker, 'guess', { playerId: id });
+  st = await nextState(picker, (x) => x.phase === 'reveal');
+  assert.ok(!st.slots[miss].by.length, 'за відкритий рядок очок немає');
+  console.log(`✓ Ліга Європи: ${st.slots[miss].player.name} відкритий одразу; решту вгадано — раунд закінчено`);
+  const cats = await (await fetch(`${URL}/api/top/topics?categories=assists,cards&size=10`)).json();
+  assert.ok(cats.some((t) => t.id === 'stat:GB1:assists') && cats.some((t) => t.category === 'cards'), 'асисти й картки');
   picker.close();
 
   // ── кімната «кожен свій топ»

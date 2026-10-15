@@ -1,4 +1,4 @@
-// Бомбардири турнірів (ЧС, Євро, Ліга чемпіонів, Ліга Європи) — з таблиць англійської Вікіпедії
+// Бомбардири турнірів (ЧС, Євро, Копа Америка, Ліга чемпіонів, Ліга Європи) — з таблиць англійської Вікіпедії
 // → server/data/tournaments.json: { [турнір]: [[id гравця | null, голи, (назва, якщо гравця немає в базі)], …] } за спаданням.
 // Гравців зіставляємо через посилання в таблиці → Wikidata (qid) → наша база; кого в базі немає — пишемо в консоль.
 // Запуск: npm run build-tournaments (після build-players).
@@ -14,6 +14,7 @@ const UA = 'football-games-grid9/1.0 (hobby project)';
 const SOURCES = {
   wc: { page: 'List_of_FIFA_World_Cup_top_goalscorers', caption: /at least \d+ goals/i },
   euro: { page: 'UEFA_European_Championship_top_goalscorers' },
+  copa: { page: 'Copa_América_records_and_statistics' },
   ucl: { page: 'List_of_European_Cup_and_UEFA_Champions_League_top_scorers' },
   uel: { page: 'List_of_UEFA_Cup_and_Europa_League_top_scorers', goals: /^Goal$/i },
 };

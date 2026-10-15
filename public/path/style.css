@@ -71,6 +71,7 @@
 .st-body b { font-size: 17px; overflow-wrap: anywhere; }
 .st-body small { color: var(--muted); font-size: 13px; }
 .st-body .loan { color: var(--gold); font-weight: 700; }
+.st-body .fee { color: var(--accent); font-weight: 700; }
 .st-stats { font-size: 13px; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
 
 .answer-box { margin-top: 14px; display: grid; gap: 8px; position: relative; }

@@ -62,6 +62,12 @@ async function main() {
   if (capsOf('lionel-messi') !== capsOf('neymar')) assert.notStrictEqual(cell('lionel-messi', 'neymar', 'caps').color, 'green', 'зелена — лише точна кількість');
   assert.strictEqual(cell('neymar', 'neymar', 'caps').color, 'green');
   assert.ok(!profileOf(playerById.get('wayne-rooney')).countries.has('Британія'), 'чемпіонат — Англія/Шотландія, не «Британія»');
+  // асисти — лише коли загаданий почав з 2012-го; хто почав раніше — «—»
+  const { columnsFor } = require('../server/games/guess/compare');
+  assert.ok(!columnsFor(profileOf(playerById.get('lionel-messi'))).some((c) => c.id === 'assists'), 'Мессі почав до 2012 — без асистів');
+  assert.ok(columnsFor(profileOf(playerById.get('erling-haaland'))).some((c) => c.id === 'assists'), 'Голанд — з асистами');
+  assert.strictEqual(cell('lionel-messi', 'erling-haaland', 'assists').text, '—');
+  assert.ok(/^\d+$/.test(cell('kylian-mbappe', 'erling-haaland', 'assists').text), 'асисти числом');
   assert.strictEqual(cell('neymar', 'neymar', 'last').color, 'green');
   assert.strictEqual(cell('andriy-shevchenko', 'neymar', 'shared').color, 'grey');
   const eng = cell('david-beckham', 'wayne-rooney', 'nation');
@@ -83,7 +89,8 @@ async function main() {
   const [w1, w2] = wrongIds(st, 2);
   ({ res, st } = await act(solo, 'guess', { playerId: w1 }, (x) => x.myTries.length === 1));
   assert.strictEqual(res.correct, false);
-  assert.strictEqual(st.myTries[0].cells.length, 11, '11 клітинок');
+  assert.strictEqual(st.myTries[0].cells.length, st.columns.length, 'клітинка на кожну колонку');
+  assert.ok([11, 12].includes(st.columns.length), '11 клітинок, з асистами — 12');
   assert.strictEqual(st.potential, st.points[1]);
   assert.ok((await emit(solo, 'guess', { playerId: w1 })).error, 'того самого гравця двічі не можна');
   ({ st } = await act(solo, 'guess', { playerId: w2 }, (x) => x.myTries.length === 2));
@@ -132,7 +139,7 @@ async function main() {
   await act(a, 'guess', { playerId: wrongIds(st, 1)[0] }, (x) => x.myTries.length === 1);
   const bView = await bSees;
   assert.strictEqual(bView.myTries.length, 0, 'чужих спроб з іменами не видно');
-  assert.strictEqual(bView.progress[0].colors[0].length, 11);
+  assert.strictEqual(bView.progress[0].colors[0].length, bView.columns.length);
   assert.ok(!JSON.stringify(bView.progress).includes(wrongIds(st, 1)[0]), 'імені в спільному стані немає');
   // А вгадує — раунд ще йде, бо Б думає
   ({ st } = await act(a, 'guess', { playerId: st.testAnswer }, (x) => x.progress[0].solved));

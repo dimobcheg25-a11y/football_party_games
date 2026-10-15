@@ -30,6 +30,7 @@ function normalize(s) {
 }
 
 const players = rawPlayers.map((p) => ({ ...p, tags: new Set(p.tags), photo: photos[p.id] || null }));
+require('./derived-tags').addDerivedTags(players); // 100+ асистів, 30+ голів у ЛЧ, трансфер 80+ млн, мандрівник
 const playerById = new Map(players.map((p) => [p.id, p]));
 
 function matches(player, categoryId) {

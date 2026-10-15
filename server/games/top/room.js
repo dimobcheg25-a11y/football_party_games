@@ -5,7 +5,7 @@
 // Обмеження налаштовуються: життя (помилки) і таймер раунду (own) або ходу (turns).
 const { playerById } = require('../../data');
 const { BaseRoom } = require('../../core/base-room');
-const { topicById, topicsFor, SIZES, CATEGORIES } = require('./tops');
+const { topicById, topicsFor, fitsSize, SIZES, CATEGORIES } = require('./tops');
 
 const MAX_PLAYERS = 8;
 const ALLOWED_LIVES = [0, 1, 3, 5]; // 0 — без обмеження помилок
@@ -52,6 +52,7 @@ class TopRoom extends BaseRoom {
     this.phase = null; // pick | guess | reveal
     this.topic = null;
     this.slots = [];
+    this.missing = new Set(); // місця гравців, яких немає в базі: відкриті одразу, без очок
     this.roundPoints = {};
     this.nextVotes = new Set();
     this.deadline = null;
@@ -154,7 +155,7 @@ class TopRoom extends BaseRoom {
     if (topicId == null) topic = this.randomTopic();
     else {
       topic = topicById.get(topicId);
-      if (!topic || topic.entries.length < this.options.size) return { error: 'Такої теми немає' };
+      if (!topic || !fitsSize(topic, this.options.size)) return { error: 'Такої теми немає' };
     }
     this.beginRound(topic);
     return { ok: true };
@@ -164,6 +165,7 @@ class TopRoom extends BaseRoom {
     this.topic = topic;
     this.usedTopics.add(topic.id);
     this.slots = topic.entries.slice(0, this.options.size);
+    this.missing = new Set(this.slots.map((e, i) => (e.p ? -1 : i)).filter((i) => i >= 0));
     this.phase = 'guess';
     if (this.options.mode === 'turns') {
       // черга зсувається з кожним раундом, щоб першим ходив не завжди той самий
@@ -182,7 +184,7 @@ class TopRoom extends BaseRoom {
   }
 
   slotsOf(playerId) {
-    return this.slots.map((e, i) => (e.p.id === playerId ? i : -1)).filter((i) => i >= 0);
+    return this.slots.map((e, i) => (e.p && e.p.id === playerId ? i : -1)).filter((i) => i >= 0);
   }
 
   board(seat) {
@@ -215,7 +217,7 @@ class TopRoom extends BaseRoom {
     if (places.length) {
       places.forEach((i) => b.found.add(i));
       res = { ok: true, correct: true, places, points: this.addPoints(seat, places) };
-      if (b.found.size === this.slots.length) b.done = true;
+      if (b.found.size + this.missing.size === this.slots.length) b.done = true;
     } else {
       b.wrong.push(player.id);
       if (this.options.lives && b.wrong.length >= this.options.lives) b.done = true;
@@ -239,7 +241,7 @@ class TopRoom extends BaseRoom {
       this.loseLife(seat);
       res = { ok: true, correct: false };
     }
-    if (this.found.size === this.slots.length) this.endRound();
+    if (this.found.size + this.missing.size === this.slots.length) this.endRound();
     else this.nextTurn();
     this.changed();
     return res;
@@ -329,7 +331,8 @@ class TopRoom extends BaseRoom {
 
   slotFull(i) {
     const e = this.slots[i];
-    return { player: publicPlayer(e.p), text: e.text, detail: e.detail, points: pointsFor(i, this.slots.length) };
+    const player = e.p ? publicPlayer(e.p) : { id: null, name: e.name, uk: null, photo: null };
+    return { player, text: e.text, detail: e.detail, points: pointsFor(i, this.slots.length), missing: !e.p };
   }
 
   publicState() {
@@ -340,6 +343,7 @@ class TopRoom extends BaseRoom {
         const by = turns ? (this.found.has(i) ? [this.found.get(i)] : []) : [...this.boards].filter(([, b]) => b.found.has(i)).map(([s]) => s);
         return { ...this.slotFull(i), by };
       }
+      if (this.missing.has(i)) return { ...this.slotFull(i), by: [] };
       if (turns && this.found.has(i)) return { ...this.slotFull(i), by: [this.found.get(i)] };
       return { points: pointsFor(i, this.slots.length) };
     });
@@ -376,7 +380,7 @@ class TopRoom extends BaseRoom {
       serverNow: Date.now(),
       history: this.status === 'finished' ? this.history : [],
     };
-    if (process.env.TOP_TEST_ANSWER === '1' && this.slots.length) state.testAnswer = this.slots.map((e) => e.p.id); // лише для автотесту
+    if (process.env.TOP_TEST_ANSWER === '1' && this.slots.length) state.testAnswer = this.slots.map((e) => e.p?.id ?? null); // лише для автотесту
     return state;
   }
 

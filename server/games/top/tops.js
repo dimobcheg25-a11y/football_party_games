@@ -1,15 +1,22 @@
 // «Топ-10»: усі теми-топи, які можна загадати, будуються з нашої бази при старті.
 // Трансфери й вартість — server/data/transfers.json (Transfermarkt; legends до ~2012 — частково, див. manual-transfers.js),
-// голи й матчі — кар'єри з Вікіпедії (голи в чемпіонатах за кожен клуб, матчі й голи за збірну).
-// Топ = [{ player, value, detail }] за спаданням; гравець може бути в топі кілька разів (два великі трансфери) —
-// тоді, назвавши його, відкриваєш усі його рядки.
+// голи й матчі — кар'єри з Вікіпедії (голи в чемпіонатах за кожен клуб, матчі й голи за збірну),
+// асисти, гол+пас, рекорди сезону, картки — stats.json (Transfermarkt, з 2012/13), бомбардири турнірів — tournaments.json.
+// Топ = [{ p, value, text, detail }] за спаданням; гравець може бути в топі кілька разів (два великі трансфери, кілька сезонів) —
+// тоді, назвавши його, відкриваєш усі його рядки. p = null — гравця немає в базі: тоді є name, і рядок відкрито одразу (без очок).
 const { players, playerById } = require('../../data');
-const { careerOf, team, teams } = require('../path/careers');
+const { careerOf, team, teams, poolFor } = require('../path/careers');
 const { leagueOf, nationName, money } = require('../guess/compare');
 
 let transfers = {};
 let tmClubs = {};
 let tournaments = {};
+let stats = { names: {}, comp: {}, club: {} };
+try {
+  stats = require('../../data/stats.json');
+} catch {
+  // асисти й рекорди сезону ще не зібрані (npm run build-stats)
+}
 try {
   tournaments = require('../../data/tournaments.json');
 } catch {
@@ -23,7 +30,9 @@ try {
 }
 
 const SIZES = [5, 10, 20];
-const CATEGORIES = { transfers: 'Трансфери', goals: 'Голи', apps: 'Матчі' };
+const CATEGORIES = { transfers: 'Трансфери', goals: 'Голи', assists: 'Асисти', apps: 'Матчі й кар’єра', cards: 'Картки' };
+// Скільки рядків топу можна відкрити одразу (гравців немає в базі): більше — тема для цього розміру не годиться.
+const MAX_MISSING = 0.25;
 // Ліги Transfermarkt → як ми їх називаємо (лише ті, де є з чого скласти топ).
 const TM_LEAGUES = {
   GB1: 'Прем’єр-ліги', ES1: 'Ла Ліги', IT1: 'Серії A', L1: 'Бундесліги', FR1: 'Ліги 1', UKR1: 'УПЛ',
@@ -36,7 +45,7 @@ const COUNTRY_CLUBS = {
   Аргентина: 'аргентинські', Бельгія: 'бельгійські', Греція: 'грецькі',
 };
 
-const fame = (p) => p.fame || 0;
+const fame = (p) => p?.fame || 0;
 const ukr = (p) => {
   const n = careerOf(p)?.nation;
   return !!n && teams[n.t]?.name === 'Україна';
@@ -74,6 +83,9 @@ for (const p of players) {
   for (const [fee, from, to, season] of transfers[p.id]?.fees || []) fees.push({ p, fee, from, to, season });
 }
 const feeEntry = (f) => ({ p: f.p, value: f.fee, text: money(f.fee), detail: `${clubName(f.from)} → ${clubName(f.to)}, ${f.season}` });
+// «17/18» → 2017 (сезони до 2000-го: «99/00» → 1999)
+const seasonStart = (season) => { const y = Number(String(season).slice(0, 2)); return y > 50 ? 1900 + y : 2000 + y; };
+const ageAt = (f) => (f.p.born ? seasonStart(f.season) - f.p.born : null); // вік — приблизно (±1 рік)
 
 // Голи й матчі за кожен клуб (за кількома періодами в одному клубі — сумарно) і за збірну.
 const byClub = new Map(); // qid → Map(player → { g, a })
@@ -144,14 +156,99 @@ for (const [code, name] of Object.entries(TM_LEAGUES)) {
   addTopic(`league-buys:${code}`, 'transfers', `Найдорожчі покупки клубів ${name}`, fees.filter((f) => tmClubs[f.to]?.league === code).map(feeEntry));
 }
 
-// ── бомбардири турнірів (з Вікіпедії); топ обрізаємо перед першим гравцем, якого немає в базі
-const TOURNAMENTS = { wc: 'чемпіонатів світу', euro: 'чемпіонатів Європи', ucl: 'Ліги чемпіонів (і Кубка європейських чемпіонів)', uel: 'Ліги Європи (і Кубка УЄФА)' };
-for (const [key, title] of Object.entries(TOURNAMENTS)) {
-  const list = tournaments[key] || [];
-  const cut = list.findIndex(([id]) => !id || !playerById.has(id));
-  const known = (cut === -1 ? list : list.slice(0, cut)).map(([id, g]) => ({ p: playerById.get(id), value: g, text: `${g} ${goalsWord(g)}`, detail: null }));
-  addTopic(`tournament:${key}`, 'goals', `Найкращі бомбардири ${title}`, known, 'Голи у фінальних турнірах — за Вікіпедією.');
+// ── трансфери за віком, позицією, збірною, десятиліттям, між лігами
+const AGE_NOTE = 'За Transfermarkt; вік — приблизно (рік сезону мінус рік народження).';
+addTopic('fees-age:u21', 'transfers', 'Найдорожчі трансфери гравців до 21 року', fees.filter((f) => ageAt(f) != null && ageAt(f) <= 20).map(feeEntry), AGE_NOTE);
+addTopic('fees-age:30', 'transfers', 'Найдорожчі трансфери гравців від 30 років', fees.filter((f) => ageAt(f) >= 30).map(feeEntry), AGE_NOTE);
+const POS_GROUPS = {
+  GK: ['воротарів', ['Goalkeeper']],
+  DEF: ['захисників', ['Centre-Back', 'Left-Back', 'Right-Back']],
+  MID: ['півзахисників', ['Defensive Midfield', 'Central Midfield', 'Attacking Midfield', 'Left Midfield', 'Right Midfield']],
+  FWD: ['нападників і вінгерів', ['Left Winger', 'Right Winger', 'Second Striker', 'Centre-Forward']],
+};
+for (const [key, [word, list]] of Object.entries(POS_GROUPS)) {
+  const has = (p) => list.includes(transfers[p.id]?.pos);
+  addTopic(`fees-pos:${key}`, 'transfers', `Найдорожчі трансфери ${word}`, fees.filter((f) => has(f.p)).map(feeEntry), 'За Transfermarkt; позиція — основна на Transfermarkt.');
+  addTopic(`value-pos:${key}`, 'transfers', `Найвища ринкова вартість ${word}`, players.filter((p) => has(p) && transfers[p.id].maxValue)
+    .map((p) => ({ p, value: transfers[p.id].maxValue, text: money(transfers[p.id].maxValue), detail: null })), 'За Transfermarkt; позиція — основна на Transfermarkt.');
 }
+const feesByNation = new Map();
+for (const f of fees) {
+  const n = careerOf(f.p)?.nation?.t;
+  if (!n) continue;
+  if (!feesByNation.has(n)) feesByNation.set(n, []);
+  feesByNation.get(n).push(f);
+}
+for (const [q, list] of feesByNation) {
+  const name = nationName(q);
+  if (!name || BANNED.has(name) || name === 'Україна' || list.length < 20) continue; // українці — окрема тема вище
+  addTopic(`fees-nation:${q}`, 'transfers', `Найдорожчі трансфери гравців збірної: ${name}`, list.map(feeEntry));
+}
+for (const decade of [2000, 2010, 2020]) {
+  addTopic(`fees-decade:${decade}`, 'transfers', `Найдорожчі трансфери ${decade}-х`, fees.filter((f) => seasonStart(f.season) >= decade && seasonStart(f.season) < decade + 10).map(feeEntry));
+}
+const MOVE_LEAGUES = { GB1: 'АПЛ', ES1: 'Ла Ліга', IT1: 'Серія A', L1: 'Бундесліга', FR1: 'Ліга 1', PO1: 'Португалія', NL1: 'Ередивізі', UKR1: 'УПЛ' };
+for (const from of Object.keys(MOVE_LEAGUES)) {
+  for (const to of Object.keys(MOVE_LEAGUES)) {
+    if (from === to) continue;
+    addTopic(`fees-move:${from}>${to}`, 'transfers', `Найдорожчі переходи: ${MOVE_LEAGUES[from]} → ${MOVE_LEAGUES[to]}`,
+      fees.filter((f) => tmClubs[f.from]?.league === from && tmClubs[f.to]?.league === to).map(feeEntry));
+  }
+}
+
+// ── бомбардири турнірів (з Вікіпедії); кого немає в базі — відкритий рядок з іменем
+const TOURNAMENTS = { wc: 'чемпіонатів світу', euro: 'чемпіонатів Європи', copa: 'Кубка Америки', ucl: 'Ліги чемпіонів (і Кубка європейських чемпіонів)', uel: 'Ліги Європи (і Кубка УЄФА)' };
+for (const [key, title] of Object.entries(TOURNAMENTS)) {
+  const list = (tournaments[key] || []).map(([id, g, name]) => ({
+    p: playerById.get(id) || null, name: name ? name.replace(/\s*\(.*\)$/, '') : null, value: g, text: `${g} ${goalsWord(g)}`, detail: null,
+  }));
+  const where = key === 'ucl' || key === 'uel' ? 'в основному турнірі (без кваліфікації)' : 'у фінальних турнірах';
+  addTopic(`tournament:${key}`, 'goals', `Найкращі бомбардири ${title}`, list, `Голи ${where} — за Вікіпедією.`);
+}
+
+// ── асисти, гол+пас, рекорди сезону й картки (Transfermarkt, з 2012/13)
+const byTm = new Map(Object.entries(transfers).filter(([, v]) => v.tm).map(([id, v]) => [v.tm, playerById.get(id)]));
+const statEntry = (word) => ([tm, v, season]) => ({
+  p: byTm.get(tm) || null, name: stats.names[tm] || '?', value: v, text: `${v} ${word(v)}`, detail: season ? `сезон ${season}` : null,
+});
+const plural3 = (one, few, many) => (n) => {
+  const m10 = n % 10, m100 = n % 100;
+  return m10 === 1 && m100 !== 11 ? one : m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14) ? few : many;
+};
+const W = {
+  assists: plural3('асист', 'асисти', 'асистів'), ga: plural3('гол+пас', 'гол+пас', 'гол+пас'), goals: goalsWord,
+  yellow: plural3('жовта', 'жовті', 'жовтих'), red: plural3('червона', 'червоні', 'червоних'),
+};
+const COMP_NAMES = {
+  GB1: 'АПЛ', ES1: 'Ла Ліга', IT1: 'Серія A', L1: 'Бундесліга', FR1: 'Ліга 1', UKR1: 'УПЛ', PO1: 'чемпіонат Португалії', NL1: 'Ередивізі',
+  TR1: 'чемпіонат Туреччини', BE1: 'чемпіонат Бельгії', SC1: 'чемпіонат Шотландії', CL: 'Ліга чемпіонів', EL: 'Ліга Європи',
+};
+const STATS_NOTE = 'З сезону 2012/13 — за Transfermarkt.';
+for (const [comp, t] of Object.entries(stats.comp)) {
+  const name = COMP_NAMES[comp];
+  if (!name) continue;
+  const one = ['CL', 'EL'].includes(comp) ? 'за один розіграш' : 'за сезон';
+  addTopic(`stat:${comp}:assists`, 'assists', `Найбільше асистів: ${name} (з 2012/13)`, t.assists.map(statEntry(W.assists)), STATS_NOTE);
+  addTopic(`stat:${comp}:ga`, 'assists', `Найбільше гол+пас: ${name} (з 2012/13)`, t.ga.map(statEntry(W.ga)), STATS_NOTE);
+  addTopic(`stat:${comp}:seasonGoals`, 'goals', `Найбільше голів ${one}: ${name}`, t.seasonGoals.map(statEntry(W.goals)), STATS_NOTE);
+  addTopic(`stat:${comp}:seasonAssists`, 'assists', `Найбільше асистів ${one}: ${name}`, t.seasonAssists.map(statEntry(W.assists)), STATS_NOTE);
+  addTopic(`stat:${comp}:yellow`, 'cards', `Найбільше жовтих карток: ${name} (з 2012/13)`, t.yellow.map(statEntry(W.yellow)), STATS_NOTE);
+  addTopic(`stat:${comp}:red`, 'cards', `Найбільше червоних карток: ${name} (з 2012/13)`, t.red.map(statEntry(W.red)), STATS_NOTE);
+}
+for (const [club, t] of Object.entries(stats.club)) {
+  const c = tmClubs[club];
+  if (!c?.team || BANNED.has(leagueOf(c.team))) continue;
+  const name = clubName(Number(club));
+  addTopic(`club-stat:${club}:assists`, 'assists', `Найбільше асистів: ${name} (з 2012/13)`, t.assists.map(statEntry(W.assists)), STATS_NOTE);
+  addTopic(`club-stat:${club}:ga`, 'assists', `Найбільше гол+пас: ${name} (з 2012/13)`, t.ga.map(statEntry(W.ga)), STATS_NOTE);
+}
+
+// ── «мандрівники»: найбільше різних клубів за кар'єру
+// лише впізнавані (топ-1300 за відомістю), інакше топ складався б із невідомих мандрівників нижчих ліг
+addTopic('journeymen', 'apps', 'Найбільше клубів за кар’єру', poolFor('all', 'fan').map((p) => {
+  const n = new Set((careerOf(p)?.clubs || []).map((x) => x.t)).size;
+  return { p, value: n, text: `${n} ${plural3('клуб', 'клуби', 'клубів')(n)}`, detail: null };
+}), 'Різні клуби в кар’єрі (з орендами) — за Вікіпедією.');
 
 // ── голи й матчі за клуби: лише відомі клуби (є категорія в базі) і українські
 // відомі клуби (є категорія в базі) і українські, у яких забивали щонайменше 40 гравців з бази (без нижчих ліг)
@@ -175,10 +272,20 @@ for (const [qid, list] of byNation) {
 }
 
 // Для вибору теми господарем: тип (загальні / клуб / ліга / збірна / турнір), країна й клуб — щоб фільтрувати список.
-const LEAGUE_COUNTRY = { GB1: 'Англія', ES1: 'Іспанія', IT1: 'Італія', L1: 'Німеччина', FR1: 'Франція', UKR1: 'Україна', PO1: 'Португалія', NL1: 'Нідерланди', TR1: 'Туреччина' };
+const LEAGUE_COUNTRY = {
+  GB1: 'Англія', ES1: 'Іспанія', IT1: 'Італія', L1: 'Німеччина', FR1: 'Франція', UKR1: 'Україна', PO1: 'Португалія', NL1: 'Нідерланди',
+  TR1: 'Туреччина', BE1: 'Бельгія', SC1: 'Шотландія',
+};
 for (const t of topics) {
-  const [kind, key] = t.id.split(':');
-  if (kind === 'buys' || kind === 'sales') Object.assign(t, { kind: 'club', country: leagueOf(tmClubs[key].team), club: clubName(Number(key)) });
+  const [kind, key, sub] = t.id.split(':');
+  if (kind === 'stat') {
+    if (sub === 'seasonGoals' || sub === 'seasonAssists') Object.assign(t, { kind: 'season', country: LEAGUE_COUNTRY[key] || null });
+    else if (key === 'CL' || key === 'EL') t.kind = 'tournament';
+    else Object.assign(t, { kind: 'league', country: LEAGUE_COUNTRY[key] });
+  } else if (kind === 'club-stat') Object.assign(t, { kind: 'club', country: leagueOf(tmClubs[key].team), club: clubName(Number(key)) });
+  else if (kind === 'fees-nation') Object.assign(t, { kind: 'nation', country: nationName(key) });
+  else if (['fees-age', 'fees-pos', 'value-pos', 'fees-decade', 'fees-move', 'journeymen'].includes(kind)) t.kind = 'misc';
+  else if (kind === 'buys' || kind === 'sales') Object.assign(t, { kind: 'club', country: leagueOf(tmClubs[key].team), club: clubName(Number(key)) });
   else if (kind === 'club-goals' || kind === 'club-apps') Object.assign(t, { kind: 'club', country: leagueOf(key), club: clubTitle(key) });
   else if (kind === 'league-buys') Object.assign(t, { kind: 'league', country: LEAGUE_COUNTRY[key] });
   else if (kind === 'league-goals') Object.assign(t, { kind: 'league', country: key });
@@ -189,9 +296,10 @@ for (const t of topics) {
 
 const topicById = new Map(topics.map((t) => [t.id, t]));
 
-// Теми, з яких можна скласти топ такого розміру.
+// Тема годиться для топу такого розміру: рядків досить і серед них не забагато гравців, яких немає в базі.
+const fitsSize = (t, size) => t.entries.length >= size && t.entries.slice(0, size).filter((e) => !e.p).length <= size * MAX_MISSING;
 function topicsFor(categories, size) {
-  return topics.filter((t) => categories.includes(t.category) && t.entries.length >= size);
+  return topics.filter((t) => categories.includes(t.category) && fitsSize(t, size));
 }
 
-module.exports = { topics, topicById, topicsFor, SIZES, CATEGORIES };
+module.exports = { topics, topicById, topicsFor, fitsSize, SIZES, CATEGORIES };

@@ -5,8 +5,6 @@ module.exports = [
   ['eden-hazard', 115, 'Chelsea', 'Real Madrid', '19/20'],
   ['gareth-bale', 101, 'Tottenham', 'Real Madrid', '13/14'],
   ['gonzalo-higuain', 90, 'Napoli', 'Juventus', '16/17'],
-  ['luis-suarez', 81.72, 'Liverpool', 'Barcelona', '14/15'],
-  ['luis-suarez', 26.5, 'Ajax', 'Liverpool', '10/11'],
   ['zinedine-zidane', 77.5, 'Juventus', 'Real Madrid', '01/02'],
   ['zlatan-ibrahimovic', 69.5, 'Inter', 'Barcelona', '09/10'],
   ['zlatan-ibrahimovic', 24.8, 'Juventus', 'Inter', '06/07'],

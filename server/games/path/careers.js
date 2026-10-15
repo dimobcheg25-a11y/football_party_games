@@ -9,6 +9,7 @@ try {
   // кар'єри ще не зібрані — у грі не буде кого загадувати
 }
 
+require('../../data/derived-tags').cleanCareers(data); // без клубів, де не зіграно жодного матчу
 const careerOf = (p) => (p.qid ? data.careers[p.qid] : null);
 
 // ── наскільки гравця впізнають — рейтинг, з якого рівні складності беруть верхівку
@@ -19,10 +20,18 @@ const MAJOR = ['BALLON', 'WC', 'UCL', 'EURO', 'COPA'];
 const UA_TAGS = ['UKR', 'DYN', 'SHA', 'UPL0014'];
 
 let transfers = {};
+let tmClubs = {};
+let stats = null;
 try {
   transfers = require('../../data/transfers.json');
+  tmClubs = require('../../data/transfer-clubs.json');
 } catch {
   // трансфери ще не зібрані — рейтинг без вартості
+}
+try {
+  stats = require('../../data/stats.json');
+} catch {
+  // асисти ще не зібрані (npm run build-stats)
 }
 
 function recognition(p) {
@@ -77,22 +86,46 @@ function team(qid) {
   const t = data.teams[qid] || { name: '?' };
   const cat = t.cat ? categoryById.get(t.cat) : null;
   // «Барселона (жіночий футбольний клуб)» → «Барселона (жін.)», «Полтава (спортивний клуб)» → «Полтава»
-  const name = t.name.replace(/\s*\((жіночий|женский)[^)]*\)$/i, ' (жін.)').replace(/\s*\([^)]*клуб\)$/i, '');
+  const name = t.name.replace(/\s*\((жіночий|женский)[^)]*\)$/i, ' (жін.)').replace(/\s*\([^)]*клуб\)$/i, '')
+    .replace(/\s*\(футбольний клуб,\s*([^)]+)\)/, ' $1'); // «Ред Булл (футбольний клуб, Зальцбург)» → «Ред Булл Зальцбург»
   return { name, country: t.country || null, img: cat?.img || t.img || null };
 }
 
 // Етапи раунду — клуби кар'єри (з першого або з останнього).
+const money = (v) => (v >= 1e6 ? `€${Number((v / 1e6).toFixed(v < 1e7 ? 1 : 0))} млн` : `€${Math.round(v / 1e3)} тис.`);
+const seasonYear = (season) => { const y = Number(String(season).slice(0, 2)); return y > 50 ? 1900 + y : 2000 + y; };
+const STATS_FROM = 2012; // асисти є лише з сезону 2012/13
+
+// Сума переходу в клуб (платні трансфери Transfermarkt): той клуб і сезон поруч із роком приходу.
+function feeFor(p, x) {
+  const list = (transfers[p.id]?.fees || []).filter(([, , to, season]) => tmClubs[to]?.team === x.t && Math.abs(seasonYear(season) - (x.s ?? 0)) <= 1);
+  return list.length ? Math.max(...list.map((f) => f[0])) : null;
+}
+// Асисти в клубі за Transfermarkt — лише якщо весь період у клубі після 2012 (інакше число неповне).
+function assistsFor(p, x) {
+  const per = stats?.players?.[transfers[p.id]?.tm];
+  if (!per || x.s == null || x.s < STATS_FROM) return undefined;
+  let a = null;
+  for (const [club, v] of Object.entries(per.c)) if (tmClubs[club]?.team === x.t) a = (a || 0) + v[1];
+  return a ?? undefined;
+}
+
 function stagesFor(p, { start = 'first', showYears = true, showStats = true } = {}) {
   const c = careerOf(p);
   const clubs = start === 'last' ? [...c.clubs].reverse() : c.clubs;
-  return clubs.map((x) => ({
-    kind: 'club',
-    ...team(x.t),
-    years: showYears ? years(x.s, x.e) : null,
-    loan: !!x.loan,
-    apps: showStats ? x.a : undefined,
-    goals: showStats ? x.g : undefined,
-  }));
+  return clubs.map((x) => {
+    const fee = feeFor(p, x);
+    return {
+      kind: 'club',
+      ...team(x.t),
+      years: showYears ? years(x.s, x.e) : null,
+      loan: !!x.loan,
+      fee: fee ? money(fee) : null,
+      apps: showStats ? x.a : undefined,
+      goals: showStats ? x.g : undefined,
+      assists: showStats ? assistsFor(p, x) : undefined,
+    };
+  });
 }
 
 // ── підказки: гравець сам обирає, яку взяти; кожна знімає бали з можливих

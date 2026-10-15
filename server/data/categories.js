@@ -106,8 +106,12 @@ const stats = [
   { id: 'G300', level: 'normal', label: "300+ голів у кар'єрі", short: '300+ голів', icon: '⚽' },
   { id: 'G50N', level: 'normal', label: '50+ голів за збірну', icon: '🥅' },
   { id: 'CAPS100', level: 'normal', label: '100+ матчів за збірну', icon: '👕' },
-  { id: 'A100', level: 'hard', label: '100+ гольових передач', short: '100+ передач', icon: '🎯' },
+  { id: 'A100', level: 'normal', label: '100+ гольових передач', short: '100+ передач', icon: '🎯' },
   { id: 'T100', level: 'fan', label: 'Трансфер за 100+ млн', short: 'Трансфер 100+ млн', icon: '💰' },
+  // з зібраних даних — server/data/derived-tags.js
+  { id: 'T80', level: 'normal', label: 'Трансфер за €80+ млн', short: 'Трансфер 80+ млн', icon: '💶' },
+  { id: 'UCL30', level: 'normal', label: '30+ голів у Лізі чемпіонів', short: '30+ голів у ЛЧ', icon: '⭐' },
+  { id: 'JOURNEY', level: 'fan', label: 'Мандрівник: 10+ клубів', short: 'Мандрівник 10+ клубів', icon: '🧳' },
 ].map((c) => ({ ...c, type: 'stat', colors: ['#5ad1b8', '#1d6b5c'] }));
 
 // Грав під керівництвом тренера (каденції з Wikidata: клуби + завершені у збірних; перетин ≥ 3 місяців)

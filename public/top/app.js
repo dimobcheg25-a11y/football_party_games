@@ -1,6 +1,6 @@
 // «Топ-10» — клієнт. Спільне (налаштування, вхід, лобі, чат, вихід) — /shared/room-client.js; тут — тема, дошка топу, відповіді.
 (() => {
-  const CATEGORY_LABELS = { transfers: '💶 Трансфери', goals: '⚽ Голи', apps: '👕 Матчі' };
+  const CATEGORY_LABELS = { transfers: '💶 Трансфери', goals: '⚽ Голи', assists: '🎯 Асисти', apps: '👕 Матчі й кар’єра', cards: '🟨 Картки' };
   const MODE_LABELS = { own: 'кожен свій топ', turns: 'спільний топ по черзі' };
   const MODE_HINTS = {
     own: 'Усі заповнюють свій топ одночасно; чужих відповідей не видно — лише скільки знайшли.',
@@ -72,7 +72,7 @@
   }
 
   // Вибір теми господарем: фільтри (категорія, тип, країна) + пошук; список згрупований за клубами / типами.
-  const KIND_LABELS = { general: '⭐ Загальні', club: '🏟 Клуби', league: '🏆 Чемпіонати', nation: '🌍 Збірні', tournament: '🏅 Турніри' };
+  const KIND_LABELS = { general: '⭐ Загальні', club: '🏟 Клуби', league: '🏆 Чемпіонати', season: '📅 Рекорди сезону', nation: '🌍 Збірні', tournament: '🏅 Турніри', misc: '🧩 Вік, позиція, переходи' };
   let topicList = null;
   let topicKey = '';
   const filter = { category: 'all', kind: 'all', country: 'all' }; // пам'ятаємо між раундами
@@ -213,14 +213,15 @@
   function slotHtml(slot, i, extra = '') {
     const by = slot.by?.length && !state.solo
       ? `<span class="by">${slot.by.map((x) => `<i class="dot-p" style="${seatStyle(x)}" title="${escapeHtml(seatName(x))}"></i>`).join('')}</span>` : '';
+    const miss = slot.missing ? '<small class="miss-note">немає в базі — відкрито</small>' : '';
     if (!slot.player) {
       return `<li class="slot empty-slot ${extra}"><span class="place">${i + 1}</span><span class="blank">?</span><span class="pts">+${slot.points}</span></li>`;
     }
     const p = slot.player;
     return `<li class="slot ${extra}"><span class="place">${i + 1}</span>
       <span class="g-photo">${p.photo ? `<img src="${p.photo}" alt="" loading="lazy" />` : escapeHtml(initials(p.name))}</span>
-      <span class="who"><b>${escapeHtml(p.uk || p.name)}</b>${slot.detail ? `<small>${escapeHtml(slot.detail)}</small>` : ''}</span>
-      <span class="val">${escapeHtml(slot.text)}</span>${by}<span class="pts">+${slot.points}</span></li>`;
+      <span class="who"><b>${escapeHtml(p.uk || p.name)}</b>${slot.detail ? `<small>${escapeHtml(slot.detail)}</small>` : ''}${miss}</span>
+      <span class="val">${escapeHtml(slot.text)}</span>${by}<span class="pts">${slot.missing ? '' : `+${slot.points}`}</span></li>`;
   }
 
   let lastFound = new Set();
@@ -234,9 +235,10 @@
       let cls = '';
       if (!reveal && !turns && mineFound.has(i)) shown = { ...mineFound.get(i), by: [] };
       if (shown.player) nowFound.add(i);
-      if (reveal) cls = (turns ? slot.by.length : slot.by.includes(mySeat)) ? 'got' : 'missed';
+      if (slot.missing) cls = 'missing';
+      else if (reveal) cls = (turns ? slot.by.length : slot.by.includes(mySeat)) ? 'got' : 'missed';
       else if (shown.player) cls = 'got';
-      if (shown.player && !reveal && !lastFound.has(i)) cls += ' fresh';
+      if (shown.player && !reveal && !slot.missing && !lastFound.has(i)) cls += ' fresh';
       return slotHtml(shown, i, cls);
     }).join('');
     lastFound = reveal ? new Set() : nowFound;

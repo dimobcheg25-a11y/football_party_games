@@ -90,6 +90,14 @@ try {
 } catch {
   // трансфери ще не зібрані (npm run build-transfers) — без вартості й точних позицій
 }
+let stats = null;
+try {
+  stats = require('../../data/stats.json');
+} catch {
+  // асисти ще не зібрані (npm run build-stats) — без клітинки асистів
+}
+// Асисти є лише з сезону 2012/13: клітинку показуємо, тільки якщо загаданий почав кар'єру з 2012-го (інакше число неповне).
+const STATS_FROM = 2012;
 
 const NOW = new Date().getFullYear();
 const profiles = new Map();
@@ -129,6 +137,8 @@ function profileOf(p) {
     goals: c.clubs.reduce((s, x) => s + (x.g || 0), 0),
     caps: c.nation?.a || 0,
     natGoals: c.nation?.g || 0,
+    modern: (c.clubs[0].s ?? c.clubs[0].e ?? 0) >= STATS_FROM,
+    assists: stats?.players?.[transfers[p.id]?.tm]?.t[1] ?? null,
     value: transfers[p.id]?.maxValue || null,
     trophies: TROPHIES.filter((t) => p.tags.has(t.id)).map((t) => t.id),
   };
@@ -173,10 +183,14 @@ const COLUMNS = [
   { id: 'goals', label: 'Голи в чемпіонатах' },
   { id: 'caps', label: 'Матчі за збірну' },
   { id: 'natGoals', label: 'Голи за збірну' },
+  { id: 'assists', label: 'Асисти' }, // лише коли загаданий почав з 2012/13 — див. columnsFor
   { id: 'value', label: 'Макс. вартість' },
   { id: 'trophies', label: 'Трофеї' },
   { id: 'shared', label: 'Спільні клуби' },
 ];
+
+// Колонки раунду: асисти — лише для загаданих, що почали кар'єру з 2012-го.
+const columnsFor = (t) => COLUMNS.filter((c) => c.id !== 'assists' || t?.modern);
 
 // Рядок клітинок для спроби g проти загаданого t (обидва — профілі).
 function compare(g, t) {
@@ -245,7 +259,12 @@ function compare(g, t) {
     note: shared.some((x) => x.together) ? '🤝 — грали разом' : null,
   };
 
-  return COLUMNS.map((c) => ({ id: c.id, ...cells[c.id] }));
+  if (t.modern) {
+    if (!g.modern) cells.assists = { text: '—', color: 'grey', note: 'почав до 2012 — даних немає' };
+    else if (g.assists == null || t.assists == null) cells.assists = { text: g.assists == null ? '?' : String(g.assists), color: 'grey', note: 'немає даних' };
+    else cells.assists = { text: String(g.assists), ...numberCell(g.assists, t.assists, { yellow: [10, 0.3] }) };
+  }
+  return columnsFor(t).map((c) => ({ id: c.id, ...cells[c.id] }));
 }
 
-module.exports = { profileOf, compare, leagueOf, nationName, COLUMNS, TROPHIES, money };
+module.exports = { profileOf, compare, columnsFor, leagueOf, nationName, COLUMNS, TROPHIES, money };

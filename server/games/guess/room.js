@@ -4,7 +4,7 @@
 const { playerById } = require('../../data');
 const { BaseRoom } = require('../../core/base-room');
 const { poolFor, careerOf, ERAS, DIFFICULTIES } = require('../path/careers');
-const { profileOf, compare, COLUMNS } = require('./compare');
+const { profileOf, compare, columnsFor } = require('./compare');
 
 // Очки: з першої спроби — MAX, з останньої — LAST, між ними рівномірно.
 const MAX_POINTS = 100;
@@ -231,7 +231,7 @@ class GuessRoom extends BaseRoom {
       code: this.code,
       solo: this.solo,
       options: this.options,
-      columns: COLUMNS,
+      columns: columnsFor(this.target),
       maxPoints: MAX_POINTS,
       points: Array.from({ length: this.options.attempts }, (_, n) => attemptPoints(n, this.options.attempts)),
       capacity: this.capacity,

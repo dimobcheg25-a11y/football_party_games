@@ -45,12 +45,14 @@
 
   // ── гра
   function stageHtml(st, i, current) {
+    const assists = st.assists != null ? ` · ${st.assists} ${plural(st.assists, 'асист', 'асисти', 'асистів')}` : '';
     const stats = st.apps != null || st.goals != null
-      ? `<span class="st-stats">${st.apps ?? '—'} ${plural(st.apps ?? 0, 'матч', 'матчі', 'матчів')} · ${st.goals ?? '—'} ${plural(st.goals ?? 0, 'гол', 'голи', 'голів')}</span>`
+      ? `<span class="st-stats">${st.apps ?? '—'} ${plural(st.apps ?? 0, 'матч', 'матчі', 'матчів')} · ${st.goals ?? '—'} ${plural(st.goals ?? 0, 'гол', 'голи', 'голів')}${assists}</span>`
       : st.apps === null && st.kind === 'club' ? '<span class="st-stats muted">матчі й голи невідомі</span>' : '';
     const icon = st.img ? `<img src="${st.img}" alt="" loading="lazy" />` : `<span>${escapeHtml(initials(st.name))}</span>`;
     const title = escapeHtml(st.name);
-    const sub = [st.country, st.years].filter(Boolean).map(escapeHtml).join(' · ') + (st.loan ? ' · <span class="loan">оренда</span>' : '');
+    const sub = [st.country, st.years].filter(Boolean).map(escapeHtml).join(' · ') + (st.loan ? ' · <span class="loan">оренда</span>' : '')
+      + (st.fee ? ` · <span class="fee">перехід за ${escapeHtml(st.fee)}</span>` : '');
     return `<li class="stage ${st.kind} ${current ? 'current' : ''}">
       <div class="st-num">${i + 1}</div>
       <div class="st-icon ${st.img ? 'crest' : ''}">${icon}</div>

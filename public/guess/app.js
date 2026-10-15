@@ -86,6 +86,7 @@
     // таблиця спроб: заголовки колонок (на широкому екрані) + рядки, нові — зверху
     const head = `<div class="g-row g-head"><div class="g-player"></div>${s.columns.map((c) => `<div class="cell-h">${escapeHtml(c.label)}</div>`).join('')}</div>`;
     const rows = [...s.myTries].reverse().map((t, i) => rowHtml(t.player, t.cells, `${t.correct ? 'win' : ''} ${i === 0 ? 'fresh' : ''}`)).join('');
+    $('#board').style.setProperty('--n', s.columns.length - 2); // звичайних клітинок: 9, з асистами — 10
     $('#board').innerHTML = s.myTries.length || reveal ? head + rows : '<p class="board-empty">Назви першого футболіста — і побачиш, у чому він схожий на загаданого.</p>';
 
     // відповідь після раунду
@@ -100,7 +101,7 @@
           <div class="answer-photo">${a.photo ? `<img src="${a.photo}" alt="" />` : `<span>${escapeHtml(initials(a.name))}</span>`}</div>
           <div><small>Це був</small><h2>${escapeHtml(a.uk || a.name)}</h2>${a.uk && a.uk !== a.name ? `<small class="muted">${escapeHtml(a.name)}</small>` : ''}</div>
         </div>
-        <div class="board answer-board">${rowHtml(a, a.cells, 'win')}</div>
+        <div class="board answer-board" style="--n:${s.columns.length - 2}">${rowHtml(a, a.cells, 'win')}</div>
         ${s.solo ? '' : `<ul class="round-results">${results}</ul>`}
         <div class="reveal-actions">
           <button id="share-btn" class="btn btn-secondary">Поділитися</button>

@@ -25,6 +25,8 @@
 .empty-slot .blank { color: var(--muted); opacity: .5; font-weight: 800; }
 .slot.got { border-color: rgba(182,243,106,0.45); background: rgba(182,243,106,0.07); }
 .slot.missed { opacity: .6; }
+.slot.missing { border-style: dashed; opacity: .75; }
+.slot .miss-note { color: var(--gold); font-weight: 700; }
 .slot.fresh { animation: rise .35s ease-out; }
 .g-photo {
   width: 40px; height: 40px; border-radius: 50%; overflow: hidden; display: grid; place-items: center;
