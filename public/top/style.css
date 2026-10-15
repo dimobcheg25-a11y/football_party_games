@@ -71,6 +71,7 @@
   padding: 8px 12px; border-radius: 10px; background: rgba(255,255,255,0.04); border: 1px solid var(--line); text-align: left;
 }
 .t-item:hover { border-color: var(--accent); background: rgba(182,243,106,0.08); }
+.t-item .lvl { font-style: normal; font-size: 10px; margin-left: 2px; }
 
 @media (max-width: 560px) {
   .slot { grid-template-columns: 22px 34px minmax(0, 1fr) auto; gap: 8px; padding: 6px 8px; }

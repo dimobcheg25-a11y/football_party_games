@@ -5,7 +5,7 @@
 // Обмеження налаштовуються: життя (помилки) і таймер раунду (own) або ходу (turns).
 const { playerById } = require('../../data');
 const { BaseRoom } = require('../../core/base-room');
-const { topicById, topicsFor, fitsSize, SIZES, CATEGORIES } = require('./tops');
+const { topicById, topicsFor, fitsSize, SIZES, CATEGORIES, LEVELS } = require('./tops');
 
 const MAX_PLAYERS = 8;
 const ALLOWED_LIVES = [0, 1, 3, 5]; // 0 — без обмеження помилок
@@ -39,6 +39,7 @@ class TopRoom extends BaseRoom {
       turnSeconds: ALLOWED_TURN_SECONDS.includes(Number(opts.turnSeconds)) ? Number(opts.turnSeconds) : 30,
       rounds: ALLOWED_ROUNDS.includes(Number(opts.rounds)) ? Number(opts.rounds) : 5,
       pick: opts.pick === 'host' ? 'host' : 'random',
+      topicLevel: LEVELS.includes(opts.topicLevel) ? opts.topicLevel : 'mix', // з яких тем брати випадкову
     };
     this.status = 'waiting'; // waiting | playing | finished
     this.scores = Array(this.capacity).fill(0);
@@ -139,7 +140,10 @@ class TopRoom extends BaseRoom {
   }
 
   randomTopic() {
-    const all = topicsFor(this.options.categories, this.options.size);
+    const fit = topicsFor(this.options.categories, this.options.size);
+    const level = this.options.topicLevel;
+    const leveled = level === 'mix' ? fit : fit.filter((t) => t.level === level);
+    const all = leveled.length ? leveled : fit; // для цих категорій такого рівня немає — беремо будь-які
     // спершу обираємо категорію (щоб трансферних тем-клубів не було в рази більше), потім тему
     const cats = [...new Set(all.map((t) => t.category))];
     const cat = pick(cats);

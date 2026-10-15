@@ -102,6 +102,14 @@ async function main() {
   console.log(`✓ Ліга Європи: ${st.slots[miss].player.name} відкритий одразу; решту вгадано — раунд закінчено`);
   const cats = await (await fetch(`${URL}/api/top/topics?categories=assists,cards&size=10`)).json();
   assert.ok(cats.some((t) => t.id === 'stat:GB1:assists') && cats.some((t) => t.category === 'cards'), 'асисти й картки');
+  assert.ok(cats.every((t) => ['easy', 'normal', 'hard'].includes(t.level) && t.score >= 0), 'у кожної теми — рівень і популярність');
+  // випадкові теми лише легкого рівня
+  const easyBot = bot();
+  await emit(easyBot, 'create', { name: 'Легкий', solo: true, size: 10, topicLevel: 'easy', rounds: 3 });
+  st = await nextState(easyBot, (x) => x.phase === 'guess');
+  assert.strictEqual(topicById.get(st.topic.id).level, 'easy', 'легка тема');
+  console.log(`✓ рівні тем: випадкова легка — «${st.topic.title}»`);
+  easyBot.close();
   picker.close();
 
   // ── кімната «кожен свій топ»

@@ -5,7 +5,7 @@
 // Топ = [{ p, value, text, detail }] за спаданням; гравець може бути в топі кілька разів (два великі трансфери, кілька сезонів) —
 // тоді, назвавши його, відкриваєш усі його рядки. p = null — гравця немає в базі: тоді є name, і рядок відкрито одразу (без очок).
 const { players, playerById } = require('../../data');
-const { careerOf, team, teams, poolFor } = require('../path/careers');
+const { careerOf, team, teams, poolFor, recognition } = require('../path/careers');
 const { leagueOf, nationName, money } = require('../guess/compare');
 
 let transfers = {};
@@ -294,6 +294,22 @@ for (const t of topics) {
   else t.kind = 'general';
 }
 
+// Популярність теми — середній рейтинг відомості (той самий, що й для рівнів складності в інших іграх) гравців її топ-10;
+// кого немає в базі — 0. Рівень: верхні 30% — легкі, наступні 40% — середні, решта — складні.
+const LEVELS = ['easy', 'normal', 'hard'];
+const recCache = new Map();
+const rec = (p) => {
+  if (!p) return 0;
+  if (!recCache.has(p.id)) recCache.set(p.id, recognition(p));
+  return recCache.get(p.id);
+};
+for (const t of topics) {
+  const head = t.entries.slice(0, 10);
+  t.score = Math.round(head.reduce((s, e) => s + rec(e.p), 0) / head.length);
+}
+const byScore = [...topics].sort((a, b) => b.score - a.score);
+byScore.forEach((t, i) => (t.level = i < byScore.length * 0.3 ? 'easy' : i < byScore.length * 0.7 ? 'normal' : 'hard'));
+
 const topicById = new Map(topics.map((t) => [t.id, t]));
 
 // Тема годиться для топу такого розміру: рядків досить і серед них не забагато гравців, яких немає в базі.
@@ -302,4 +318,4 @@ function topicsFor(categories, size) {
   return topics.filter((t) => categories.includes(t.category) && fitsSize(t, size));
 }
 
-module.exports = { topics, topicById, topicsFor, fitsSize, SIZES, CATEGORIES };
+module.exports = { topics, topicById, topicsFor, fitsSize, SIZES, CATEGORIES, LEVELS };

@@ -36,6 +36,7 @@ try {
 
 function recognition(p) {
   const c = careerOf(p);
+  if (!c || !c.clubs.length) return p.fame; // без кар'єри — лише відомість за Вікіпедією
   const end = c.clubs[c.clubs.length - 1].e ?? new Date().getFullYear();
   const caps = c.nation?.a || 0;
   const bigApps = c.clubs.filter((x) => data.teams[x.t]?.cat).reduce((s, x) => s + (x.a || 0), 0);
@@ -159,4 +160,4 @@ function hintValue(p, id, { showStats = true } = {}) {
   return null;
 }
 
-module.exports = { poolFor, stagesFor, hintValue, careerOf, team, teams: data.teams, POSITIONS, HINTS, ERAS, DIFFICULTIES };
+module.exports = { poolFor, stagesFor, hintValue, careerOf, recognition, team, teams: data.teams, POSITIONS, HINTS, ERAS, DIFFICULTIES };

@@ -18,7 +18,7 @@ function register({ app, io }) {
   app.get('/api/top/topics', (req, res) => {
     const categories = String(req.query.categories || '').split(',').filter((c) => CATEGORIES[c]);
     const size = SIZES.includes(Number(req.query.size)) ? Number(req.query.size) : 10;
-    res.json(topicsFor(categories.length ? categories : Object.keys(CATEGORIES), size).map((t) => ({ id: t.id, title: t.title, category: t.category, kind: t.kind, country: t.country || null, club: t.club || null })));
+    res.json(topicsFor(categories.length ? categories : Object.keys(CATEGORIES), size).map((t) => ({ id: t.id, title: t.title, category: t.category, kind: t.kind, country: t.country || null, club: t.club || null, level: t.level, score: t.score })));
   });
 
   createRoomServer({

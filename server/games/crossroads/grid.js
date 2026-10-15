@@ -60,27 +60,29 @@ function canFillDistinct(rows, cols, cells, usedIds) {
 
 // ── Режими гри
 // easy   — 15 топ-клубів, 9 топ-збірних, ЧС/ЛЧ/Євро/Золотий м'яч, позиції; щонайменше 10 відповідей у клітинці,
-//          з них 6 — зірки (стаття у 55+ мовних розділах Вікіпедії);
+//          з них 6 — з верхівки рейтингу відомості (540 найвідоміших);
 // normal — топ-клуби й збірні; у кожній клітинці щонайменше 4 ВІДОМІ відповіді й 6 відповідей загалом
 //          (клітинки з 5 і менше варіантами — «ту мач» для звичайного режиму). Для українських категорій
 //          поріг м'якший: їхніх гравців наші знають краще, ніж каже статистика Вікіпедії, а перетинів у них мало;
 // hard   — усі категорії, але щонайменше 4 з 6 — «нешаблонні» (level у categories.js); у клітинці 3–15 відповідей
 //          і не більше 3 зірок — щоб клітинку не закривали Роналду з Мессі. Через це найочевидніші категорії
 //          (Реал, ЧС, ЛЧ, Золотий м'яч, польові позиції) у складний майже не потрапляють — вони для легкого/звичайного.
-const UA_TAGS = ['UKR', 'DYN', 'SHA'];
-// «Відомий» гравець: стаття в 50+ мовних розділах Вікіпедії. Старші (народжені до 1965) за десятиліття
-// назбирали статей за титули, хоча сьогодні їх мало хто пам'ятає (Вава, Валдо) — для них поріг 65
-// (Пеле, Кройф, Гаррінча, Блохін лишаються відомими). Українців наші знають краще — поріг 25.
-const OLD_BORN = 1965;
-const famousAt = (p, fame) =>
-  p.fame >= (p.born && p.born < OLD_BORN ? Math.max(fame, 65) : fame) ||
-  (p.fame >= 25 && UA_TAGS.some((t) => p.tags.has(t)));
-const isFamous = (p) => famousAt(p, 50);
+// «Відомий» гравець — за спільним рейтингом відомості (server/games/path/careers.js → recognition), як і рівні в інших іграх:
+// стаття у Вікіпедії в багатьох мовах (тренерам — зі знижкою), ринкова вартість, матчі за великі клуби й збірну, трофеї;
+// давно завершеним — штраф, українцям — бонус. Пули — верхівка цього рейтингу (розміри — як були на «голому» fame).
+const { recognition } = require('../path/careers');
+const UA_TAGS = ['UKR', 'DYN', 'SHA']; // українські категорії — м'якші пороги (перетинів у них мало)
+const ranked = [...players].sort((a, b) => recognition(b) - recognition(a));
+const topN = (n) => new Set(ranked.slice(0, n).map((p) => p.id));
+const EASY_POOL = topN(540);
+const FAMOUS = topN(760);
+const FAN_POOL = topN(1500);
+const isFamous = (p) => FAMOUS.has(p.id);
 
 const MODES = {
   easy: {
     categories: categories.filter((c) => !c.level).map((c) => c.id),
-    pool: players.filter((p) => famousAt(p, 55)),
+    pool: players.filter((p) => EASY_POOL.has(p.id)),
     minAnswers: 6,
     minTotal: 10,
   },
@@ -95,7 +97,7 @@ const MODES = {
   // fan — усе зі звичайного + тренери, академії, бомбардири ліг, Golden Boy, трансфери, МЛС/Китай/ОАЕ
   fan: {
     categories: categories.filter((c) => c.level !== 'hard').map((c) => c.id),
-    pool: players.filter((p) => p.fame >= 40 || (p.fame >= 25 && UA_TAGS.some((t) => p.tags.has(t)))),
+    pool: players.filter((p) => FAN_POOL.has(p.id)),
     minAnswers: 3,
     minTotal: 4,
     uaMinAnswers: 2,
@@ -104,7 +106,7 @@ const MODES = {
   // mix — справді всі категорії без обмежень «очевидності»: максимальна різноманітність сіток
   mix: {
     categories: categories.map((c) => c.id),
-    pool: players.filter((p) => p.fame >= 40 || (p.fame >= 25 && UA_TAGS.some((t) => p.tags.has(t)))),
+    pool: players.filter((p) => FAN_POOL.has(p.id)),
     minAnswers: 3,
     minTotal: 4,
     uaMinAnswers: 2,

@@ -2,6 +2,8 @@
 (() => {
   const CATEGORY_LABELS = { transfers: '💶 Трансфери', goals: '⚽ Голи', assists: '🎯 Асисти', apps: '👕 Матчі й кар’єра', cards: '🟨 Картки' };
   const MODE_LABELS = { own: 'кожен свій топ', turns: 'спільний топ по черзі' };
+  const LEVEL_LABELS = { easy: '🟢 легкі теми', normal: '🟡 середні теми', hard: '🔴 складні теми', mix: '🎲 теми будь-якої складності' };
+  const LEVEL_DOT = { easy: '🟢', normal: '🟡', hard: '🔴' };
   const MODE_HINTS = {
     own: 'Усі заповнюють свій топ одночасно; чужих відповідей не видно — лише скільки знайшли.',
     turns: 'Одна дошка на всіх, називаєте по черзі. Помилка або пас — мінус життя.',
@@ -13,7 +15,7 @@
   const g = RoomClient.create({
     id: 'top',
     title: 'Топ-10',
-    defaults: { categories: Object.keys(CATEGORY_LABELS), size: '10', pick: 'random', mode: 'own', lives: '3', roundSeconds: '180', turnSeconds: '30', rounds: '5' },
+    defaults: { categories: Object.keys(CATEGORY_LABELS), size: '10', topicLevel: 'mix', pick: 'random', mode: 'own', lives: '3', roundSeconds: '180', turnSeconds: '30', rounds: '5' },
     fixSetup(setup) {
       if (!Array.isArray(setup.categories) || !setup.categories.length) setup.categories = Object.keys(CATEGORY_LABELS);
       if (setup.mode === 'turns' && setup.lives === '0') setup.lives = '3'; // по черзі без життів раунд не закінчиться
@@ -41,7 +43,8 @@
     return [o.categories.map((c) => CATEGORY_LABELS[c]).join(' '), `Топ-${o.size}`, solo ? null : MODE_LABELS[o.mode],
       o.lives ? `${o.lives} ${plural(o.lives, 'помилка', 'помилки', 'помилок')}` : 'помилки без обмежень',
       o.mode === 'turns' ? (o.turnSeconds ? `${o.turnSeconds} с на хід` : 'хід без таймера') : o.roundSeconds ? `${o.roundSeconds / 60} хв на раунд` : 'без таймера',
-      `${o.rounds} ${plural(o.rounds, 'раунд', 'раунди', 'раундів')}`, o.pick === 'host' ? 'тему обирає господар' : 'випадкові теми'].filter(Boolean);
+      `${o.rounds} ${plural(o.rounds, 'раунд', 'раунди', 'раундів')}`, o.pick === 'host' ? 'тему обирає господар' : 'випадкові теми',
+      LEVEL_LABELS[o.topicLevel || 'mix']].filter(Boolean);
   }
 
   function playSounds(p, s) {
@@ -75,7 +78,7 @@
   const KIND_LABELS = { general: '⭐ Загальні', club: '🏟 Клуби', league: '🏆 Чемпіонати', season: '📅 Рекорди сезону', nation: '🌍 Збірні', tournament: '🏅 Турніри', misc: '🧩 Вік, позиція, переходи' };
   let topicList = null;
   let topicKey = '';
-  const filter = { category: 'all', kind: 'all', country: 'all' }; // пам'ятаємо між раундами
+  const filter = { level: 'all', category: 'all', kind: 'all', country: 'all' }; // пам'ятаємо між раундами
   async function renderPicker() {
     const box = $('#picker');
     const isHost = mySeat === state.host;
@@ -133,11 +136,14 @@
     const q = norm($('#topic-filter').value);
     const byText = topicList.filter((t) => !q || norm(`${t.title} ${t.country || ''}`).includes(q));
     // кожен фільтр рахуємо з урахуванням решти — у чипах лише ті варіанти, що дають теми
-    const pass = (t, skip) => (skip === 'category' || filter.category === 'all' || t.category === filter.category)
+    const pass = (t, skip) => (skip === 'level' || filter.level === 'all' || t.level === filter.level)
+      && (skip === 'category' || filter.category === 'all' || t.category === filter.category)
       && (skip === 'kind' || filter.kind === 'all' || t.kind === filter.kind)
       && (skip === 'country' || filter.country === 'all' || t.country === filter.country);
     const catOrder = Object.keys(CATEGORY_LABELS);
     const kindOrder = Object.keys(KIND_LABELS);
+    const levelOrder = ['easy', 'normal', 'hard'];
+    const levels = byText.filter((t) => pass(t, 'level')).map((t) => t.level).sort((a, b) => levelOrder.indexOf(a) - levelOrder.indexOf(b));
     const cats = byText.filter((t) => pass(t, 'category')).map((t) => t.category).sort((a, b) => catOrder.indexOf(a) - catOrder.indexOf(b));
     const kinds = byText.filter((t) => pass(t, 'kind')).map((t) => t.kind).sort((a, b) => kindOrder.indexOf(a) - kindOrder.indexOf(b));
     const countries = byText.filter((t) => pass(t, 'country') && t.country).map((t) => t.country);
@@ -146,13 +152,15 @@
     countries.forEach((c) => (freq[c] = (freq[c] || 0) + 1));
     countries.sort((a, b) => (b === 'Україна') - (a === 'Україна') || freq[b] - freq[a] || a.localeCompare(b, 'uk'));
     // вибраний варіант зник (інші фільтри його відсікли) — скидаємо на «Усі»
-    for (const [field, values] of [['category', cats], ['kind', kinds], ['country', countries]]) {
+    for (const [field, values] of [['level', levels], ['category', cats], ['kind', kinds], ['country', countries]]) {
       if (filter[field] !== 'all' && !values.includes(filter[field])) { filter[field] = 'all'; return drawTopics(); }
     }
-    $('#topic-filters').innerHTML = chipRow('Категорія', 'category', cats, CATEGORY_LABELS) + chipRow('Тип', 'kind', kinds, KIND_LABELS)
+    $('#topic-filters').innerHTML = chipRow('Складність', 'level', levels, { easy: '🟢 Легкі', normal: '🟡 Середні', hard: '🔴 Складні' })
+      + chipRow('Категорія', 'category', cats, CATEGORY_LABELS) + chipRow('Тип', 'kind', kinds, KIND_LABELS)
       + (filter.kind === 'general' || filter.kind === 'tournament' ? '' : chipRow('Країна', 'country', countries));
 
-    const found = byText.filter((t) => pass(t));
+    // найпопулярніші теми — зверху (групи — у порядку своєї найпопулярнішої теми)
+    const found = byText.filter((t) => pass(t)).sort((a, b) => b.score - a.score);
     $('#topic-count').textContent = `${found.length} ${plural(found.length, 'тема', 'теми', 'тем')}`;
     // групи: клуби — за назвою клубу (усередині — коротка назва теми), решта — за типом
     const groups = new Map();
@@ -164,7 +172,7 @@
     const short = (t) => (t.kind === 'club' ? t.title.replace(/:\s.*$/, '') : t.title);
     list.innerHTML = found.length
       ? [...groups].map(([name, items]) => `<section class="t-group"><h4>${escapeHtml(name)}</h4><div class="t-items">${items
-        .map((t) => `<button type="button" class="t-item" data-id="${escapeHtml(t.id)}"><span>${CATEGORY_LABELS[t.category].split(' ')[0]}</span>${escapeHtml(short(t))}</button>`).join('')}</div></section>`).join('')
+        .map((t) => `<button type="button" class="t-item" data-id="${escapeHtml(t.id)}" title="${escapeHtml(t.title)}"><span>${CATEGORY_LABELS[t.category].split(' ')[0]}</span>${escapeHtml(short(t))}<i class="lvl">${LEVEL_DOT[t.level] || ''}</i></button>`).join('')}</div></section>`).join('')
       : '<p class="empty">Нічого не знайдено — зміни фільтри або пошук</p>';
   }
 

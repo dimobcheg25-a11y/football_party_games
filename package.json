@@ -14,6 +14,7 @@
     "build-transfers": "node scripts/build-transfers.js",
     "build-tournaments": "node scripts/build-tournaments.js",
     "build-stats": "node scripts/build-stats.js",
+    "build-coaches": "node scripts/build-coaches.js",
     "fetch-category-images": "node scripts/fetch-category-images.js"
   },
   "engines": {

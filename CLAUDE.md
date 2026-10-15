@@ -54,6 +54,13 @@ Node 18+, Express + Socket.IO, клієнт — чистий HTML/CSS/JS без 
   голів/асистів за сезон, карток — по лігах, ЛЧ/ЛЄ і клубах; `players[tm]` — підсумки гравців бази: `t` усі змагання, `c[клуб]` лише чемпіонат);
   `scripts/lib/wikidata.js` — запити до Wikidata з повторами.
 
+## Складність — єдиний рейтинг відомості
+`recognition(p)` у `server/games/path/careers.js` — для ВСІХ ігор: fame (кількість мовних статей Вікіпедії; тренерам ×0,6 —
+`coaches.json`, знижка вже в `p.fame`, сирий — `p.rawFame`) + ринкова вартість + матчі за збірну й великі клуби + великі трофеї;
+українцям +25, давно завершеним — штраф. «Шлях», «Вгадай гравця», «Шпигун» — `poolFor` (верхівка рейтингу); «Перехрестя» — пули
+`EASY_POOL/FAMOUS/FAN_POOL` (верхні 540/760/1500); «Топ-10» — популярність теми = середній рейтинг гравців її топ-10, рівні тем
+easy/normal/hard = верхні 30% / наступні 40% / решта. Нова гра бере складність звідси ж, своїх порогів на fame не вигадувати.
+
 ## Не читати цілком
 `server/data/players.json`, `careers.json`, `photos.json`, `transfers.json`, `transfer-clubs.json`, `tournaments.json`, `stats.json` (десятки–сотні КБ), `package-lock.json` —
 лише Grep або `node -e` по конкретному імені/ключу. Клієнти ігор (`public/<id>/app.js`, 240–320 рядків; crossroads — 1100) читати частинами: потрібне місце шукати Grep за назвою функції
@@ -109,7 +116,7 @@ actions: { start, guess, ... : (room, seat, payload) => ({ ok } | { error }) }, 
 
 ## Команди
 - `npm test` — прогін усіх перевірок (~3 хв). Обов'язково перед комітом; запускати у фоні, вивід — у файл і `grep ПРОЙШЛИ|✗`.
-- Оновити базу: `npm run build-players` (≈15 хв) → `npm run build-careers` (≈10 хв; кар'єри з таблиць en.wikipedia) → `npm run fetch-photos`; `npm run build-transfers` (≈1 хв); `npm run build-tournaments` (≈1 хв); `npm run build-stats` (≈2 хв, після build-transfers).
+- Оновити базу: `npm run build-players` (≈15 хв) → `npm run build-careers` (≈10 хв; кар'єри з таблиць en.wikipedia) → `npm run fetch-photos`; `npm run build-transfers` (≈1 хв); `npm run build-tournaments` (≈1 хв); `npm run build-stats` (≈2 хв, після build-transfers); `npm run build-coaches` (≈1 хв).
 - `npm run dev` — локальний сервер з перезапуском.
 - `npm run ui-check -- [hub|top|spy|guess|path] [--mobile]` — справжній Chrome без вікна (playwright-core + встановлений Chrome; окремий процес,
   браузер користувача не чіпає): проходить основні екрани, ловить помилки JS, знімки — у `.shots/` (не в git). Перед пушем UI-змін запускати

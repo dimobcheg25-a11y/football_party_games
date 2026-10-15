@@ -29,7 +29,21 @@ function normalize(s) {
     .trim();
 }
 
-const players = rawPlayers.map((p) => ({ ...p, tags: new Set(p.tags), photo: photos[p.id] || null }));
+// Хто працював тренером (npm run build-coaches): їхні статті у Вікіпедії — значною мірою за тренерську кар'єру,
+// тож для складності «відомість як гравця» (fame) у них знижена — інакше Анчелотті чи Куман траплялися б у легкому рівні.
+let coaches = new Set();
+try {
+  coaches = new Set(require('./coaches.json'));
+} catch {
+  // список тренерів ще не зібраний
+}
+const COACH_FAME = 0.6;
+
+// fame — у скількох мовних розділах Вікіпедії є стаття (грубий показник світової відомості); rawFame — без знижки тренерам.
+const players = rawPlayers.map((p) => ({
+  ...p, tags: new Set(p.tags), photo: photos[p.id] || null,
+  rawFame: p.fame, coach: coaches.has(p.qid), fame: coaches.has(p.qid) ? Math.round(p.fame * COACH_FAME) : p.fame,
+}));
 require('./derived-tags').addDerivedTags(players); // 100+ асистів, 30+ голів у ЛЧ, трансфер 80+ млн, мандрівник
 const playerById = new Map(players.map((p) => [p.id, p]));
 
