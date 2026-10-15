@@ -93,7 +93,7 @@ easy/normal/hard = верхні 30% / наступні 40% / решта. Нов�
 
 ### Клієнт нової гри
 Усе спільне — `public/shared/room-client.js` (`RoomClient.create(cfg)`; опис `cfg` і того, що повертає, — у коментарі на початку файлу):
-налаштування-чипи (`[data-opt]` один варіант, `[data-multi]` кілька, `[data-toggle]` вмикач; підказка `#difficulty-hint` — сама), вхід/перепідключення,
+налаштування-чипи (`[data-opt]` один варіант, `[data-multi]` кілька, `[data-toggle]` вмикач; підказка `#difficulty-hint` — сама, підказка під іншим вибором — `cfg.hints` → `#<опція>-hint`; статичний текст під вибором не писати), вхід/перепідключення,
 запрошення `?room=`, лобі (`state.minPlayers`, `state.notice` — якщо є), вихід, чат, реакції, звук, кнопки `#start-btn`/`#again-btn`.
 Гра пише лише своє: `defaults`, `createOptions`, `optionList`, `onState` (свої змінні + звуки), `renderGame`, `renderFinal`.
 - `index.html` — скопіювати `public/top/index.html` (або `guess`) і замінити налаштування й `#screen-game`; скрипти: socket.io, `/shared/players.js`,

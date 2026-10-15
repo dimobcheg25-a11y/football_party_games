@@ -6,6 +6,8 @@
 //     defaults: { size: '10', … },             // налаштування нової гри (чипи [data-opt], [data-multi], [data-toggle] на головному екрані)
 //     fixSetup(setup),                         // необов'язково: виправити збережене (невідомі значення → типові)
 //     onSetup(setup),                          // необов'язково: дорисувати головний екран (підказки, приховані поля)
+//     hints: { опція: { значення: 'текст' } }, // необов'язково: підказка під вибором — у #<опція>-hint, змінюється разом із вибором
+//                                              // (#difficulty-hint для difficulty — сама, з LABELS.DIFFICULTY_HINTS)
 //     createOptions(setup) → {…},              // що надіслати серверу в 'create' (числа — Number)
 //     optionList(options, solo) → [рядки],     // налаштування кімнати словами (лобі, запрошення)
 //     onState(state, prev),                    // новий стан: свої змінні гри, звуки
@@ -123,6 +125,10 @@ window.RoomClient = (() => {
       });
       const hint = $('#difficulty-hint');
       if (hint && setup.difficulty) hint.textContent = LABELS.DIFFICULTY_HINTS[setup.difficulty] || '';
+      for (const [opt, texts] of Object.entries(cfg.hints || {})) {
+        const el = document.getElementById(`${opt}-hint`);
+        if (el) el.textContent = texts[setup[opt]] || '';
+      }
       cfg.onSetup?.(setup);
       store.set(`${id}:setup`, JSON.stringify(setup));
     }

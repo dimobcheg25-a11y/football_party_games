@@ -26,6 +26,18 @@
       $('#round-time-field').classList.toggle('hidden', setup.mode === 'turns');
       $('#turn-time-field').classList.toggle('hidden', setup.mode !== 'turns');
     },
+    hints: {
+      topicLevel: {
+        easy: 'Топи з найвідомішими гравцями — третина тем, де відповіді знає кожен, хто дивиться футбол.',
+        normal: 'Середні теми: багато відомих імен, але є й несподівані.',
+        hard: 'Складні теми: менш відомі гравці, ліги й клуби — для справжніх фанатів.',
+        mix: 'Теми будь-якої складності впереміш.',
+      },
+      pick: {
+        random: 'Кожен раунд — випадкова тема обраної складності.',
+        host: 'Перед раундом господар сам обирає тему зі списку (з фільтрами за категорією, країною, клубом).',
+      },
+    },
     createOptions: (s) => ({ ...s, size: Number(s.size), lives: Number(s.lives), roundSeconds: Number(s.roundSeconds), turnSeconds: Number(s.turnSeconds), rounds: Number(s.rounds) }),
     optionList,
     onState(s, prev) {
