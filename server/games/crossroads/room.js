@@ -2,15 +2,20 @@ const { playerById, categoryById, matches } = require('../../data');
 const { generateGrid, cellCandidates, isFamous } = require('./grid');
 const { BOARDS, segments } = require('./boards');
 const { BaseRoom } = require('../../core/base-room');
+const { T } = require('../../core/i18n');
 
 const ALLOWED_TIMERS = [0, 15, 20, 30, 45, 60]; // 0 — без обмеження
 const MODES = ['easy', 'normal', 'fan', 'hard', 'mix'];
 const CLAIM_WIN_AFTER_MS = Number(process.env.CLAIM_WIN_MS) || 2 * 60 * 1000; // гравець офлайн стільки — можна виключити
 const MISSED_TURNS_TO_KICK = 2; // …але лише якщо зараз його хід або він уже пропустив стільки ходів поспіль
 
+// Назва категорії парою мов (англійська — c.en / c.enShort з categories.js)
+const catLabel = (c) => T(c.label, c.en);
+const catShort = (c) => (c.short || c.enShort ? T(c.short || c.label, c.enShort || c.en) : null);
+
 function publicCategory(id) {
   const c = categoryById.get(id);
-  return { id: c.id, type: c.type, label: c.label, short: c.short || null, colors: c.colors, icon: c.icon || null, img: c.img || null };
+  return { id: c.id, type: c.type, label: catLabel(c), short: catShort(c), colors: c.colors, icon: c.icon || null, img: c.img || null };
 }
 
 function publicPlayer(p) {
@@ -67,9 +72,9 @@ class Room extends BaseRoom {
   join(token, name) {
     let seat = this.rejoin(token, name);
     if (seat === -1) {
-      if (this.status !== 'waiting') return { error: 'Гра вже йде — дочекайся кінця або створи свою' };
+      if (this.status !== 'waiting') return { error: T('Гра вже йде — дочекайся кінця або створи свою', 'The game is already on — wait for it to end or start your own') };
       seat = this.takeSeat(token, name);
-      if (seat === -1) return { error: 'Кімната вже заповнена — створи свою гру' };
+      if (seat === -1) return { error: T('Кімната вже заповнена — створи свою гру', 'The room is full — start your own game') };
     }
     this.touch();
     if (this.status === 'waiting' && this.seats.every(Boolean)) {
@@ -172,14 +177,14 @@ class Room extends BaseRoom {
 
   move(seat, cell, playerId) {
     const n = this.cfg.size;
-    if (this.status !== 'playing') return { error: 'Гра не йде' };
-    if (seat !== this.turn) return { error: 'Зараз не ваш хід' };
-    if (!Number.isInteger(cell) || cell < 0 || cell >= n * n) return { error: 'Невірна клітинка' };
-    if (this.board[cell]) return { error: 'Клітинка вже зайнята' };
+    if (this.status !== 'playing') return { error: T('Гра не йде', 'The game is not in progress') };
+    if (seat !== this.turn) return { error: T('Зараз не ваш хід', "It's not your turn") };
+    if (!Number.isInteger(cell) || cell < 0 || cell >= n * n) return { error: T('Невірна клітинка', 'Invalid cell') };
+    if (this.board[cell]) return { error: T('Клітинка вже зайнята', 'That cell is already taken') };
     const player = playerById.get(playerId);
-    if (!player) return { error: 'Такого футболіста немає в базі' };
+    if (!player) return { error: T('Такого футболіста немає в базі', 'No such footballer in the database') };
     // Правило: один футболіст — один раз за гру. Хід не втрачається, просто треба обрати іншого.
-    if (this.used.has(player.id)) return { error: `${player.uk} вже був у цій грі` };
+    if (this.used.has(player.id)) return { error: T(`${player.uk} вже був у цій грі`, `${player.name} has already been used in this game`) };
 
     this.touch();
     this.drawVotes.clear();
@@ -190,7 +195,7 @@ class Room extends BaseRoom {
 
     if (!correct) {
       // яку саме умову не виконано — показуємо після ходу, щоб було зрозуміло «чому»
-      const failed = [row, col].filter((id) => !matches(player, id)).map((id) => categoryById.get(id).label);
+      const failed = [row, col].filter((id) => !matches(player, id)).map((id) => catLabel(categoryById.get(id)));
       this.event({ type: 'miss', seat, cell, player: publicPlayer(player), failed });
       this.passTurn();
       return { ok: true, correct: false };
@@ -218,7 +223,7 @@ class Room extends BaseRoom {
   }
 
   skip(seat) {
-    if (this.status !== 'playing' || seat !== this.turn) return { error: 'Зараз не ваш хід' };
+    if (this.status !== 'playing' || seat !== this.turn) return { error: T('Зараз не ваш хід', "It's not your turn") };
     this.touch();
     this.missed[seat] = 0;
     this.event({ type: 'skip', seat });
@@ -228,8 +233,8 @@ class Room extends BaseRoom {
 
   // Нічия — коли погодились усі, хто ще в грі.
   offerDraw(seat) {
-    if (this.status !== 'playing') return { error: 'Гра не йде' };
-    if (!this.activeSeats().includes(seat)) return { error: 'Ти вже не в цій партії' };
+    if (this.status !== 'playing') return { error: T('Гра не йде', 'The game is not in progress') };
+    if (!this.activeSeats().includes(seat)) return { error: T('Ти вже не в цій партії', 'You are no longer in this game') };
     this.touch();
     this.drawVotes.add(seat);
     if (this.activeSeats().every((s) => this.drawVotes.has(s))) {
@@ -244,7 +249,7 @@ class Room extends BaseRoom {
 
   declineDraw(seat) {
     if (this.status !== 'playing' || !this.drawVotes.size || this.drawVotes.has(seat)) {
-      return { error: 'Немає пропозиції нічиєї' };
+      return { error: T('Немає пропозиції нічиєї', 'There is no draw offer') };
     }
     this.drawVotes.clear();
     this.event({ type: 'drawDeclined', seat });
@@ -254,8 +259,8 @@ class Room extends BaseRoom {
 
   // Здатися: удвох — перемога супернику; утрьох/вчотирьох — вибуваєш, гра триває.
   surrender(seat) {
-    if (this.status !== 'playing') return { error: 'Гра не йде' };
-    if (!this.activeSeats().includes(seat)) return { error: 'Ти вже не в цій партії' };
+    if (this.status !== 'playing') return { error: T('Гра не йде', 'The game is not in progress') };
+    if (!this.activeSeats().includes(seat)) return { error: T('Ти вже не в цій партії', 'You are no longer in this game') };
     this.touch();
     this.out.add(seat);
     this.drawVotes.delete(seat);
@@ -280,9 +285,9 @@ class Room extends BaseRoom {
 
   // Хтось надовго зник і заважає грі — решта може не чекати: він вибуває з партії.
   claimWin(seat) {
-    if (this.status !== 'playing') return { error: 'Гра не йде' };
+    if (this.status !== 'playing') return { error: T('Гра не йде', 'The game is not in progress') };
     const absent = this.activeSeats().filter((i) => i !== seat && this.canKick(i));
-    if (!absent.length) return { error: 'Поки нікого не можна виключити' };
+    if (!absent.length) return { error: T('Поки нікого не можна виключити', 'No one can be removed yet') };
     absent.forEach((i) => this.out.add(i));
     const active = this.activeSeats();
     if (active.length < 2) {
@@ -322,8 +327,8 @@ class Room extends BaseRoom {
 
   // Реванш — коли погодились усі, хто в кімнаті.
   voteRematch(seat) {
-    if (this.status !== 'finished') return { error: 'Гра ще не завершена' };
-    if (this.presentSeats().length < this.capacity) return { error: 'Хтось вийшов — зачекайте нового гравця' };
+    if (this.status !== 'finished') return { error: T('Гра ще не завершена', 'The game is not over yet') };
+    if (this.presentSeats().length < this.capacity) return { error: T('Хтось вийшов — зачекайте нового гравця', 'Someone left — wait for a new player') };
     this.rematchVotes.add(seat);
     if (this.presentSeats().every((s) => this.rematchVotes.has(s))) this.newGame();
     else this.changed();

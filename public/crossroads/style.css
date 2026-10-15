@@ -77,7 +77,7 @@
 @keyframes blink { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
 
 /* ── гра: верх */
-.game-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; padding-right: 50px; }
+.game-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; padding-right: 100px; } /* праворуч — фіксовані кнопки мови й звуку (.sound-ctl) */
 .game-top .config-chips { justify-content: flex-start; }
 
 /* ── плашка «чий хід» — головний акцент екрана */

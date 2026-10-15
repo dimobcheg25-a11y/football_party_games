@@ -1,11 +1,12 @@
 // «Шлях футболіста»: вгадай гравця за клубами його кар'єри. Сторінка — public/path/, сокети — простір імен /path.
 const { createRoomServer } = require('../../core/room-server');
 const { PathRoom } = require('./room');
+const { T } = require('../../core/i18n');
 
 const meta = {
   id: 'path',
-  title: 'Шлях футболіста',
-  description: "Вгадай гравця за клубами його кар'єри: що раніше вгадаєш — то більше очок.",
+  title: T('Шлях футболіста', 'Footballer’s Path'),
+  description: T("Вгадай гравця за клубами його кар'єри: що раніше вгадаєш — то більше очок.", 'Guess the player from the clubs of his career: the sooner you get it, the more points.'),
   solo: true,
   friends: '2–8',
   emoji: '→',

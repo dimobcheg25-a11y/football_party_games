@@ -185,6 +185,29 @@ async function main() {
   await emit(c, 'leave');
   await emit(a, 'leave');
   assert.strictEqual((await (await fetch(`${URL}/api/path/room/${code}`)).json()).found, true, 'Б ще має місце (офлайн)');
+
+  // ── англійська: стан, підказки, помилки й каталог — без кирилиці (крім імен: uk, name гравців і місць)
+  const CYR = /[А-Яа-яІіЇїЄєҐґ]/;
+  const cyrillic = (v, path = '') => {
+    if (typeof v === 'string') return CYR.test(v) ? [`${path}: ${v}`] : [];
+    if (Array.isArray(v)) return v.flatMap((x, i) => cyrillic(x, `${path}[${i}]`));
+    if (v && typeof v === 'object') return Object.entries(v).flatMap(([k, x]) => (['uk', 'name'].includes(k) ? [] : cyrillic(x, `${path}.${k}`)));
+    return [];
+  };
+  const en = io(GAME, { auth: { lang: 'en' } });
+  ({ res, st } = await act(en, 'create', { name: 'En', solo: true, rounds: 5, difficulty: 'easy', turnSeconds: 0 }, (x) => x.status === 'playing'));
+  for (const id of ['position', 'nation', 'born', 'letter']) ({ st } = await act(en, 'hint', { id }, (x) => x.myHints.length));
+  assert.deepStrictEqual(cyrillic(st), [], 'англійський стан без кирилиці');
+  assert.ok(st.hintCosts.some((h) => h.label === 'Position'), 'підказки англійською');
+  assert.ok(!CYR.test((await emit(en, 'hint', { id: 'nope' })).error), 'помилка англійською');
+  ({ st } = await act(en, 'guess', { playerId: st.testAnswer }, (x) => x.phase === 'reveal'));
+  assert.deepStrictEqual(cyrillic(st), [], 'відповідь і факти англійською');
+  const enGames = await (await fetch(`${URL}/api/games?lang=en`)).json();
+  assert.strictEqual(enGames.find((g) => g.id === 'path').title, 'Footballer’s Path', 'каталог англійською');
+  assert.ok(CYR.test(games.find((g) => g.id === 'path').title), 'без ?lang — українською');
+  await emit(en, 'leave');
+  console.log('✓ англійська:', st.stages.slice(0, 2).map((x) => `${x.name} (${x.country}, ${x.years}${x.fee ? `, ${x.fee}` : ''})`).join(' → '));
+
   console.log('\nУСІ ПЕРЕВІРКИ «ШЛЯХУ» ПРОЙШЛИ');
 }
 

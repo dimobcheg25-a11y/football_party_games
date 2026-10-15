@@ -91,6 +91,18 @@ easy/normal/hard = верхні 30% / наступні 40% / решта. Нов�
 - Анімацію, що перемальовується зі станом, запускати лише для нового (ключ, як `cardKey` у spy), і вимикати в `prefers-reduced-motion`.
 - Звук гри — функція в `shared/sounds.js` (`flap`, `station`, `stamp`, `ding` — приклади), виклик у `playSounds` гри.
 
+### Дві мови — українська (основна) й англійська
+Перемикач UA/EN на кожній сторінці (сам ставиться в `.sound-ctl` / `[data-lang-switch]`), вибір у localStorage `lang`, перемикання перезавантажує сторінку.
+У кімнаті кожен бачить свою мову. Кожен новий текст — одразу обома мовами.
+- Клієнт — `public/shared/i18n.js` (підключати першим зі скриптів): статичний HTML — український текст у розмітці + `data-en="…"`
+  (`data-en-html`, `data-en-placeholder`, `data-en-title`, `data-en-aria-label`, `data-en-content`); JS — `I18n.L('укр', 'eng')`,
+  `I18n.name(p)` (ім'я гравця: `p.uk` або `p.name`), `I18n.plural(n, [3 укр. форми], [one, many])`. `/api/...` — з `?lang=${I18n.lang}`.
+- Сервер — `server/core/i18n.js`: тексти парами `T('укр', 'eng')` у стані, помилках, відповідях дій; room-server перед відправкою робить
+  `localize(…, socket.lang)` (мова з `io('/<id>', { auth: { lang } })` — room-client це робить сам). Пари не склеювати «+» — будувати обидва рядки: `T('Раунд ' + n, 'Round ' + n)`.
+  Для /api — `localize(дані, langOf(req.query.lang))`. `meta.title/description` гри — теж `T`.
+- Назви англійською: `server/data/names-en.js` — `countryEn(укр. назва країни)`, `teamEn(qid, team)` (клуби з `team-names-en.json`,
+  `npm run build-names-en` після build-careers; ручні правки — `TEAM_FIX`). Гравці — `p.name` (англійське ім'я вже є в базі).
+
 ### Клієнт нової гри
 Усе спільне — `public/shared/room-client.js` (`RoomClient.create(cfg)`; опис `cfg` і того, що повертає, — у коментарі на початку файлу):
 налаштування-чипи (`[data-opt]` один варіант, `[data-multi]` кілька, `[data-toggle]` вмикач; підказка `#difficulty-hint` — сама, підказка під іншим вибором — `cfg.hints` → `#<опція>-hint`; статичний текст під вибором не писати), вхід/перепідключення,
@@ -133,7 +145,7 @@ actions: { start, guess, ... : (room, seat, payload) => ({ ok } | { error }) }, 
 
 ## Команди
 - `npm test` — прогін усіх перевірок (~3 хв). Обов'язково перед комітом; запускати у фоні, вивід — у файл і `grep ПРОЙШЛИ|✗`.
-- Оновити базу: `npm run build-players` (≈15 хв) → `npm run build-careers` (≈10 хв; кар'єри з таблиць en.wikipedia) → `npm run fetch-photos`; `npm run build-transfers` (≈1 хв); `npm run build-tournaments` (≈1 хв); `npm run build-stats` (≈2 хв, після build-transfers); `npm run build-coaches` (≈1 хв).
+- Оновити базу: `npm run build-players` (≈15 хв) → `npm run build-careers` (≈10 хв; кар'єри з таблиць en.wikipedia) → `npm run fetch-photos`; `npm run build-transfers` (≈1 хв); `npm run build-tournaments` (≈1 хв); `npm run build-stats` (≈2 хв, після build-transfers); `npm run build-coaches` (≈1 хв); `npm run build-names-en` (≈5 хв, англійські назви клубів, після build-careers).
 - `npm run dev` — локальний сервер з перезапуском.
 - `npm run ui-check -- [hub|top|spy|guess|path|crossroads] [--mobile]` — справжній Chrome без вікна (playwright-core + встановлений Chrome; окремий процес,
   браузер користувача не чіпає): проходить основні екрани, ловить помилки JS, знімки — у `.shots/` (не в git). Перед пушем UI-змін запускати

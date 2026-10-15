@@ -43,7 +43,11 @@ async function main() {
 
   // ── порівняння: Мессі проти Неймара
   const { profileOf, compare } = require('../server/games/guess/compare');
-  const cell = (g, t, id) => compare(profileOf(playerById.get(g)), profileOf(playerById.get(t))).find((c) => c.id === id);
+  const { localize } = require('../server/core/i18n');
+  // тексти клітинок — парами T(uk, en); як їх бачить гравець відповідною мовою
+  const cellIn = (lang) => (g, t, id) => localize(compare(profileOf(playerById.get(g)), profileOf(playerById.get(t))), lang).find((c) => c.id === id);
+  const cell = cellIn('uk');
+  const cellEn = cellIn('en');
   const shared = cell('lionel-messi', 'neymar', 'shared');
   assert.strictEqual(shared.color, 'yellow');
   assert.ok(shared.clubs.some((x) => x.name === 'Барселона' && x.together), 'разом у Барселоні');
@@ -72,6 +76,12 @@ async function main() {
   assert.strictEqual(cell('andriy-shevchenko', 'neymar', 'shared').color, 'grey');
   const eng = cell('david-beckham', 'wayne-rooney', 'nation');
   assert.ok(eng.text === 'Англія' && eng.color === 'green', 'британські збірні — окремо');
+  // англійська: ті самі клітинки іншою мовою
+  assert.strictEqual(cellEn('lionel-messi', 'neymar', 'born').note, 'mystery player is younger');
+  assert.ok(cellEn('lionel-messi', 'neymar', 'shared').clubs.some((x) => x.name === 'Barcelona' && x.together), 'клуби англійською');
+  assert.strictEqual(cellEn('david-beckham', 'wayne-rooney', 'nation').text, 'England');
+  assert.ok(/^€\d+m$/.test(cellEn('neymar', 'kylian-mbappe', 'value').text), 'вартість англійською');
+  assert.ok(cellEn('lionel-messi', 'neymar', 'trophies').items.some((x) => x.label === 'Champions League'));
   // у кожного, кого можна загадати, є профіль
   const { poolFor, careerOf } = require('../server/games/path/careers');
   assert.ok(poolFor('all', 'expert').every((p) => profileOf(p)), 'профілі для всього пулу');
@@ -117,6 +127,22 @@ async function main() {
   ({ st } = await act(solo, 'next', null, (x) => x.status === 'finished'));
   assert.strictEqual(st.history.length, 3);
   console.log('✓ соло: здатися, серія з 3 раундів, рахунок', st.scores[0]);
+
+  // ── англійська: гравець з auth.lang 'en' бачить стан і помилки англійською (кирилиця — лише в іменах гравців)
+  const CYR = /[А-Яа-яІіЇїЄєҐґ]/;
+  const noNames = (k, v) => (['uk', 'ru', 'aliases'].includes(k) ? undefined : v);
+  const en = io(GAME, { auth: { lang: 'en' } });
+  ({ res, st } = await act(en, 'create', { name: 'Bot', solo: true, rounds: 1, attempts: 6, difficulty: 'easy', turnSeconds: 0 }, (x) => x.status === 'playing'));
+  const enWrong = ['lionel-messi', 'neymar'].find((id) => id !== st.testAnswer);
+  ({ st } = await act(en, 'guess', { playerId: enWrong }, (x) => x.myTries.length === 1));
+  assert.ok(!CYR.test(JSON.stringify(st.columns)), 'колонки англійською');
+  assert.ok(!CYR.test(JSON.stringify(st.myTries, noNames)), 'клітинки англійською: ' + JSON.stringify(st.myTries, noNames).match(/.{0,40}[А-Яа-яІіЇїЄєҐґ].{0,40}/)?.[0]);
+  const enErr = (await emit(en, 'guess', { playerId: enWrong })).error;
+  assert.ok(enErr && !CYR.test(enErr), 'помилка англійською: ' + enErr);
+  const enGames = await (await fetch(`${URL}/api/games?lang=en`)).json();
+  assert.strictEqual(enGames.find((g) => g.id === 'guess').title, 'Guess the Player');
+  en.close();
+  console.log('✓ англійська: клітинки, колонки, помилки —', enErr);
   solo.close();
 
   // ── кімната

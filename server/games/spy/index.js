@@ -2,11 +2,13 @@
 // Сторінка — public/spy/, сокети — простір імен /spy.
 const { createRoomServer } = require('../../core/room-server');
 const { SpyRoom } = require('./room');
+const { T } = require('../../core/i18n');
 
 const meta = {
   id: 'spy',
-  title: 'Футбольний шпигун',
-  description: 'Усі знають футболіста, крім одного. Давайте підказки по черзі й викрийте шпигуна, поки він не здогадався, про кого мова.',
+  title: T('Футбольний шпигун', 'Football Spy'),
+  description: T('Усі знають футболіста, крім одного. Давайте підказки по черзі й викрийте шпигуна, поки він не здогадався, про кого мова.',
+    'Everyone knows the footballer except one. Take turns giving clues and unmask the spy before they figure out who it is.'),
   solo: false,
   friends: '3–10',
   emoji: '🕵️',

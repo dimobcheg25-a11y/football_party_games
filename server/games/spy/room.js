@@ -4,6 +4,7 @@
 // голосів, інакше 2; +2, якщо вгадав футболіста. Хто футболіст і хто шпигун — лише в privateState, доки матч не скінчився.
 const { playerById } = require('../../data');
 const { BaseRoom } = require('../../core/base-room');
+const { T } = require('../../core/i18n');
 const { poolFor, ERAS, DIFFICULTIES } = require('../path/careers');
 
 const MIN_PLAYERS = 3;
@@ -81,7 +82,7 @@ class SpyRoom extends BaseRoom {
     let seat = this.rejoin(token, name);
     if (seat === -1) {
       seat = this.takeSeat(token, name);
-      if (seat === -1) return { error: 'Кімната вже заповнена — створи свою гру' };
+      if (seat === -1) return { error: T('Кімната вже заповнена — створи свою гру', 'The room is full — start your own game') };
       this.scores[seat] = 0;
       this.stats[seat] = { spy: 0, caught: 0 };
     }
@@ -96,8 +97,8 @@ class SpyRoom extends BaseRoom {
     if (this.status === 'playing' && this.players.includes(seat)) {
       // до підрахунку голосів без шпигуна або коли гравців замало матч не має сенсу: скасовуємо без балів
       const early = this.phase === 'clues' || this.phase === 'vote';
-      if (early && seat === this.spy) this.cancelMatch('Шпигун вийшов — матч скасовано');
-      else if (early && this.players.filter((i) => this.seats[i]).length < MIN_PLAYERS) this.cancelMatch('Замало гравців — матч скасовано');
+      if (early && seat === this.spy) this.cancelMatch(T('Шпигун вийшов — матч скасовано', 'The spy left — match cancelled'));
+      else if (early && this.players.filter((i) => this.seats[i]).length < MIN_PLAYERS) this.cancelMatch(T('Замало гравців — матч скасовано', 'Not enough players — match cancelled'));
       else this.checkProgress();
     }
     this.changed();
@@ -120,9 +121,9 @@ class SpyRoom extends BaseRoom {
 
   // ── турнір
   start(seat) {
-    if (this.status === 'playing') return { error: 'Гра вже йде' };
-    if (seat !== this.host()) return { error: 'Почати гру може той, хто її створив' };
-    if (this.presentSeats().length < MIN_PLAYERS) return { error: `Потрібно щонайменше ${MIN_PLAYERS} гравці` };
+    if (this.status === 'playing') return { error: T('Гра вже йде', 'The game is already on') };
+    if (seat !== this.host()) return { error: T('Почати гру може той, хто її створив', 'Only the room creator can start the game') };
+    if (this.presentSeats().length < MIN_PLAYERS) return { error: T(`Потрібно щонайменше ${MIN_PLAYERS} гравці`, `At least ${MIN_PLAYERS} players needed`) };
     if (this.status === 'finished') {
       this.scores = Array(this.capacity).fill(0);
       this.stats = this.stats.map(() => ({ spy: 0, caught: 0 }));
@@ -147,7 +148,7 @@ class SpyRoom extends BaseRoom {
 
   startMatch() {
     const players = this.presentSeats();
-    if (players.length < MIN_PLAYERS) return { error: `Потрібно щонайменше ${MIN_PLAYERS} гравці` };
+    if (players.length < MIN_PLAYERS) return { error: T(`Потрібно щонайменше ${MIN_PLAYERS} гравці`, `At least ${MIN_PLAYERS} players needed`) };
     const tiebreak = this.status === 'playing' && this.isTie();
     this.resetMatch();
     this.notice = null;
@@ -198,15 +199,15 @@ class SpyRoom extends BaseRoom {
   }
 
   clue(seat, text) {
-    if (this.status !== 'playing' || this.phase !== 'clues') return { error: 'Зараз не час для підказок' };
-    if (this.reroll) return { error: 'Спершу дограйте голосування за заміну' };
-    if (seat !== this.activeSeat()) return { error: 'Зараз не твій хід' };
+    if (this.status !== 'playing' || this.phase !== 'clues') return { error: T('Зараз не час для підказок', 'Not the time for clues') };
+    if (this.reroll) return { error: T('Спершу дограйте голосування за заміну', 'Finish the replacement vote first') };
+    if (seat !== this.activeSeat()) return { error: T('Зараз не твій хід', 'It’s not your turn') };
     let clean = null;
     if (text != null) {
       clean = String(text).replace(/\s+/g, ' ').trim().slice(0, CLUE_MAX);
-      if (!clean) return { error: 'Напиши підказку або натисни «Сказав голосом»' };
+      if (!clean) return { error: T('Напиши підказку або натисни «Сказав голосом»', 'Type a clue or press “Said it out loud”') };
       const low = clean.toLowerCase();
-      if (seat !== this.spy && nameWords(this.footballer).some((w) => low.includes(w))) return { error: 'Не називай самого футболіста 🙂' };
+      if (seat !== this.spy && nameWords(this.footballer).some((w) => low.includes(w))) return { error: T('Не називай самого футболіста 🙂', 'Don’t name the footballer 🙂') };
     }
     this.clues.push({ seat, circle: this.circle, text: clean });
     this.touch();
@@ -217,8 +218,8 @@ class SpyRoom extends BaseRoom {
 
   // Господар: пропустити хід (гравець відійшов) або одразу до голосування.
   skipTurn(seat) {
-    if (seat !== this.host()) return { error: 'Це може лише господар кімнати' };
-    if (this.phase !== 'clues' || this.reroll) return { error: 'Зараз не можна' };
+    if (seat !== this.host()) return { error: T('Це може лише господар кімнати', 'Only the host can do this') };
+    if (this.phase !== 'clues' || this.reroll) return { error: T('Зараз не можна', 'Not now') };
     this.clues.push({ seat: this.activeSeat(), circle: this.circle, text: null, skipped: true });
     this.advanceTurn();
     this.changed();
@@ -226,8 +227,8 @@ class SpyRoom extends BaseRoom {
   }
 
   forceVote(seat) {
-    if (seat !== this.host()) return { error: 'Це може лише господар кімнати' };
-    if (this.phase !== 'clues') return { error: 'Зараз не можна' };
+    if (seat !== this.host()) return { error: T('Це може лише господар кімнати', 'Only the host can do this') };
+    if (this.phase !== 'clues') return { error: T('Зараз не можна', 'Not now') };
     this.toVote();
     this.changed();
     return { ok: true };
@@ -235,8 +236,8 @@ class SpyRoom extends BaseRoom {
 
   // ── заміна футболіста (хтось не знає, хто це): голосують усі, більшість «за» — новий футболіст, підказки спочатку
   requestReroll(seat) {
-    if (this.phase !== 'clues' || !this.players.includes(seat)) return { error: 'Зараз не можна' };
-    if (this.reroll) return { error: 'Голосування вже йде' };
+    if (this.phase !== 'clues' || !this.players.includes(seat)) return { error: T('Зараз не можна', 'Not now') };
+    if (this.reroll) return { error: T('Голосування вже йде', 'A vote is already on') };
     this.reroll = { by: seat, yes: new Set([seat]), no: new Set() };
     this.checkReroll();
     this.changed();
@@ -244,8 +245,8 @@ class SpyRoom extends BaseRoom {
   }
 
   rerollVote(seat, { yes } = {}) {
-    if (!this.reroll || !this.players.includes(seat)) return { error: 'Голосування немає' };
-    if (this.reroll.yes.has(seat) || this.reroll.no.has(seat)) return { error: 'Ти вже проголосував' };
+    if (!this.reroll || !this.players.includes(seat)) return { error: T('Голосування немає', 'There is no vote') };
+    if (this.reroll.yes.has(seat) || this.reroll.no.has(seat)) return { error: T('Ти вже проголосував', 'You have already voted') };
     (yes ? this.reroll.yes : this.reroll.no).add(seat);
     this.checkReroll();
     this.changed();
@@ -276,11 +277,11 @@ class SpyRoom extends BaseRoom {
   }
 
   vote(seat, { target } = {}) {
-    if (this.phase !== 'vote') return { error: 'Зараз не голосуємо' };
-    if (!this.players.includes(seat)) return { error: 'Ти граєш з наступного матчу' };
-    if (this.votes.has(seat)) return { error: 'Ти вже проголосував' };
+    if (this.phase !== 'vote') return { error: T('Зараз не голосуємо', 'Not voting now') };
+    if (!this.players.includes(seat)) return { error: T('Ти граєш з наступного матчу', 'You play from the next match') };
+    if (this.votes.has(seat)) return { error: T('Ти вже проголосував', 'You have already voted') };
     target = Number(target);
-    if (target === seat || !this.players.includes(target) || !this.seats[target]) return { error: 'Обери іншого гравця' };
+    if (target === seat || !this.players.includes(target) || !this.seats[target]) return { error: T('Обери іншого гравця', 'Pick another player') };
     this.votes.set(seat, target);
     this.touch();
     this.checkProgress();
@@ -308,13 +309,13 @@ class SpyRoom extends BaseRoom {
 
   // ── шпигун називає футболіста (одна спроба) або пропускає
   spyGuessAction(seat, { playerId } = {}) {
-    if (this.phase !== 'spyGuess') return { error: 'Зараз не можна' };
-    if (seat !== this.spy) return { error: 'Вгадує лише шпигун' };
+    if (this.phase !== 'spyGuess') return { error: T('Зараз не можна', 'Not now') };
+    if (seat !== this.spy) return { error: T('Вгадує лише шпигун', 'Only the spy guesses') };
     if (playerId == null) {
       this.spyGuess = { skipped: true };
     } else {
       const p = playerById.get(playerId);
-      if (!p) return { error: 'Обери гравця зі списку' };
+      if (!p) return { error: T('Обери гравця зі списку', 'Pick a player from the list') };
       const correct = p.id === this.footballer.id;
       this.spyGuess = { player: publicPlayer(p), correct };
       if (correct) {
@@ -332,7 +333,7 @@ class SpyRoom extends BaseRoom {
     this.history.push({
       footballer: publicPlayer(this.footballer),
       spy: this.spy,
-      spyName: this.seats[this.spy]?.name || 'Гравець',
+      spyName: this.seats[this.spy]?.name || T('Гравець', 'Player'),
       spyPoints: this.spyPoints,
       guessed: !!this.spyGuess?.correct,
     });
@@ -340,7 +341,7 @@ class SpyRoom extends BaseRoom {
 
   // Після матчу: усі онлайн натиснули «далі» — наступний матч або фінал.
   next(seat) {
-    if (this.phase !== 'reveal') return { error: 'Матч ще йде' };
+    if (this.phase !== 'reveal') return { error: T('Матч ще йде', 'The match is still on') };
     this.nextVotes.add(seat);
     this.checkProgress();
     if (this.phase === 'reveal') this.changed();

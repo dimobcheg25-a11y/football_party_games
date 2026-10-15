@@ -1,11 +1,13 @@
 // «Футбольне перехрестя»: футбольні хрестики-нулики. Сторінка — public/crossroads/, сокети — простір імен /crossroads.
 const { createRoomServer } = require('../../core/room-server');
 const { Room } = require('./room');
+const { T } = require('../../core/i18n');
 
 const meta = {
   id: 'crossroads',
-  title: 'Футбольне перехрестя',
-  description: 'Хрестики-нулики футболістами: клітинка — гравець, який підходить і рядку, і стовпцю.',
+  title: T('Футбольне перехрестя', 'Football Crossroads'),
+  description: T('Хрестики-нулики футболістами: клітинка — гравець, який підходить і рядку, і стовпцю.',
+    'Tic-tac-toe with footballers: each cell needs a player who fits both the row and the column.'),
   solo: false,
   friends: '2–4',
   emoji: '✕',

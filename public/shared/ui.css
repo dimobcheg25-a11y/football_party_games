@@ -161,7 +161,8 @@ input::placeholder { color: #6b8577; }
 .toast.bad { border-color: var(--danger); }
 
 /* ── звук */
-.sound-ctl { position: fixed; top: 12px; right: 12px; z-index: 45; }
+.sound-ctl { position: fixed; top: 12px; right: 12px; z-index: 45; display: flex; gap: 6px; }
+.lang-btn { font-size: 13px; font-weight: 800; letter-spacing: .02em; }
 .popover {
   position: absolute; top: 48px; right: 0; width: 230px; display: grid; gap: 10px; padding: 14px;
   background: var(--surface-solid); border: 1px solid var(--line-strong); border-radius: 14px;

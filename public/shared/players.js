@@ -61,6 +61,11 @@ window.Players = (() => {
     'Едмар', 'Марко Девич', 'Хосе Соса', 'Клейтон Шав’єр', 'Папу Гомес', 'Тайсон', 'Горяїнов', 'Крістальдо',
     'Вільягра', 'Себастьян Бланко', 'Валяєв', 'Шелаєв',
   ];
+  const LEGENDS_EN = ['Pelé', 'Maradona', 'Johan Cruyff', 'Beckenbauer', 'Zidane', 'Ronaldinho', 'Eusébio', 'Puskás', 'Di Stéfano',
+    'Platini', 'Van Basten', 'Maldini', 'Roberto Baggio', 'Totti', 'Romário', 'Thierry Henry', 'George Best', 'Bobby Charlton',
+    'Buffon', 'Kaká', 'David Beckham', 'Oleh Blokhin', 'Shevchenko', 'Rebrov', 'Belanov', 'Shovkovskyi', 'Tymoshchuk', 'Srna'];
   const input = document.getElementById('name-input');
-  if (input) input.placeholder = `Наприклад, ${LEGENDS[Math.floor(Math.random() * LEGENDS.length)]}`;
+  if (input) input.placeholder = window.I18n?.lang === 'en'
+    ? `e.g. ${LEGENDS_EN[Math.floor(Math.random() * LEGENDS_EN.length)]}`
+    : `Наприклад, ${LEGENDS[Math.floor(Math.random() * LEGENDS.length)]}`;
 })();

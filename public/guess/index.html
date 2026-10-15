@@ -3,8 +3,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Вгадай гравця</title>
-  <meta name="description" content="Вгадай гравця — називай футболістів і за збігами виходь на загаданого. Соло або з друзями." />
+  <title data-en="Guess the Player — Football party games">Вгадай гравця</title>
+  <meta name="description" content="Вгадай гравця — називай футболістів і за збігами виходь на загаданого. Соло або з друзями." data-en-content="Guess the Player — name footballers and use the matches to find the mystery player. Solo or with friends." />
+  <meta property="og:site_name" content="Football party games" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://football-party-games.onrender.com/guess/" />
+  <meta property="og:title" content="Вгадай гравця — Football party games" data-en-content="Guess the Player — Football party games" />
+  <meta property="og:description" content="Вгадай гравця — називай футболістів і за збігами виходь на загаданого. Соло або з друзями." data-en-content="Guess the Player — name footballers and use the matches to find the mystery player. Solo or with friends." />
+  <meta property="og:locale" content="uk_UA" />
+  <meta property="og:locale:alternate" content="en_US" />
+  <meta name="application-name" content="Football party games" />
+  <meta name="twitter:card" content="summary" />
   <meta name="theme-color" content="#0d0d0f" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -19,15 +28,15 @@
   <div class="pitch-bg" aria-hidden="true"></div>
 
   <div class="sound-ctl">
-    <button id="mute-btn" class="round-btn" aria-label="Звук">🔊</button>
+    <button id="mute-btn" class="round-btn" aria-label="Звук" data-en-aria-label="Sound">🔊</button>
   </div>
 
   <!-- ── Головний екран: налаштування -->
   <main id="screen-home" class="screen">
-    <a class="back-link" href="/">← Усі ігри</a>
+    <a class="back-link" href="/" data-en="← All games">← Усі ігри</a>
     <header class="hero">
-      <div class="logo flaps" aria-label="Вгадай гравця"><small>ВГАДАЙ</small><span aria-hidden="true"><i>Г</i><i>Р</i><i>А</i><i>В</i><i>Ц</i><i class="hot">Я</i></span></div>
-      <p class="tagline">Називай будь-яких футболістів — кольори підкажуть, наскільки ти близько до загаданого.</p>
+      <div class="logo flaps" aria-label="Вгадай гравця" data-en-aria-label="Guess the Player" data-en-html="&lt;small&gt;GUESS THE&lt;/small&gt;&lt;span aria-hidden=&quot;true&quot;&gt;&lt;i&gt;P&lt;/i&gt;&lt;i&gt;L&lt;/i&gt;&lt;i&gt;A&lt;/i&gt;&lt;i&gt;Y&lt;/i&gt;&lt;i&gt;E&lt;/i&gt;&lt;i class=&quot;hot&quot;&gt;R&lt;/i&gt;&lt;/span&gt;"><small>ВГАДАЙ</small><span aria-hidden="true"><i>Г</i><i>Р</i><i>А</i><i>В</i><i>Ц</i><i class="hot">Я</i></span></div>
+      <p class="tagline" data-en="Name any footballers — the colours show how close you are to the mystery player.">Називай будь-яких футболістів — кольори підкажуть, наскільки ти близько до загаданого.</p>
     </header>
 
     <section class="card setup">
@@ -35,35 +44,35 @@
       <button id="resume-btn" class="btn btn-secondary resume hidden"></button>
 
       <label class="field" for="name-input">
-        <span class="field-label">Твоє ім'я</span>
+        <span class="field-label" data-en="Your name">Твоє ім'я</span>
         <input id="name-input" maxlength="20" placeholder="Наприклад, Пеле" autocomplete="nickname" />
       </label>
 
       <div id="setup-options">
         <div class="field">
-          <span class="field-label">Гравці</span>
-          <div class="chips" data-opt="era" role="radiogroup" aria-label="Які гравці">
-            <button type="button" class="chip" data-val="all">Усі</button>
-            <button type="button" class="chip" data-val="modern">Сучасні</button>
-            <button type="button" class="chip" data-val="retired">Завершили кар'єру</button>
+          <span class="field-label" data-en="Players">Гравці</span>
+          <div class="chips" data-opt="era" role="radiogroup" aria-label="Які гравці" data-en-aria-label="Which players">
+            <button type="button" class="chip" data-val="all" data-en="All">Усі</button>
+            <button type="button" class="chip" data-val="modern" data-en="Current">Сучасні</button>
+            <button type="button" class="chip" data-val="retired" data-en="Retired">Завершили кар'єру</button>
           </div>
         </div>
 
         <div class="field">
-          <span class="field-label">Складність</span>
-          <div class="chips" data-opt="difficulty" role="radiogroup" aria-label="Складність">
-            <button type="button" class="chip" data-val="easy">🟢 Легкий</button>
-            <button type="button" class="chip" data-val="normal">🟡 Звичайний</button>
-            <button type="button" class="chip" data-val="fan">🟣 Фанат</button>
-            <button type="button" class="chip" data-val="hard">🔴 Складний</button>
-            <button type="button" class="chip" data-val="expert">⚫ Експерт</button>
+          <span class="field-label" data-en="Difficulty">Складність</span>
+          <div class="chips" data-opt="difficulty" role="radiogroup" aria-label="Складність" data-en-aria-label="Difficulty">
+            <button type="button" class="chip" data-val="easy" data-en="🟢 Easy">🟢 Легкий</button>
+            <button type="button" class="chip" data-val="normal" data-en="🟡 Normal">🟡 Звичайний</button>
+            <button type="button" class="chip" data-val="fan" data-en="🟣 Fan">🟣 Фанат</button>
+            <button type="button" class="chip" data-val="hard" data-en="🔴 Hard">🔴 Складний</button>
+            <button type="button" class="chip" data-val="expert" data-en="⚫ Expert">⚫ Експерт</button>
           </div>
           <p class="hint" id="difficulty-hint"></p>
         </div>
 
         <div class="field">
-          <span class="field-label">Спроб на гравця</span>
-          <div class="chips" data-opt="attempts" role="radiogroup" aria-label="Спроб на гравця">
+          <span class="field-label" data-en="Attempts per player">Спроб на гравця</span>
+          <div class="chips" data-opt="attempts" role="radiogroup" aria-label="Спроб на гравця" data-en-aria-label="Attempts per player">
             <button type="button" class="chip" data-val="6">6</button>
             <button type="button" class="chip" data-val="8">8</button>
             <button type="button" class="chip" data-val="10">10</button>
@@ -71,8 +80,8 @@
         </div>
 
         <div class="field">
-          <span class="field-label">Раундів</span>
-          <div class="chips" data-opt="rounds" role="radiogroup" aria-label="Раундів">
+          <span class="field-label" data-en="Rounds">Раундів</span>
+          <div class="chips" data-opt="rounds" role="radiogroup" aria-label="Раундів" data-en-aria-label="Rounds">
             <button type="button" class="chip" data-val="3">3</button>
             <button type="button" class="chip" data-val="5">5</button>
             <button type="button" class="chip" data-val="10">10</button>
@@ -80,39 +89,39 @@
         </div>
 
         <div class="field">
-          <span class="field-label">Час на раунд</span>
-          <div class="chips" data-opt="turnSeconds" role="radiogroup" aria-label="Час на раунд">
-            <button type="button" class="chip" data-val="60">1 хв</button>
-            <button type="button" class="chip" data-val="120">2 хв</button>
-            <button type="button" class="chip" data-val="180">3 хв</button>
+          <span class="field-label" data-en="Time per round">Час на раунд</span>
+          <div class="chips" data-opt="turnSeconds" role="radiogroup" aria-label="Час на раунд" data-en-aria-label="Time per round">
+            <button type="button" class="chip" data-val="60" data-en="1 min">1 хв</button>
+            <button type="button" class="chip" data-val="120" data-en="2 min">2 хв</button>
+            <button type="button" class="chip" data-val="180" data-en="3 min">3 хв</button>
             <button type="button" class="chip" data-val="0">∞</button>
           </div>
         </div>
       </div>
 
       <div class="start-buttons" id="start-buttons">
-        <button id="solo-btn" class="btn btn-secondary btn-lg">Грати соло</button>
-        <button id="create-btn" class="btn btn-primary btn-lg">Кімната з друзями</button>
+        <button id="solo-btn" class="btn btn-secondary btn-lg" data-en="Play solo">Грати соло</button>
+        <button id="create-btn" class="btn btn-primary btn-lg" data-en="Room with friends">Кімната з друзями</button>
       </div>
-      <button id="join-btn" class="btn btn-primary btn-lg hidden">Приєднатися до гри</button>
+      <button id="join-btn" class="btn btn-primary btn-lg hidden" data-en="Join the game">Приєднатися до гри</button>
       <p id="home-error" class="error"></p>
     </section>
 
     <section class="card rules-card">
-      <h3>Як грати</h3>
+      <h3 data-en="How to play">Як грати</h3>
       <ul class="rules-list">
-        <li>Називай <b>будь-якого</b> футболіста — під ним з'являться клітинки: збірна, позиція, рік народження, останній клуб,
+        <li data-en-html="Name &lt;b&gt;any&lt;/b&gt; footballer — a row of cells appears: nation, position, year of birth, last club, league, league goals, caps and international goals, peak market value, trophies, shared clubs. If the mystery player started their career in 2012 or later — &lt;b&gt;assists&lt;/b&gt; too (all competitions, per Transfermarkt).">Називай <b>будь-якого</b> футболіста — під ним з'являться клітинки: збірна, позиція, рік народження, останній клуб,
           чемпіонат, голи в чемпіонатах, матчі й голи за збірну, максимальна ринкова вартість, трофеї, спільні клуби.
           Якщо загаданий почав кар’єру з 2012 року — ще й <b>асисти</b> (усі змагання, за Transfermarkt).</li>
-        <li><span class="sw green"></span> — збіг. <span class="sw yellow"></span> — близько, під значенням написано чому:
+        <li data-en-html="&lt;span class=&quot;sw green&quot;&gt;&lt;/span&gt; — match. &lt;span class=&quot;sw yellow&quot;&gt;&lt;/span&gt; — close, the reason is written under the value: same continent, same line on the pitch (both defenders, both wide…), ±2 years, the mystery player once played for this club / in this league, a close number. &lt;span class=&quot;sw grey&quot;&gt;&lt;/span&gt; — miss."><span class="sw green"></span> — збіг. <span class="sw yellow"></span> — близько, під значенням написано чому:
           той самий континент, та сама лінія на полі (обидва захисники, обидва на фланзі…), ±2 роки, загаданий колись грав у цьому клубі / чемпіонаті,
           число близьке. <span class="sw grey"></span> — мимо.</li>
-        <li>Під роком — <b>загаданий старший / молодший</b>, під числами — <b>у загаданого більше / менше</b>.</li>
-        <li><b>Трофеї</b> — Золотий м'яч, чемпіон світу / Європи, Кубок Америки, Ліга чемпіонів, Ліга Європи; ✓ — такий є і в загаданого.</li>
-        <li><b>Спільні клуби</b> — де грали обоє; 🤝 — грали там разом, в один час.</li>
-        <li>Очки: <span id="points-rule"></span>. Можна здатися, щоб не чекати.</li>
-        <li>У кімнаті всі вгадують одного гравця, кожен у своєму темпі. Чужі спроби видно лише кольорами.</li>
-        <li>Голи в чемпіонатах — як у Вікіпедії. Вартість і позиція — за Transfermarkt (для ветеранів до ~2012 вартості немає).</li>
+        <li data-en-html="Under the year — &lt;b&gt;the mystery player is older / younger&lt;/b&gt;, under numbers — &lt;b&gt;the mystery player has more / less&lt;/b&gt;.">Під роком — <b>загаданий старший / молодший</b>, під числами — <b>у загаданого більше / менше</b>.</li>
+        <li data-en-html="&lt;b&gt;Trophies&lt;/b&gt; — Ballon d&#x27;Or, World Cup / Euro winner, Copa América, Champions League, Europa League; ✓ — the mystery player has it too."><b>Трофеї</b> — Золотий м'яч, чемпіон світу / Європи, Кубок Америки, Ліга чемпіонів, Ліга Європи; ✓ — такий є і в загаданого.</li>
+        <li data-en-html="&lt;b&gt;Shared clubs&lt;/b&gt; — where both played; 🤝 — they played there together, at the same time."><b>Спільні клуби</b> — де грали обоє; 🤝 — грали там разом, в один час.</li>
+        <li><span data-en="Points:">Очки:</span> <span id="points-rule"></span>. <span data-en="You can give up so you don't have to wait.">Можна здатися, щоб не чекати.</span></li>
+        <li data-en-html="In a room everyone guesses the same player, each at their own pace. Others’ attempts show only as colours.">У кімнаті всі вгадують одного гравця, кожен у своєму темпі. Чужі спроби видно лише кольорами.</li>
+        <li data-en-html="League goals — as on Wikipedia. Value and position — per Transfermarkt (no value for veterans before ~2012).">Голи в чемпіонатах — як у Вікіпедії. Вартість і позиція — за Transfermarkt (для ветеранів до ~2012 вартості немає).</li>
       </ul>
     </section>
   </main>
@@ -120,16 +129,16 @@
   <!-- ── Лобі кімнати -->
   <main id="screen-lobby" class="screen hidden">
     <section class="card lobby">
-      <p class="field-label">Кімната</p>
+      <p class="field-label" data-en="Room">Кімната</p>
       <div class="room-code" id="lobby-code"></div>
       <div class="share-row">
-        <button id="copy-link" class="btn btn-primary">Скопіювати запрошення</button>
+        <button id="copy-link" class="btn btn-primary" data-en="Copy invite link">Скопіювати запрошення</button>
       </div>
       <div class="opt-chips" id="lobby-options"></div>
       <ul class="lobby-players" id="lobby-players"></ul>
-      <button id="start-btn" class="btn btn-primary btn-lg hidden">Почати гру</button>
+      <button id="start-btn" class="btn btn-primary btn-lg hidden" data-en="Start game">Почати гру</button>
       <p id="lobby-wait" class="hint"></p>
-      <button class="btn btn-ghost btn-sm" data-action="leave">Вийти з кімнати</button>
+      <button class="btn btn-ghost btn-sm" data-action="leave" data-en="Leave room">Вийти з кімнати</button>
     </section>
   </main>
 
@@ -147,11 +156,11 @@
         <div class="answer-box" id="answer-box">
           <div class="earn" id="earn"></div>
           <div class="search">
-            <input id="guess-input" placeholder="Назви футболіста — почни вводити прізвище…" autocomplete="off" />
+            <input id="guess-input" placeholder="Назви футболіста — почни вводити прізвище…" data-en-placeholder="Name a footballer — start typing a surname…" autocomplete="off" />
             <ul class="suggestions" id="suggestions"></ul>
           </div>
           <div class="answer-actions">
-            <button id="giveup-btn" class="btn btn-ghost btn-sm">Здатися</button>
+            <button id="giveup-btn" class="btn btn-ghost btn-sm" data-en="Give up">Здатися</button>
           </div>
           <p class="hint" id="answer-hint"></p>
         </div>
@@ -161,7 +170,7 @@
 
       <aside class="side-col">
         <section class="table-card">
-          <h3 class="table-title" id="table-title">Таблиця</h3>
+          <h3 class="table-title" id="table-title" data-en="Standings">Таблиця</h3>
           <ol class="scoreboard" id="scoreboard"></ol>
         </section>
         <div class="reactions" id="reactions"></div>
@@ -169,7 +178,7 @@
     </div>
 
     <div class="game-footer">
-      <button class="btn btn-ghost btn-sm" data-action="leave">Вийти</button>
+      <button class="btn btn-ghost btn-sm" data-action="leave" data-en="Leave">Вийти</button>
     </div>
   </main>
 
@@ -178,29 +187,30 @@
     <section class="card final">
       <h2 id="final-title"></h2>
       <ol class="standings" id="final-standings"></ol>
-      <h3 class="field-label">Хто це був</h3>
+      <h3 class="field-label" data-en="Who it was">Хто це був</h3>
       <ol class="history" id="final-history"></ol>
       <div class="result-actions">
-        <button id="again-btn" class="btn btn-primary btn-lg">Ще одна гра</button>
+        <button id="again-btn" class="btn btn-primary btn-lg" data-en="Play again">Ще одна гра</button>
         <p id="again-wait" class="hint"></p>
-        <button class="btn btn-ghost" data-action="leave">На головну</button>
+        <button class="btn btn-ghost" data-action="leave" data-en="Home">На головну</button>
       </div>
     </section>
   </main>
 
   <!-- Чат (лише в кімнаті) -->
-  <button id="chat-fab" class="chat-fab hidden" aria-label="Чат">💬<span id="chat-badge" class="chat-badge hidden"></span></button>
-  <section id="chat-panel" class="chat-panel hidden" aria-label="Чат кімнати">
-    <div class="chat-head"><b>Чат</b><button class="icon-btn" id="chat-close" aria-label="Закрити">✕</button></div>
+  <button id="chat-fab" class="chat-fab hidden" aria-label="Чат" data-en-aria-label="Chat">💬<span id="chat-badge" class="chat-badge hidden"></span></button>
+  <section id="chat-panel" class="chat-panel hidden" aria-label="Чат кімнати" data-en-aria-label="Room chat">
+    <div class="chat-head"><b data-en="Chat">Чат</b><button class="icon-btn" id="chat-close" aria-label="Закрити" data-en-aria-label="Close">✕</button></div>
     <ul class="chat-list" id="chat-list"></ul>
     <form class="chat-form" id="chat-form">
-      <input id="chat-input" maxlength="200" placeholder="Повідомлення…" autocomplete="off" />
+      <input id="chat-input" maxlength="200" placeholder="Повідомлення…" data-en-placeholder="Message…" autocomplete="off" />
       <button class="btn btn-primary btn-sm">↑</button>
     </form>
   </section>
 
   <div id="toast" class="toast" role="status"></div>
 
+  <script src="/shared/i18n.js"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script src="/shared/players.js"></script>
   <script src="/shared/sounds.js"></script>

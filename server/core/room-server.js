@@ -6,13 +6,17 @@
 //                                           необов'язково privateState(seat) — те, що бачить лише цей гравець)
 //     actions   — { подія: (room, seat, payload) => відповідь } — ігрові дії гравця
 //     roomInfo  — (room) => поля для екрана запрошення (налаштування гри)
+//   Тексти — парами T(uk, en) (server/core/i18n.js); кожен сокет отримує стан і відповіді своєю мовою.
 const crypto = require('crypto');
+const { T, localize, langOf } = require('./i18n');
 
+const NOT_IN_ROOM = T('Ви не в кімнаті', 'You are not in a room');
+const NOT_PLAYER = T('Ви не гравець цієї кімнати', 'You are not a player in this room');
 const ROOM_TTL_MS = 60 * 60 * 1000; // кімнату без активності видаляємо через годину
 const REACTIONS = ['👍', '😂', '😮', '😡', '🔥', '👏'];
 
-function cleanName(name) {
-  return String(name || '').trim().slice(0, 20) || 'Гравець';
+function cleanName(name, lang) {
+  return String(name || '').trim().slice(0, 20) || (lang === 'en' ? 'Player' : 'Гравець');
 }
 
 function createRoomServer({ app, io, id, createRoom, actions, roomInfo = () => ({}) }) {
@@ -24,14 +28,14 @@ function createRoomServer({ app, io, id, createRoom, actions, roomInfo = () => (
     const room = rooms.get(String(req.params.code || '').toUpperCase());
     // «не знайдено» — звичайна відповідь (не 404), щоб у консолі браузера не було помилки
     if (!room) return res.json({ found: false });
-    res.json({
+    res.json(localize({
       found: true,
       code: room.code,
       capacity: room.capacity,
       status: room.status,
       players: room.seats.filter(Boolean).map((s) => s.name),
       ...roomInfo(room),
-    });
+    }, langOf(req.query.lang)));
   });
 
   function makeCode() {
@@ -44,31 +48,34 @@ function createRoomServer({ app, io, id, createRoom, actions, roomInfo = () => (
   }
 
   // Стан для одного гравця: спільне + його місце + його особисте (підказки, свої відповіді).
-  const stateFor = (room, state, seat) => ({ ...state, you: seat, ...(room.privateState && seat !== -1 ? room.privateState(seat) : {}) });
+  const stateFor = (room, state, seat, lang) =>
+    localize({ ...state, you: seat, ...(room.privateState && seat !== -1 ? room.privateState(seat) : {}) }, lang);
 
   // Кожному сокету — стан кімнати + його власне місце (воно може змінитися, коли хтось виходить).
   function broadcast(room) {
     const state = room.publicState();
     for (const sid of nsp.adapter.rooms.get(room.code) || []) {
       const s = nsp.sockets.get(sid);
-      if (s) s.emit('state', stateFor(room, state, room.seatOf(s.data.token)));
+      if (s) s.emit('state', stateFor(room, state, room.seatOf(s.data.token), s.lang));
     }
   }
 
   nsp.on('connection', (socket) => {
-    // socket.data: { code, token, seat }
+    // socket.data: { code, token, seat }; socket.lang — мова гравця ('uk' | 'en')
+    socket.lang = langOf(socket.handshake.auth?.lang);
+    const reply = (cb, res) => cb?.(localize(res, socket.lang));
 
     function currentRoom() {
       return socket.data.code ? rooms.get(socket.data.code) : null;
     }
 
     function enter(room, token, name, cb) {
-      const res = room.join(token, cleanName(name));
-      if (res.error) return cb?.({ error: res.error });
+      const res = room.join(token, cleanName(name, socket.lang));
+      if (res.error) return reply(cb, { error: res.error });
       socket.join(room.code);
       socket.data = { code: room.code, token, seat: res.seat };
       cb?.({ ok: true, code: room.code, token, seat: res.seat });
-      socket.emit('state', stateFor(room, room.publicState(), res.seat));
+      socket.emit('state', stateFor(room, room.publicState(), res.seat, socket.lang));
       socket.emit('chatHistory', room.chat);
     }
 
@@ -81,7 +88,7 @@ function createRoomServer({ app, io, id, createRoom, actions, roomInfo = () => (
 
     socket.on('join', ({ code, name, token } = {}, cb) => {
       const room = rooms.get(String(code || '').toUpperCase().trim());
-      if (!room) return cb?.({ error: 'Кімнату не знайдено' });
+      if (!room) return reply(cb, { error: T('Кімнату не знайдено', 'Room not found') });
       enter(room, token || crypto.randomUUID(), name, cb);
     });
 
@@ -89,10 +96,10 @@ function createRoomServer({ app, io, id, createRoom, actions, roomInfo = () => (
     for (const [event, handler] of Object.entries(actions)) {
       socket.on(event, (payload, cb) => {
         const room = currentRoom();
-        if (!room) return cb?.({ error: 'Ви не в кімнаті' });
+        if (!room) return reply(cb, { error: NOT_IN_ROOM });
         const seat = room.seatOf(socket.data.token);
-        if (seat === -1) return cb?.({ error: 'Ви не гравець цієї кімнати' });
-        cb?.(handler(room, seat, payload));
+        if (seat === -1) return reply(cb, { error: NOT_PLAYER });
+        reply(cb, handler(room, seat, payload, socket.lang));
       });
     }
 
@@ -115,12 +122,12 @@ function createRoomServer({ app, io, id, createRoom, actions, roomInfo = () => (
     let lastChat = 0;
     socket.on('chat', (text, cb) => {
       const room = currentRoom();
-      if (!room) return cb?.({ error: 'Ви не в кімнаті' });
+      if (!room) return reply(cb, { error: NOT_IN_ROOM });
       const seat = room.seatOf(socket.data.token);
-      if (seat === -1) return cb?.({ error: 'Ви не гравець цієї кімнати' });
-      if (Date.now() - lastChat < 700) return cb?.({ error: 'Не так швидко 🙂' });
+      if (seat === -1) return reply(cb, { error: NOT_PLAYER });
+      if (Date.now() - lastChat < 700) return reply(cb, { error: T('Не так швидко 🙂', 'Not so fast 🙂') });
       const msg = room.addChat(seat, text);
-      if (!msg) return cb?.({ error: 'Порожнє повідомлення' });
+      if (!msg) return reply(cb, { error: T('Порожнє повідомлення', 'Empty message') });
       lastChat = Date.now();
       nsp.to(room.code).emit('chat', msg);
       cb?.({ ok: true });

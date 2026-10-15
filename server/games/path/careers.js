@@ -1,6 +1,8 @@
 // Кар'єри для «Шляху футболіста»: хто може бути загаданим (епоха × складність), етапи раунду (клуби) і підказки.
 // Дані — server/data/careers.json (npm run build-careers), гравці — спільна база.
 const { players, categories, categoryById } = require('../../data');
+const { T } = require('../../core/i18n');
+const { countryEn, teamEn } = require('../../data/names-en');
 
 let data = { teams: {}, careers: {} };
 try {
@@ -81,7 +83,7 @@ function poolFor(era, difficulty) {
   return list.slice(0, Math.max(40, Math.round((size * list.length) / candidates.length)));
 }
 
-const years = (s, e) => (!s ? `до ${e}` : e === s ? `${s}` : `${s}–${e ?? ''}`);
+const years = (s, e) => (!s ? T(`до ${e}`, `until ${e}`) : e === s ? `${s}` : `${s}–${e ?? ''}`);
 
 function team(qid) {
   const t = data.teams[qid] || { name: '?' };
@@ -89,11 +91,14 @@ function team(qid) {
   // «Барселона (жіночий футбольний клуб)» → «Барселона (жін.)», «Полтава (спортивний клуб)» → «Полтава»
   const name = t.name.replace(/\s*\((жіночий|женский)[^)]*\)$/i, ' (жін.)').replace(/\s*\([^)]*клуб\)$/i, '')
     .replace(/\s*\(футбольний клуб,\s*([^)]+)\)/, ' $1'); // «Ред Булл (футбольний клуб, Зальцбург)» → «Ред Булл Зальцбург»
-  return { name, country: t.country || null, img: cat?.img || t.img || null };
+  // nameEn — для англійської версії (інші ігри беруть name як рядок — його не чіпаємо)
+  return { name, nameEn: teamEn(qid, t) || name, country: t.country || null, img: cat?.img || t.img || null };
 }
 
 // Етапи раунду — клуби кар'єри (з першого або з останнього).
-const money = (v) => (v >= 1e6 ? `€${Number((v / 1e6).toFixed(v < 1e7 ? 1 : 0))} млн` : `€${Math.round(v / 1e3)} тис.`);
+const money = (v) => (v >= 1e6
+  ? T(`€${Number((v / 1e6).toFixed(v < 1e7 ? 1 : 0))} млн`, `€${Number((v / 1e6).toFixed(v < 1e7 ? 1 : 0))}m`)
+  : T(`€${Math.round(v / 1e3)} тис.`, `€${Math.round(v / 1e3)}k`));
 const seasonYear = (season) => { const y = Number(String(season).slice(0, 2)); return y > 50 ? 1900 + y : 2000 + y; };
 const STATS_FROM = 2012; // асисти є лише з сезону 2012/13
 
@@ -116,9 +121,12 @@ function stagesFor(p, { start = 'first', showYears = true, showStats = true } = 
   const clubs = start === 'last' ? [...c.clubs].reverse() : c.clubs;
   return clubs.map((x) => {
     const fee = feeFor(p, x);
+    const { nameEn, ...t } = team(x.t);
     return {
       kind: 'club',
-      ...team(x.t),
+      ...t,
+      name: T(t.name, nameEn),
+      country: t.country ? T(t.country, countryEn(t.country)) : null,
       years: showYears ? years(x.s, x.e) : null,
       loan: !!x.loan,
       fee: fee ? money(fee) : null,
@@ -134,30 +142,32 @@ function stagesFor(p, { start = 'first', showYears = true, showStats = true } = 
 // що коротша кар'єра, то дорожчі підказки. Позиція і збірна — рівноцінні; рік народження слабкий
 // (епоху й так видно з років у клубах); перша літера прізвища — найсильніша, тому найдорожча.
 const HINTS = [
-  { id: 'position', label: 'Позиція', steps: 0.6, min: 5 },
-  { id: 'nation', label: 'Збірна', steps: 0.6, min: 5 },
-  { id: 'born', label: 'Рік народження', steps: 0.3, min: 3 },
-  { id: 'letter', label: 'Перша літера прізвища', steps: 2, min: 15 },
+  { id: 'position', label: T('Позиція', 'Position'), steps: 0.6, min: 5 },
+  { id: 'nation', label: T('Збірна', 'National team'), steps: 0.6, min: 5 },
+  { id: 'born', label: T('Рік народження', 'Year of birth'), steps: 0.3, min: 3 },
+  { id: 'letter', label: T('Перша літера прізвища', 'First letter of surname'), steps: 2, min: 15 },
 ];
-const POSITIONS = { GK: 'Воротар', DF: 'Захисник', MF: 'Півзахисник', FW: 'Нападник' };
+const POSITIONS = { GK: 'Воротар', DF: 'Захисник', MF: 'Півзахисник', FW: 'Нападник' }; // рядками — їх бере й «Вгадай гравця»
+const POSITIONS_EN = { GK: 'Goalkeeper', DF: 'Defender', MF: 'Midfielder', FW: 'Forward' };
 
 function hintValue(p, id, { showStats = true } = {}) {
   const c = careerOf(p);
   if (id === 'position') {
     const pos = ['GK', 'DF', 'MF', 'FW'].find((t) => p.tags.has(t));
-    return { text: pos ? POSITIONS[pos] : 'невідома' };
+    return { text: pos ? T(POSITIONS[pos], POSITIONS_EN[pos]) : T('невідома', 'unknown') };
   }
-  if (id === 'born') return { text: p.born ? String(p.born) : 'невідомий' };
+  if (id === 'born') return { text: p.born ? String(p.born) : T('невідомий', 'unknown') };
   if (id === 'nation') {
-    if (!c.nation) return { text: 'не грав за збірну' };
+    if (!c.nation) return { text: T('не грав за збірну', 'never played for a national team') };
     const t = team(c.nation.t);
-    return { text: t.name, img: t.img, apps: showStats ? c.nation.a : undefined, goals: showStats ? c.nation.g : undefined };
+    return { text: T(t.name, t.nameEn), img: t.img, apps: showStats ? c.nation.a : undefined, goals: showStats ? c.nation.g : undefined };
   }
   if (id === 'letter') {
-    const surname = (p.uk || p.name).trim().split(/\s+/).pop();
-    return { text: `${surname[0].toUpperCase()}…` };
+    // англійською — літера англійського прізвища (так, як його шукатимуть у списку)
+    const first = (n) => `${(n || '').trim().split(/\s+/).pop()[0]?.toUpperCase() || '?'}…`;
+    return { text: T(first(p.uk || p.name), first(p.name || p.uk)) };
   }
   return null;
 }
 
-module.exports = { poolFor, stagesFor, hintValue, careerOf, recognition, team, teams: data.teams, POSITIONS, HINTS, ERAS, DIFFICULTIES };
+module.exports = { poolFor, stagesFor, hintValue, careerOf, recognition, team, teams: data.teams, POSITIONS, POSITIONS_EN, HINTS, ERAS, DIFFICULTIES };

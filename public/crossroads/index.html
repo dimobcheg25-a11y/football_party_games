@@ -3,8 +3,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Футбольне перехрестя</title>
-  <meta name="description" content="Футбольне перехрестя — футбольні хрестики-нулики онлайн з друзями: від класики 3×3 до поля 6×6 на чотирьох." />
+  <title data-en="Football Crossroads">Футбольне перехрестя</title>
+  <meta name="description" content="Футбольне перехрестя — футбольні хрестики-нулики онлайн з друзями: від класики 3×3 до поля 6×6 на чотирьох." data-en-content="Football Crossroads — football tic-tac-toe online with friends: from classic 3×3 to a 6×6 board for four." />
+  <meta property="og:site_name" content="Football party games" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://football-party-games.onrender.com/crossroads/" />
+  <meta property="og:title" content="Футбольне перехрестя — Football party games" data-en-content="Football Crossroads — Football party games" />
+  <meta property="og:description" content="Футбольне перехрестя — футбольні хрестики-нулики онлайн з друзями: від класики 3×3 до поля 6×6 на чотирьох." data-en-content="Football Crossroads — football tic-tac-toe online with friends: from classic 3×3 to a 6×6 board for four." />
+  <meta property="og:locale" content="uk_UA" />
+  <meta property="og:locale:alternate" content="en_US" />
+  <meta name="application-name" content="Football party games" />
+  <meta name="twitter:card" content="summary" />
   <meta name="theme-color" content="#16302a" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -21,10 +30,10 @@
 
   <!-- Звук -->
   <div class="sound-ctl">
-    <button id="mute-btn" class="round-btn" aria-label="Налаштування звуку" aria-expanded="false">🔊</button>
+    <button id="mute-btn" class="round-btn" aria-label="Налаштування звуку" data-en-aria-label="Sound settings" aria-expanded="false">🔊</button>
     <div id="sound-panel" class="popover hidden">
       <label class="vol-row" for="volume">
-        <span>Гучність</span>
+        <span data-en="Volume">Гучність</span>
         <input id="volume" type="range" min="0" max="100" step="5" />
         <b id="volume-val"></b>
       </label>
@@ -34,10 +43,10 @@
 
   <!-- ── Головний екран -->
   <main id="screen-home" class="screen">
-    <a class="back-link" href="/">← Усі ігри</a>
+    <a class="back-link" href="/" data-en="← All games">← Усі ігри</a>
     <header class="hero">
-      <div class="logo"><small>ФУТБОЛЬНЕ</small><span>ПЕРЕ<b>Х</b>РЕСТЯ</span></div>
-      <p class="tagline">Футбольні хрестики-нулики з друзями. Займай клітинку футболістом, який підходить і рядку, і стовпцю.</p>
+      <div class="logo"><small data-en="FOOTBALL">ФУТБОЛЬНЕ</small><span data-en-html="CR<b>O</b>SSROADS">ПЕРЕ<b>Х</b>РЕСТЯ</span></div>
+      <p class="tagline" data-en="Football tic-tac-toe with friends. Claim a cell with a footballer who fits both the row and the column.">Футбольні хрестики-нулики з друзями. Займай клітинку футболістом, який підходить і рядку, і стовпцю.</p>
     </header>
 
     <section class="card setup">
@@ -45,18 +54,18 @@
       <button id="resume-btn" class="btn btn-secondary resume hidden"></button>
 
       <label class="field" for="name-input">
-        <span class="field-label">Твоє ім'я</span>
+        <span class="field-label" data-en="Your name">Твоє ім'я</span>
         <input id="name-input" maxlength="20" placeholder="Наприклад, Пеле" autocomplete="nickname" />
       </label>
 
       <div class="field">
-        <span class="field-label">Поле</span>
-        <div class="boards" id="board-cards" role="radiogroup" aria-label="Поле"></div>
+        <span class="field-label" data-en="Board">Поле</span>
+        <div class="boards" id="board-cards" role="radiogroup" aria-label="Поле" data-en-aria-label="Board"></div>
       </div>
 
       <div class="field">
-        <span class="field-label">Гравців</span>
-        <div class="segmented" id="players-chips" role="radiogroup" aria-label="Кількість гравців">
+        <span class="field-label" data-en="Players">Гравців</span>
+        <div class="segmented" id="players-chips" role="radiogroup" aria-label="Кількість гравців" data-en-aria-label="Number of players">
           <button type="button" data-players="2">2</button>
           <button type="button" data-players="3">3</button>
           <button type="button" data-players="4">4</button>
@@ -65,29 +74,29 @@
       </div>
 
       <div class="field">
-        <span class="field-label">Складність</span>
-        <div class="modes" id="mode-chips" role="radiogroup" aria-label="Складність"></div>
+        <span class="field-label" data-en="Difficulty">Складність</span>
+        <div class="modes" id="mode-chips" role="radiogroup" aria-label="Складність" data-en-aria-label="Difficulty"></div>
       </div>
 
       <div class="field">
-        <span class="field-label">Час на хід</span>
-        <div class="chips" id="timer-chips" role="radiogroup" aria-label="Час на хід">
-          <button type="button" class="chip" data-sec="15">15 с</button>
-          <button type="button" class="chip" data-sec="20">20 с</button>
-          <button type="button" class="chip" data-sec="30">30 с</button>
-          <button type="button" class="chip" data-sec="45">45 с</button>
-          <button type="button" class="chip" data-sec="60">60 с</button>
-          <button type="button" class="chip" data-sec="0">∞ Без ліміту</button>
+        <span class="field-label" data-en="Time per turn">Час на хід</span>
+        <div class="chips" id="timer-chips" role="radiogroup" aria-label="Час на хід" data-en-aria-label="Time per turn">
+          <button type="button" class="chip" data-sec="15" data-en="15 s">15 с</button>
+          <button type="button" class="chip" data-sec="20" data-en="20 s">20 с</button>
+          <button type="button" class="chip" data-sec="30" data-en="30 s">30 с</button>
+          <button type="button" class="chip" data-sec="45" data-en="45 s">45 с</button>
+          <button type="button" class="chip" data-sec="60" data-en="60 s">60 с</button>
+          <button type="button" class="chip" data-sec="0" data-en="∞ No limit">∞ Без ліміту</button>
         </div>
       </div>
 
-      <button id="create-btn" class="btn btn-primary btn-lg">Створити гру</button>
+      <button id="create-btn" class="btn btn-primary btn-lg" data-en="Create game">Створити гру</button>
 
-      <div class="divider"><span>або зайди до друга</span></div>
+      <div class="divider"><span data-en="or join a friend">або зайди до друга</span></div>
 
       <div class="join-row">
-        <input id="code-input" maxlength="5" placeholder="КОД" autocomplete="off" spellcheck="false" aria-label="Код кімнати" />
-        <button id="join-btn" class="btn btn-secondary">Приєднатися</button>
+        <input id="code-input" maxlength="5" placeholder="КОД" data-en-placeholder="CODE" autocomplete="off" spellcheck="false" aria-label="Код кімнати" data-en-aria-label="Room code" />
+        <button id="join-btn" class="btn btn-secondary" data-en="Join">Приєднатися</button>
       </div>
       <p id="home-error" class="error" role="alert"></p>
     </section>
@@ -98,20 +107,20 @@
   <!-- ── Запрошення: той, кому кинули посилання, бачить лише ім'я й одну кнопку -->
   <main id="screen-invite" class="screen hidden">
     <section class="card invite-card">
-      <div class="logo small"><small>ФУТБОЛЬНЕ</small><span>ПЕРЕ<b>Х</b>РЕСТЯ</span></div>
-      <h2 id="invite-title">Тебе запросили в гру</h2>
+      <div class="logo small"><small data-en="FOOTBALL">ФУТБОЛЬНЕ</small><span data-en-html="CR<b>O</b>SSROADS">ПЕРЕ<b>Х</b>РЕСТЯ</span></div>
+      <h2 id="invite-title" data-en="You've been invited to a game">Тебе запросили в гру</h2>
       <p class="muted" id="invite-sub"></p>
       <div class="config-chips" id="invite-config"></div>
       <ul class="slots" id="invite-slots"></ul>
       <label class="field invite-name" for="invite-name">
-        <span class="field-label">Як тебе звати?</span>
-        <input id="invite-name" maxlength="20" placeholder="Твоє ім'я" autocomplete="nickname" />
+        <span class="field-label" data-en="What's your name?">Як тебе звати?</span>
+        <input id="invite-name" maxlength="20" placeholder="Твоє ім'я" data-en-placeholder="Your name" autocomplete="nickname" />
       </label>
-      <button id="invite-join" class="btn btn-primary btn-lg invite-join">Приєднатися до гри</button>
+      <button id="invite-join" class="btn btn-primary btn-lg invite-join" data-en="Join the game">Приєднатися до гри</button>
       <p id="invite-error" class="error" role="alert"></p>
       <div class="invite-links">
-        <button class="btn btn-ghost btn-sm" data-action="rules-invite">Як грати?</button>
-        <button class="btn btn-ghost btn-sm" data-action="go-home">Або створити свою гру</button>
+        <button class="btn btn-ghost btn-sm" data-action="rules-invite" data-en="How to play?">Як грати?</button>
+        <button class="btn btn-ghost btn-sm" data-action="go-home" data-en="Or start your own game">Або створити свою гру</button>
       </div>
     </section>
   </main>
@@ -119,19 +128,19 @@
   <!-- ── Лобі -->
   <main id="screen-lobby" class="screen hidden">
     <section class="card lobby-card">
-      <div class="logo small"><small>ФУТБОЛЬНЕ</small><span>ПЕРЕ<b>Х</b>РЕСТЯ</span></div>
-      <h2 id="lobby-title">Кімната створена</h2>
+      <div class="logo small"><small data-en="FOOTBALL">ФУТБОЛЬНЕ</small><span data-en-html="CR<b>O</b>SSROADS">ПЕРЕ<b>Х</b>РЕСТЯ</span></div>
+      <h2 id="lobby-title" data-en="Room created">Кімната створена</h2>
       <p class="muted" id="lobby-sub"></p>
       <div class="room-code" id="lobby-code">-----</div>
       <div class="share-row">
-        <input id="share-link" readonly aria-label="Посилання на кімнату" />
-        <button id="copy-btn" class="btn btn-primary">Копіювати</button>
+        <input id="share-link" readonly aria-label="Посилання на кімнату" data-en-aria-label="Room link" />
+        <button id="copy-btn" class="btn btn-primary" data-en="Copy">Копіювати</button>
       </div>
       <div class="config-chips" id="lobby-config"></div>
       <ul class="slots" id="lobby-slots"></ul>
       <div class="lobby-actions">
-        <button class="btn btn-ghost" data-action="rules">Правила цього режиму</button>
-        <button class="btn btn-ghost" data-action="leave">✕ Скасувати кімнату</button>
+        <button class="btn btn-ghost" data-action="rules" data-en="Rules of this mode">Правила цього режиму</button>
+        <button class="btn btn-ghost" data-action="leave" data-en="✕ Cancel room">✕ Скасувати кімнату</button>
       </div>
     </section>
   </main>
@@ -140,7 +149,7 @@
   <main id="screen-game" class="screen screen-game hidden">
     <div class="game-top">
       <div class="config-chips" id="game-config"></div>
-      <button class="round-btn" data-action="rules" aria-label="Правила">?</button>
+      <button class="round-btn" data-action="rules" aria-label="Правила" data-en-aria-label="Rules">?</button>
     </div>
 
     <section class="turn-stage" id="turn-stage" aria-live="polite">
@@ -166,22 +175,22 @@
 
     <div class="board-wrap" id="board-wrap">
       <div class="board" id="board"></div>
-      <p class="board-legend"><span class="ex"><b>5</b> / 15</span> — <b>відомі</b> гравці / усі правильні відповіді (з маловідомими й давніми)</p>
+      <p class="board-legend" data-en-html="<span class=&quot;ex&quot;><b>5</b> / 15</span> — <b>well-known</b> players / all correct answers (including lesser-known and old-time ones)"><span class="ex"><b>5</b> / 15</span> — <b>відомі</b> гравці / усі правильні відповіді (з маловідомими й давніми)</p>
     </div>
 
-    <div class="reactions" id="reactions" aria-label="Реакції">
+    <div class="reactions" id="reactions" aria-label="Реакції" data-en-aria-label="Reactions">
       <button data-emoji="👍">👍</button><button data-emoji="😂">😂</button><button data-emoji="😮">😮</button>
       <button data-emoji="😡">😡</button><button data-emoji="🔥">🔥</button><button data-emoji="👏">👏</button>
     </div>
 
     <div class="actions">
-      <button class="btn btn-secondary btn-sm" data-action="skip">Пропустити хід</button>
-      <button class="btn btn-secondary btn-sm" data-action="draw" id="draw-btn">Запропонувати нічию</button>
-      <button class="btn btn-ghost btn-sm" data-action="surrender" id="surrender-btn">Здатися</button>
+      <button class="btn btn-secondary btn-sm" data-action="skip" data-en="Skip turn">Пропустити хід</button>
+      <button class="btn btn-secondary btn-sm" data-action="draw" id="draw-btn" data-en="Offer a draw">Запропонувати нічию</button>
+      <button class="btn btn-ghost btn-sm" data-action="surrender" id="surrender-btn" data-en="Resign">Здатися</button>
     </div>
     <p class="room-footer muted small">
-      Кімната <b id="game-code"></b> · <a href="#" id="game-copy">скопіювати посилання</a> ·
-      <a href="#" data-action="leave-confirm">вийти з кімнати</a>
+      <span data-en="Room">Кімната</span> <b id="game-code"></b> · <a href="#" id="game-copy" data-en="copy link">скопіювати посилання</a> ·
+      <a href="#" data-action="leave-confirm" data-en="leave room">вийти з кімнати</a>
     </p>
   </main>
 
@@ -191,13 +200,13 @@
     <div class="sheet">
       <div class="sheet-head">
         <div id="picker-title" class="picker-title"></div>
-        <button class="icon-btn" data-action="close-picker" aria-label="Закрити">✕</button>
+        <button class="icon-btn" data-action="close-picker" aria-label="Закрити" data-en-aria-label="Close">✕</button>
       </div>
       <div class="search">
-        <input id="picker-input" placeholder="Почни вводити прізвище…" autocomplete="off" spellcheck="false" />
+        <input id="picker-input" placeholder="Почни вводити прізвище…" data-en-placeholder="Start typing a surname…" autocomplete="off" spellcheck="false" />
         <ul id="suggestions" class="suggestions" role="listbox"></ul>
       </div>
-      <p class="muted small picker-hint">Можна українською, російською або англійською. ↑↓ — вибір, Enter — підтвердити.</p>
+      <p class="muted small picker-hint" data-en="Ukrainian, Russian or English all work. ↑↓ to choose, Enter to confirm.">Можна українською, російською або англійською. ↑↓ — вибір, Enter — підтвердити.</p>
     </div>
   </div>
 
@@ -206,8 +215,8 @@
     <div class="overlay-backdrop" data-action="close-rules"></div>
     <div class="sheet rules-sheet">
       <div class="sheet-head">
-        <h3 id="rules-modal-title">Правила</h3>
-        <button class="icon-btn" data-action="close-rules" aria-label="Закрити">✕</button>
+        <h3 id="rules-modal-title" data-en="Rules">Правила</h3>
+        <button class="icon-btn" data-action="close-rules" aria-label="Закрити" data-en-aria-label="Close">✕</button>
       </div>
       <div id="rules-modal-body" class="rules-body"></div>
     </div>
@@ -219,8 +228,8 @@
     <div class="sheet confirm-sheet">
       <p id="confirm-text"></p>
       <div class="confirm-actions">
-        <button class="btn btn-secondary" data-action="confirm-no">Скасувати</button>
-        <button class="btn btn-danger" data-action="confirm-yes" id="confirm-yes">Так</button>
+        <button class="btn btn-secondary" data-action="confirm-no" data-en="Cancel">Скасувати</button>
+        <button class="btn btn-danger" data-action="confirm-yes" id="confirm-yes" data-en="Yes">Так</button>
       </div>
     </div>
   </div>
@@ -234,26 +243,27 @@
       <ol class="standings" id="standings"></ol>
       <p id="result-rematch" class="rematch-note hidden"></p>
       <div class="result-actions">
-        <button class="btn btn-primary btn-lg" data-action="rematch" id="rematch-btn">Реванш</button>
-        <button class="btn btn-secondary" data-action="leave">Вийти · нова гра</button>
-        <button class="btn btn-ghost" data-action="view-board">Подивитися поле</button>
+        <button class="btn btn-primary btn-lg" data-action="rematch" id="rematch-btn" data-en="Rematch">Реванш</button>
+        <button class="btn btn-secondary" data-action="leave" data-en="Leave · new game">Вийти · нова гра</button>
+        <button class="btn btn-ghost" data-action="view-board" data-en="View the board">Подивитися поле</button>
       </div>
     </div>
   </div>
 
   <!-- ── Чат -->
-  <button id="chat-btn" class="chat-fab hidden" aria-label="Чат" aria-expanded="false">💬<span id="chat-badge" class="chat-badge hidden"></span></button>
-  <div id="chat-panel" class="chat-panel hidden" role="dialog" aria-label="Чат кімнати">
-    <div class="chat-head"><b>Чат кімнати</b><button class="icon-btn" data-action="close-chat" aria-label="Закрити чат">✕</button></div>
-    <ul id="chat-list" class="chat-list"><li class="chat-empty">Тут поки тихо. Напиши першим 🙂</li></ul>
+  <button id="chat-btn" class="chat-fab hidden" aria-label="Чат" data-en-aria-label="Chat" aria-expanded="false">💬<span id="chat-badge" class="chat-badge hidden"></span></button>
+  <div id="chat-panel" class="chat-panel hidden" role="dialog" aria-label="Чат кімнати" data-en-aria-label="Room chat">
+    <div class="chat-head"><b data-en="Room chat">Чат кімнати</b><button class="icon-btn" data-action="close-chat" aria-label="Закрити чат" data-en-aria-label="Close chat">✕</button></div>
+    <ul id="chat-list" class="chat-list"><li class="chat-empty" data-en="Quiet so far. Say something first 🙂">Тут поки тихо. Напиши першим 🙂</li></ul>
     <form id="chat-form" class="chat-form" autocomplete="off">
-      <input id="chat-input" maxlength="200" placeholder="Напиши повідомлення…" aria-label="Повідомлення" />
-      <button class="btn btn-primary btn-sm" type="submit" aria-label="Надіслати">➤</button>
+      <input id="chat-input" maxlength="200" placeholder="Напиши повідомлення…" data-en-placeholder="Type a message…" aria-label="Повідомлення" data-en-aria-label="Message" />
+      <button class="btn btn-primary btn-sm" type="submit" aria-label="Надіслати" data-en-aria-label="Send">➤</button>
     </form>
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
+  <script src="/shared/i18n.js"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script src="/shared/players.js"></script>
   <script src="/shared/sounds.js"></script>

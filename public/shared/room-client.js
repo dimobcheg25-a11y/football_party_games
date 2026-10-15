@@ -18,15 +18,16 @@
 //   g.state, g.mySeat, g.serverNow(), g.showScreen, g.store, g.socket.
 // Розмітка сторінки — як у public/top/index.html (id елементів ті самі).
 window.RoomClient = (() => {
+  const { L } = window.I18n; // мова сторінки — /shared/i18n.js (підключати раніше за цей файл)
   const LABELS = {
-    ERA: { all: 'Усі гравці', modern: 'Сучасні', retired: 'Завершили кар’єру' },
-    DIFF: { easy: '🟢 Легкий', normal: '🟡 Звичайний', fan: '🟣 Фанат', hard: '🔴 Складний', expert: '⚫ Експерт' },
+    ERA: { all: L('Усі гравці', 'All players'), modern: L('Сучасні', 'Current'), retired: L('Завершили кар’єру', 'Retired') },
+    DIFF: { easy: L('🟢 Легкий', '🟢 Easy'), normal: L('🟡 Звичайний', '🟡 Normal'), fan: L('🟣 Фанат', '🟣 Fan'), hard: L('🔴 Складний', '🔴 Hard'), expert: L('⚫ Експерт', '⚫ Expert') },
     DIFFICULTY_HINTS: {
-      easy: 'Топ-400 найвідоміших: зірки й основні гравці топ-клубів.',
-      normal: 'Топ-800: відомі гравці топ-ліг і збірних (українців — трохи більше).',
-      fan: 'Топ-1300: для тих, хто дивиться футбол щотижня.',
-      hard: 'Топ-1900: включно з гравцями УПЛ 2000-х і середняками топ-ліг.',
-      expert: 'Уся база — включно з тими, кого пам’ятають лише справжні фанати.',
+      easy: L('Топ-400 найвідоміших: зірки й основні гравці топ-клубів.', 'Top 400 most famous: stars and regulars of top clubs.'),
+      normal: L('Топ-800: відомі гравці топ-ліг і збірних (українців — трохи більше).', 'Top 800: well-known players from top leagues and national teams (a few more Ukrainians).'),
+      fan: L('Топ-1300: для тих, хто дивиться футбол щотижня.', 'Top 1300: for those who watch football every week.'),
+      hard: L('Топ-1900: включно з гравцями УПЛ 2000-х і середняками топ-ліг.', 'Top 1900: including Ukrainian league players of the 2000s and mid-table regulars.'),
+      expert: L('Уся база — включно з тими, кого пам’ятають лише справжні фанати.', 'The whole database — including players only true fans remember.'),
     },
   };
   const SEAT_COLORS = ['#4fb3ff', '#ff6b8b', '#ffb547', '#a98bff', '#5fe0b5', '#ff8a4c', '#e0e86a', '#f08fe0', '#7fd4ff', '#c7a6ff'];
@@ -53,7 +54,7 @@ window.RoomClient = (() => {
 
   function create(cfg) {
     const { id } = cfg;
-    const socket = io(`/${id}`);
+    const socket = io(`/${id}`, { auth: { lang: window.I18n.lang } });
     const emit = (event, data) => new Promise((res) => socket.emit(event, data, (r) => res(r || {})));
 
     let setup = { ...cfg.defaults };
@@ -70,7 +71,7 @@ window.RoomClient = (() => {
       clockOffset: 0,
       setup,
       serverNow: () => Date.now() + g.clockOffset,
-      seatName: (i) => (i === g.mySeat ? 'Ти' : g.state?.seats[i]?.name || 'Гравець'),
+      seatName: (i) => (i === g.mySeat ? L('Ти', 'You') : g.state?.seats[i]?.name || L('Гравець', 'Player')),
       seatStyle: (i) => `--pc:${SEAT_COLORS[i % SEAT_COLORS.length]}`,
       async act(event, data) {
         const res = await emit(event, data);
@@ -145,7 +146,7 @@ window.RoomClient = (() => {
         const key = chip.parentElement.dataset.multi;
         const list = setup[key] || [];
         const has = list.includes(chip.dataset.val);
-        if (has && list.length === 1) return toast('Потрібен хоча б один варіант', 'bad');
+        if (has && list.length === 1) return toast(L('Потрібен хоча б один варіант', 'Pick at least one option'), 'bad');
         setup[key] = has ? list.filter((x) => x !== chip.dataset.val) : [...list, chip.dataset.val];
         renderSetup();
       }),
@@ -163,7 +164,7 @@ window.RoomClient = (() => {
     function requireName() {
       const name = nameInput.value.trim();
       if (!name) {
-        $('#home-error').textContent = 'Введи ім’я';
+        $('#home-error').textContent = L('Введи ім’я', 'Enter your name');
         nameInput.focus();
         return null;
       }
@@ -221,19 +222,19 @@ window.RoomClient = (() => {
       $('#join-btn').classList.toggle('hidden', !invite);
       $('#invite-note').classList.add('hidden');
       $('#resume-btn').classList.toggle('hidden', invite || !session);
-      if (session && !invite) $('#resume-btn').textContent = 'Повернутися до своєї гри';
+      if (session && !invite) $('#resume-btn').textContent = L('Повернутися до своєї гри', 'Back to your game');
       if (!invite) return;
       try {
-        const info = await (await fetch(`/api/${id}/room/${encodeURIComponent(inviteCode)}`)).json();
+        const info = await (await fetch(`/api/${id}/room/${encodeURIComponent(inviteCode)}?lang=${window.I18n.lang}`)).json();
         const note = $('#invite-note');
         note.classList.remove('hidden');
         if (!info.found) {
-          note.textContent = 'Цієї кімнати вже немає — створи свою гру.';
+          note.textContent = L('Цієї кімнати вже немає — створи свою гру.', 'This room no longer exists — start your own game.');
           inviteCode = null;
           history.replaceState(null, '', location.pathname);
           return renderHome();
         }
-        note.innerHTML = `${escapeHtml(info.players[0] || 'Друг')} кличе грати!<br><small>${escapeHtml(cfg.optionList(info.options, info.solo).join(' · '))}</small>`;
+        note.innerHTML = `${escapeHtml(info.players[0] || L('Друг', 'A friend'))} ${L('кличе грати!', 'invites you to play!')}<br><small>${escapeHtml(cfg.optionList(info.options, info.solo).join(' · '))}</small>`;
       } catch { /* мережа — просто без опису */ }
     }
 
@@ -277,7 +278,7 @@ window.RoomClient = (() => {
         notice.textContent = s.notice || '';
       }
       $('#lobby-players').innerHTML = s.seats
-        .map((x, i) => (x ? `<li style="${g.seatStyle(i)}"><span class="dot-p"></span>${escapeHtml(x.name)}${i === g.mySeat ? ' <small>(ти)</small>' : ''}${i === s.host ? ' <small>· господар</small>' : ''}${x.connected ? '' : ' <small class="muted">· офлайн</small>'}${cfg.lobbyExtra?.(i) || ''}</li>` : ''))
+        .map((x, i) => (x ? `<li style="${g.seatStyle(i)}"><span class="dot-p"></span>${escapeHtml(x.name)}${i === g.mySeat ? ` <small>${L('(ти)', '(you)')}</small>` : ''}${i === s.host ? ` <small>${L('· господар', '· host')}</small>` : ''}${x.connected ? '' : ` <small class="muted">${L('· офлайн', '· offline')}</small>`}${cfg.lobbyExtra?.(i) || ''}</li>` : ''))
         .join('');
       const isHost = g.mySeat === s.host;
       const count = s.seats.filter(Boolean).length;
@@ -286,18 +287,20 @@ window.RoomClient = (() => {
       const btn = $('#start-btn');
       btn.classList.toggle('hidden', !isHost);
       btn.disabled = !enough;
-      btn.textContent = !enough ? `Потрібно щонайменше ${min} ${plural(min, 'гравець', 'гравці', 'гравців')}`
-        : count > 1 ? `Почати гру (${count} ${plural(count, 'гравець', 'гравці', 'гравців')})` : 'Почати гру';
-      $('#lobby-wait').textContent = !isHost ? `Чекаємо, поки ${s.seats[s.host]?.name || 'господар'} почне гру.`
-        : !enough ? `Надішли запрошення друзям: зараз ${count} з ${min}.`
-          : count > 1 ? 'Можна починати — або дочекайтесь ще когось.' : 'Надішли запрошення друзям. Хто зайде пізніше — приєднається до гри, що вже йде.';
+      const players = (n) => window.I18n.plural(n, ['гравець', 'гравці', 'гравців'], ['player', 'players']);
+      btn.textContent = !enough ? L(`Потрібно щонайменше ${min} ${players(min)}`, `At least ${min} ${players(min)} needed`)
+        : count > 1 ? L(`Почати гру (${count} ${players(count)})`, `Start game (${count} ${players(count)})`) : L('Почати гру', 'Start game');
+      $('#lobby-wait').textContent = !isHost ? L(`Чекаємо, поки ${s.seats[s.host]?.name || 'господар'} почне гру.`, `Waiting for ${s.seats[s.host]?.name || 'the host'} to start.`)
+        : !enough ? L(`Надішли запрошення друзям: зараз ${count} з ${min}.`, `Send the invite to friends: ${count} of ${min} so far.`)
+          : count > 1 ? L('Можна починати — або дочекайтесь ще когось.', 'Ready to start — or wait for more friends.')
+            : L('Надішли запрошення друзям. Хто зайде пізніше — приєднається до гри, що вже йде.', 'Send the invite to friends. Anyone who joins later will jump into the game in progress.');
     }
 
     $('#copy-link').addEventListener('click', async () => {
       const link = `${location.origin}${location.pathname}?room=${g.state.code}`;
       try {
         if (navigator.share && matchMedia('(pointer: coarse)').matches) await navigator.share({ title: cfg.title, url: link });
-        else { await navigator.clipboard.writeText(link); toast('Посилання скопійовано', 'good'); }
+        else { await navigator.clipboard.writeText(link); toast(L('Посилання скопійовано', 'Link copied'), 'good'); }
       } catch { /* скасовано */ }
     });
     $('#start-btn').addEventListener('click', () => g.act('start'));
@@ -306,7 +309,7 @@ window.RoomClient = (() => {
     // ── вихід
     document.querySelectorAll('[data-action="leave"]').forEach((b) => b.addEventListener('click', leave));
     async function leave() {
-      if (g.state?.status === 'playing' && !g.state.solo && !confirm('Вийти з гри? Твої очки пропадуть.')) return;
+      if (g.state?.status === 'playing' && !g.state.solo && !confirm(L('Вийти з гри? Твої очки пропадуть.', 'Leave the game? Your points will be lost.'))) return;
       await emit('leave');
       g.state = null;
       forgetSession();
@@ -327,8 +330,8 @@ window.RoomClient = (() => {
     }
     function renderChat() {
       $('#chat-list').innerHTML = chat.length
-        ? chat.map((m) => `<li class="${m.seat === g.mySeat ? 'mine' : ''}" style="${g.seatStyle(m.seat)}"><span class="chat-who">${escapeHtml(m.seat === g.mySeat ? 'Ти' : m.name)}</span><span class="chat-text">${escapeHtml(m.text)}</span></li>`).join('')
-        : '<li class="chat-empty">Тут ще тихо</li>';
+        ? chat.map((m) => `<li class="${m.seat === g.mySeat ? 'mine' : ''}" style="${g.seatStyle(m.seat)}"><span class="chat-who">${escapeHtml(m.seat === g.mySeat ? L('Ти', 'You') : m.name)}</span><span class="chat-text">${escapeHtml(m.text)}</span></li>`).join('')
+        : `<li class="chat-empty">${L('Тут ще тихо', 'Nothing here yet')}</li>`;
       $('#chat-list').scrollTop = 1e6;
     }
     socket.on('chatHistory', (list) => { chat = list; renderChat(); });

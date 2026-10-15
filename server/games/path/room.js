@@ -4,6 +4,7 @@
 // Соло — кімната на одного.
 const { playerById } = require('../../data');
 const { BaseRoom } = require('../../core/base-room');
+const { T } = require('../../core/i18n');
 const { poolFor, stagesFor, hintValue, HINTS, ERAS, DIFFICULTIES } = require('./careers');
 
 // Очки: на першому клубі — MAX, на останньому — LAST, між ними рівномірно (для кар'єри будь-якої довжини
@@ -18,6 +19,8 @@ const hintCosts = (n) => HINTS.map((h) => ({ id: h.id, label: h.label, cost: Mat
 const ALLOWED_TIMERS = [0, 15, 20, 30, 45]; // секунд на етап; 0 — без обмеження
 const ALLOWED_ROUNDS = [5, 10, 15];
 const MAX_PLAYERS = 8;
+const NOT_NOW = T('Зараз не можна', 'Not now');
+const ALREADY = T('Ти вже вгадав', 'You’ve already guessed it');
 const REVEAL_MS = Number(process.env.PATH_REVEAL_MS) || 10000; // пауза з відповіддю між раундами (у кімнаті)
 
 function publicPlayer(p) {
@@ -75,7 +78,7 @@ class PathRoom extends BaseRoom {
     let seat = this.rejoin(token, name);
     if (seat === -1) {
       seat = this.takeSeat(token, name);
-      if (seat === -1) return { error: 'Кімната вже заповнена — створи свою гру' };
+      if (seat === -1) return { error: T('Кімната вже заповнена — створи свою гру', 'The room is full — start your own game') };
       this.scores[seat] = 0; // місце могло лишитися від того, хто вийшов
     }
     this.touch();
@@ -104,15 +107,15 @@ class PathRoom extends BaseRoom {
 
   // ── серія
   start(seat) {
-    if (this.status === 'playing') return { error: 'Гра вже йде' };
-    if (seat !== this.host()) return { error: 'Почати гру може той, хто її створив' };
+    if (this.status === 'playing') return { error: T('Гра вже йде', 'The game is already on') };
+    if (seat !== this.host()) return { error: T('Почати гру може той, хто її створив', 'Only the host can start the game') };
     return this.startSeries();
   }
 
   startSeries() {
     const { era, difficulty, rounds } = this.options;
     const pool = poolFor(era, difficulty);
-    if (!pool.length) return { error: 'Немає гравців для цих налаштувань' };
+    if (!pool.length) return { error: T('Немає гравців для цих налаштувань', 'No players match these settings') };
     this.picks = shuffle(pool).slice(0, rounds);
     this.scores = Array(this.capacity).fill(0);
     this.history = [];
@@ -152,9 +155,9 @@ class PathRoom extends BaseRoom {
 
   // ── дії гравця
   hint(seat, id) {
-    if (this.status !== 'playing' || this.phase !== 'guess') return { error: 'Зараз не можна' };
-    if (this.solved.has(seat)) return { error: 'Ти вже вгадав' };
-    if (!HINTS.some((h) => h.id === id)) return { error: 'Немає такої підказки' };
+    if (this.status !== 'playing' || this.phase !== 'guess') return { error: NOT_NOW };
+    if (this.solved.has(seat)) return { error: ALREADY };
+    if (!HINTS.some((h) => h.id === id)) return { error: T('Немає такої підказки', 'No such hint') };
     const taken = this.hints.get(seat) || [];
     if (taken.includes(id)) return { ok: true };
     this.hints.set(seat, [...taken, id]);
@@ -164,11 +167,11 @@ class PathRoom extends BaseRoom {
   }
 
   guess(seat, playerId) {
-    if (this.status !== 'playing' || this.phase !== 'guess') return { error: 'Зараз не можна відповідати' };
-    if (this.solved.has(seat)) return { error: 'Ти вже вгадав' };
-    if (this.stageDone.has(seat)) return { error: 'На цьому етапі ти вже відповів — чекай наступної підказки' };
+    if (this.status !== 'playing' || this.phase !== 'guess') return { error: T('Зараз не можна відповідати', 'You can’t answer right now') };
+    if (this.solved.has(seat)) return { error: ALREADY };
+    if (this.stageDone.has(seat)) return { error: T('На цьому етапі ти вже відповів — чекай наступної підказки', 'You’ve already answered at this stage — wait for the next club') };
     const player = playerById.get(playerId);
-    if (!player) return { error: 'Обери гравця зі списку' };
+    if (!player) return { error: T('Обери гравця зі списку', 'Pick a player from the list') };
     const correct = player.id === this.answer.id;
     this.touch();
     this.guesses.push({ seat, stage: this.stage, playerId: player.id, correct });
@@ -185,7 +188,7 @@ class PathRoom extends BaseRoom {
 
   // «Далі»: без відповіді на цьому етапі — щоб не чекати таймер.
   pass(seat) {
-    if (this.status !== 'playing' || this.phase !== 'guess') return { error: 'Зараз не можна' };
+    if (this.status !== 'playing' || this.phase !== 'guess') return { error: NOT_NOW };
     if (this.solved.has(seat) || this.stageDone.has(seat)) return { ok: true };
     this.touch();
     this.stageDone.add(seat);
@@ -196,7 +199,7 @@ class PathRoom extends BaseRoom {
 
   // Після відповіді — наступний раунд, коли всі онлайн натиснули «Далі» (або минула пауза).
   next(seat) {
-    if (this.status !== 'playing' || this.phase !== 'reveal') return { error: 'Раунд ще йде' };
+    if (this.status !== 'playing' || this.phase !== 'reveal') return { error: T('Раунд ще йде', 'The round is still on') };
     this.nextVotes.add(seat);
     if (this.waitingFor(this.nextVotes).length === 0) this.nextRound();
     else this.changed();

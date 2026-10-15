@@ -6,6 +6,7 @@ const { Server } = require('socket.io');
 const { publicPlayers } = require('./data');
 const games = require('./games');
 
+const { localize, langOf } = require('./core/i18n');
 const PORT = process.env.PORT || 3000;
 
 const app = express();
@@ -30,7 +31,7 @@ app.get('/api/players', (req, res) => {
 
 // Список ігор для головної сторінки.
 app.get('/api/games', (req, res) => {
-  res.json(games.map((g) => g.meta));
+  res.json(localize(games.map((g) => g.meta), langOf(req.query.lang))); // meta.title / description — пари T(uk, en)
 });
 
 for (const game of games) game.register({ app, io });

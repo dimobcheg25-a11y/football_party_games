@@ -1,6 +1,10 @@
 (() => {
   const $ = (sel) => document.querySelector(sel);
-  const socket = io('/crossroads');
+  const { L } = window.I18n; // мова — /shared/i18n.js; сервер отримує її через auth.lang
+  const pname = (p) => window.I18n.name(p);
+  const pl = (n, uk, en) => window.I18n.plural(n, uk, en);
+  const TITLE = L('Футбольне перехрестя', 'Football Crossroads');
+  const socket = io('/crossroads', { auth: { lang: window.I18n.lang } });
   const { SYMBOLS, BOARDS, MODES } = window.Rules;
 
   // ── локальне сховище (може бути недоступне в приватному режимі)
@@ -36,14 +40,9 @@
     const parts = name.split(/\s+/).filter(Boolean);
     return (parts.length > 1 ? parts[0][0] + parts[parts.length - 1][0] : name.slice(0, 2)).toUpperCase();
   };
-  const plural = (n, one, few, many) => {
-    const m10 = n % 10, m100 = n % 100;
-    if (m10 === 1 && m100 !== 11) return one;
-    if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
-    return many;
-  };
   const roomLink = (code) => `${location.origin}${location.pathname}?room=${code}`;
-  const seatName = (i) => (i === mySeat ? 'Ти' : state?.seats[i]?.name || 'Гравець');
+  const seatName = (i) => (i === mySeat ? L('Ти', 'You') : state?.seats[i]?.name || L('Гравець', 'Player'));
+  const YOU_MARK = L(' (ти)', ' (you)');
   const symHtml = (i) => `<span class="sym seat-${i}">${SYMBOLS[i]}</span>`;
   // Позначка гравця крейдою на зайнятій клітинці (✕ ◯ △ □); у щойно зайнятої — «дописується» (клас draw).
   const CHALK = [
@@ -72,15 +71,15 @@
   async function copy(text) {
     try {
       await navigator.clipboard.writeText(text);
-      toast('Посилання скопійовано ✓', 'good');
+      toast(L('Посилання скопійовано ✓', 'Link copied ✓'), 'good');
     } catch {
-      window.prompt('Скопіюй посилання:', text);
+      window.prompt(L('Скопіюй посилання:', 'Copy the link:'), text);
     }
   }
 
   // Своє вікно підтвердження (замість браузерного confirm)
   let confirmResolve = null;
-  function askConfirm(text, yes = 'Так') {
+  function askConfirm(text, yes = L('Так', 'Yes')) {
     $('#confirm-text').textContent = text;
     $('#confirm-yes').textContent = yes;
     $('#confirm').classList.remove('hidden');
@@ -97,9 +96,9 @@
     const m = MODES[cfg.mode];
     return [
       `<span>▦ ${b.title} · ${b.sub}</span>`,
-      `<span>👥 ${cfg.capacity} ${plural(cfg.capacity, 'гравець', 'гравці', 'гравців')}</span>`,
+      `<span>👥 ${cfg.capacity} ${pl(cfg.capacity, ['гравець', 'гравці', 'гравців'], ['player', 'players'])}</span>`,
       `<span><i class="dot ${m.dot}"></i>${m.label}</span>`,
-      `<span>⏱ ${cfg.turnSeconds ? `${cfg.turnSeconds} с` : 'без ліміту'}</span>`,
+      `<span>⏱ ${cfg.turnSeconds ? `${cfg.turnSeconds} ${L('с', 's')}` : L('без ліміту', 'no limit')}</span>`,
     ].join('');
   }
   const roomCfg = () => ({ board: state.board.key, mode: state.mode, capacity: state.capacity, turnSeconds: state.turnSeconds });
@@ -134,8 +133,8 @@
       btn.setAttribute('aria-checked', n === setup.players);
     });
     $('#players-hint').textContent = max === 2
-      ? 'Класика — лише вдвох. Утрьох і вчотирьох — на великих полях.'
-      : `Можна грати вдвох, утрьох або вчотирьох. ${SYMBOLS.join(' ')} — у кожного свій колір.`;
+      ? L('Класика — лише вдвох. Утрьох і вчотирьох — на великих полях.', 'Classic is for two only. Three or four players — on the bigger boards.')
+      : L(`Можна грати вдвох, утрьох або вчотирьох. ${SYMBOLS.join(' ')} — у кожного свій колір.`, `Play with two, three or four. ${SYMBOLS.join(' ')} — everyone has their own colour.`);
     // порядок: від легкого до складного, «Мікс» — окремим рядком унизу
     $('#mode-chips').innerHTML = ['easy', 'normal', 'fan', 'hard', 'mix']
       .map((key) => [key, MODES[key]])
@@ -168,7 +167,7 @@
     const last = store.get('g9:last-room');
     const btn = $('#resume-btn');
     btn.classList.toggle('hidden', !last || !!session.code);
-    if (last) btn.textContent = `↩ Повернутися до гри ${last}`;
+    if (last) btn.textContent = L(`↩ Повернутися до гри ${last}`, `↩ Back to game ${last}`);
   }
   renderResume();
   $('#resume-btn').addEventListener('click', () => joinRoom(store.get('g9:last-room')));
@@ -176,7 +175,7 @@
   function requireName() {
     const name = nameInput.value.trim();
     if (!name) {
-      $('#home-error').textContent = "Введи своє ім'я";
+      $('#home-error').textContent = L("Введи своє ім'я", 'Enter your name');
       nameInput.focus();
       return null;
     }
@@ -195,7 +194,7 @@
     if (!name) return;
     code = (code || '').toUpperCase().trim();
     if (!code) {
-      $('#home-error').textContent = 'Введи код кімнати';
+      $('#home-error').textContent = L('Введи код кімнати', 'Enter the room code');
       return;
     }
     socket.emit('join', { code, name, token: store.get(`g9:token:${code}`) }, onEntered);
@@ -213,7 +212,7 @@
     if (!res || res.error) {
       // кімнати вже нема (сервер перезапускався / всі вийшли) — забуваємо її
       if (session.code && store.get('g9:last-room') === session.code) store.del('g9:last-room');
-      $('#home-error').textContent = res?.error || 'Помилка з’єднання';
+      $('#home-error').textContent = res?.error || L('Помилка з’єднання', 'Connection error');
       goHome();
       return;
     }
@@ -235,7 +234,7 @@
     resultDismissed = false;
     closePicker();
     $('#result').classList.add('hidden');
-    document.title = 'Футбольне перехрестя';
+    document.title = TITLE;
     history.replaceState(null, '', location.pathname);
     showScreen('home');
     renderResume();
@@ -331,20 +330,23 @@
       ? `<span class="lm-where">${escapeHtml(state.grid.rows[Math.floor(ev.cell / n)].label)} × ${escapeHtml(state.grid.cols[ev.cell % n].label)}</span>`
       : '';
     let what = '';
-    if (ev.type === 'hit') what = `поставив <b>${escapeHtml(ev.player.uk)}</b>${ev.gained ? ` · +${ev.gained} ${plural(ev.gained, 'очко', 'очки', 'очок')}` : ''}`;
-    if (ev.type === 'miss') what = `<b>${escapeHtml(ev.player.uk)}</b> — <span class="lm-bad">не «${ev.failed.map(escapeHtml).join('» і не «')}»</span>`;
-    if (ev.type === 'timeout') what = '<span class="lm-bad">не встиг — час вийшов</span>';
-    if (ev.type === 'skip') what = 'пропустив хід';
+    const pts = (k) => `${k} ${pl(k, ['очко', 'очки', 'очок'], ['point', 'points'])}`;
+    if (ev.type === 'hit') what = `${L('поставив', 'played')} <b>${escapeHtml(pname(ev.player))}</b>${ev.gained ? ` · +${pts(ev.gained)}` : ''}`;
+    if (ev.type === 'miss') {
+      what = `<b>${escapeHtml(pname(ev.player))}</b> — <span class="lm-bad">${L(`не «${ev.failed.map(escapeHtml).join('» і не «')}»`, `not “${ev.failed.map(escapeHtml).join('” and not “')}”`)}</span>`;
+    }
+    if (ev.type === 'timeout') what = `<span class="lm-bad">${L('не встиг — час вийшов', 'ran out of time')}</span>`;
+    if (ev.type === 'skip') what = L('пропустив хід', 'skipped the turn');
     el.className = `last-move ${ev.type === 'hit' ? 'ok' : 'bad'}`;
     el.dataset.cell = Number.isInteger(ev.cell) ? ev.cell : '';
-    el.innerHTML = `<span class="lm-label">Останній хід</span><span class="lm-text">${who}: ${what}</span>${where}`;
+    el.innerHTML = `<span class="lm-label">${L('Останній хід', 'Last move')}</span><span class="lm-text">${who}: ${what}</span>${where}`;
   }
 
   function renderLobby() {
     closePicker();
     $('#result').classList.add('hidden');
     showScreen('lobby');
-    document.title = 'Чекаємо гравців · Футбольне перехрестя';
+    document.title = `${L('Чекаємо гравців', 'Waiting for players')} · ${TITLE}`;
     $('#lobby-code').textContent = state.code;
     $('#share-link').value = roomLink(state.code);
     $('#lobby-config').innerHTML = configChips(roomCfg());
@@ -352,16 +354,17 @@
     const need = state.capacity - joined;
     $('#lobby-slots').innerHTML = state.seats
       .map((s, i) => s
-        ? `<li class="seat-${i}">${symHtml(i)}<span>${escapeHtml(s.name)}${i === mySeat ? ' (ти)' : ''}</span></li>`
-        : `<li class="empty">${symHtml(i)}<span>Чекаємо гравця…</span></li>`)
+        ? `<li class="seat-${i}">${symHtml(i)}<span>${escapeHtml(s.name)}${i === mySeat ? YOU_MARK : ''}</span></li>`
+        : `<li class="empty">${symHtml(i)}<span>${L('Чекаємо гравця…', 'Waiting for a player…')}</span></li>`)
       .join('');
-    const wait = `Чекаємо ще ${need} ${plural(need, 'гравця', 'гравців', 'гравців')} — гра почнеться автоматично.`;
+    const wait = L(`Чекаємо ще ${need} ${pl(need, ['гравця', 'гравців', 'гравців'], [])} — гра почнеться автоматично.`,
+      `Waiting for ${need} more ${need === 1 ? 'player' : 'players'} — the game starts automatically.`);
     if (state.notice?.type === 'left') {
-      $('#lobby-title').textContent = `${state.notice.name || 'Гравець'} вийшов з гри`;
-      $('#lobby-sub').textContent = `Кімната лишилась за вами. Надішли посилання іншому другу. ${wait}`;
+      $('#lobby-title').textContent = L(`${state.notice.name || 'Гравець'} вийшов з гри`, `${state.notice.name || 'A player'} left the game`);
+      $('#lobby-sub').textContent = L(`Кімната лишилась за вами. Надішли посилання іншому другу. ${wait}`, `The room is still yours. Send the link to another friend. ${wait}`);
     } else {
-      $('#lobby-title').textContent = 'Кімната створена';
-      $('#lobby-sub').textContent = `Надішли посилання друзям. ${wait}`;
+      $('#lobby-title').textContent = L('Кімната створена', 'Room created');
+      $('#lobby-sub').textContent = L(`Надішли посилання друзям. ${wait}`, `Send the link to your friends. ${wait}`);
     }
   }
 
@@ -378,19 +381,19 @@
     stage.classList.toggle('over', !playing);
     $('#turn-symbol').textContent = playing ? SYMBOLS[t] : '🏁';
     if (!playing) {
-      $('#turn-title').textContent = 'Гру завершено';
-      $('#turn-sub').textContent = 'Реванш або нова гра — у вікні результату';
-      document.title = 'Футбольне перехрестя';
+      $('#turn-title').textContent = L('Гру завершено', 'Game over');
+      $('#turn-sub').textContent = L('Реванш або нова гра — у вікні результату', 'Rematch or a new game — in the result window');
+      document.title = TITLE;
       return;
     }
     if (isMyTurn()) {
-      $('#turn-title').textContent = 'Твій хід!';
-      $('#turn-sub').textContent = 'Обери клітинку й назви футболіста';
-      document.title = '🟢 Твій хід · Футбольне перехрестя';
+      $('#turn-title').textContent = L('Твій хід!', 'Your turn!');
+      $('#turn-sub').textContent = L('Обери клітинку й назви футболіста', 'Pick a cell and name a footballer');
+      document.title = `🟢 ${L('Твій хід', 'Your turn')} · ${TITLE}`;
     } else {
-      $('#turn-title').textContent = `Ходить ${state.seats[t]?.name || 'гравець'}`;
+      $('#turn-title').textContent = L(`Ходить ${state.seats[t]?.name || 'гравець'}`, `${state.seats[t]?.name || 'Player'}'s turn`);
       const active = activeSeats();
-      let sub = amActive() ? 'Чекай свого ходу' : 'Ти вибув з цієї партії — можна спостерігати';
+      let sub = amActive() ? L('Чекай свого ходу', 'Wait for your turn') : L('Ти вибув з цієї партії — можна спостерігати', 'You are out of this game — you can watch');
       if (amActive() && active.length > 2) {
         // скільки ходів до мене
         const order = state.order;
@@ -402,10 +405,10 @@
           k++;
           if (i === mySeat) break;
         }
-        sub = k === 1 ? 'Ти ходиш наступним' : `Твій хід через ${k} ${plural(k, 'хід', 'ходи', 'ходів')}`;
+        sub = k === 1 ? L('Ти ходиш наступним', 'You are next') : L(`Твій хід через ${k} ${pl(k, ['хід', 'ходи', 'ходів'], [])}`, `Your turn in ${k} moves`);
       }
       $('#turn-sub').textContent = sub;
-      document.title = `Хід: ${state.seats[t]?.name || ''} · Футбольне перехрестя`;
+      document.title = `${L('Хід', 'Turn')}: ${state.seats[t]?.name || ''} · ${TITLE}`;
     }
   }
 
@@ -419,15 +422,15 @@
         const turnNo = order.indexOf(i) + 1;
         const out = !s || state.out.includes(i);
         const active = state.status === 'playing' && state.turn === i;
-        const status = !s ? 'вийшов' : state.out.includes(i) ? 'вибув' : s.connected ? 'онлайн' : 'офлайн';
-        const series = state.scores[i] ? ` · серія ${state.scores[i]}` : '';
+        const status = !s ? L('вийшов', 'left') : state.out.includes(i) ? L('вибув', 'out') : s.connected ? L('онлайн', 'online') : L('офлайн', 'offline');
+        const series = state.scores[i] ? ` · ${L('серія', 'series')} ${state.scores[i]}` : '';
         const score = pointsMode
-          ? `<div class="pscore" title="Очки в цій партії">${state.points[i]}<small>${plural(state.points[i], 'очко', 'очки', 'очок')}</small></div>`
-          : `<div class="pscore" title="Перемоги в серії">${state.scores[i]}<small>${plural(state.scores[i], 'перемога', 'перемоги', 'перемог')}</small></div>`;
+          ? `<div class="pscore" title="${L('Очки в цій партії', 'Points this game')}">${state.points[i]}<small>${pl(state.points[i], ['очко', 'очки', 'очок'], ['point', 'points'])}</small></div>`
+          : `<div class="pscore" title="${L('Перемоги в серії', 'Wins in the series')}">${state.scores[i]}<small>${pl(state.scores[i], ['перемога', 'перемоги', 'перемог'], ['win', 'wins'])}</small></div>`;
         return `<div class="pcard seat-${i} ${active ? 'active' : ''} ${out ? 'is-out' : ''}" id="pcard-${i}">
           <span class="sym">${SYMBOLS[i]}</span>
-          <div class="pinfo"><div class="pname">${escapeHtml(s?.name || '—')}${i === mySeat ? ' (ти)' : ''}</div>
-            <div class="pstatus ${s && !s.connected ? 'off' : ''}">${turnNo ? `хід ${turnNo} · ` : ''}${status}${pointsMode ? series : ''}</div></div>
+          <div class="pinfo"><div class="pname">${escapeHtml(s?.name || '—')}${i === mySeat ? YOU_MARK : ''}</div>
+            <div class="pstatus ${s && !s.connected ? 'off' : ''}">${turnNo ? `${L('хід', 'turn')} ${turnNo} · ` : ''}${status}${pointsMode ? series : ''}</div></div>
           ${score}
         </div>`;
       })
@@ -435,7 +438,10 @@
   }
 
   function categoryHtml(cat) {
-    const typeLabel = { club: 'клуб', nation: 'збірна', award: 'трофей', stat: 'рекорд', position: 'позиція', league: 'ліга', coach: 'тренер', academy: 'академія' }[cat.type];
+    const typeLabel = L(
+      { club: 'клуб', nation: 'збірна', award: 'трофей', stat: 'рекорд', position: 'позиція', league: 'ліга', coach: 'тренер', academy: 'академія' },
+      { club: 'club', nation: 'national team', award: 'trophy', stat: 'record', position: 'position', league: 'league', coach: 'manager', academy: 'academy' },
+    )[cat.type];
     let crest;
     if (cat.img) {
       crest = `<div class="crest img ${cat.type}"><img src="${escapeHtml(cat.img)}" alt="" loading="lazy">${cat.type === 'academy' ? '<i class="crest-badge">🎓</i>' : ''}</div>`;
@@ -454,7 +460,7 @@
   }
 
   function playerVisual(player) {
-    const fallback = `<div class="avatar">${escapeHtml(initials(player.uk))}</div>`;
+    const fallback = `<div class="avatar">${escapeHtml(initials(pname(player)))}</div>`;
     if (!player.photo) return fallback;
     return `${fallback}<img class="photo" src="${escapeHtml(player.photo)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`;
   }
@@ -484,19 +490,19 @@
             scored.has(i) ? 'scored' : '',
             i === justCell ? 'just' : '',
           ].join(' ');
-          const isNew = i === justCell ? '<span class="new-tag">НОВЕ</span>' : '';
-          html += `<div class="cell filled seat-${b.seat} ${cls}" data-cell="${i}" title="${escapeHtml(b.player.uk)}">
+          const isNew = i === justCell ? `<span class="new-tag">${L('НОВЕ', 'NEW')}</span>` : '';
+          html += `<div class="cell filled seat-${b.seat} ${cls}" data-cell="${i}" title="${escapeHtml(pname(b.player))}">
             ${playerVisual(b.player)}
             <div class="seat-badge">${chalkMark(b.seat, i === justCell)}</div>${isNew}
-            <div class="pname-tag">${escapeHtml(b.player.uk)}</div>
+            <div class="pname-tag">${escapeHtml(pname(b.player))}</div>
           </div>`;
         } else {
           // скільки гравців ще доступно для цієї клітинки (зменшується, коли підходящого поставили деінде)
           // велике число — відомі гравці, мале — усі, кого зарахує гра
           const cnt = grid.answerCounts[i];
           const fam = grid.famousCounts?.[i] ?? cnt;
-          const count = `<span class="count" title="Відомих гравців: ${fam}, усього правильних відповідей: ${cnt}"><b>${fam}</b><span class="w"> ${plural(fam, 'відомий', 'відомі', 'відомих')}</span><span class="all"> / ${cnt}</span></span>`;
-          html += `<button class="cell ${myTurn ? 'playable' : ''}" data-cell="${i}" ${myTurn ? '' : 'disabled'} aria-label="Клітинка ${r + 1}×${c + 1}">
+          const count = `<span class="count" title="${L(`Відомих гравців: ${fam}, усього правильних відповідей: ${cnt}`, `Well-known players: ${fam}, correct answers in total: ${cnt}`)}"><b>${fam}</b><span class="w"> ${pl(fam, ['відомий', 'відомі', 'відомих'], ['well-known', 'well-known'])}</span><span class="all"> / ${cnt}</span></span>`;
+          html += `<button class="cell ${myTurn ? 'playable' : ''}" data-cell="${i}" ${myTurn ? '' : 'disabled'} aria-label="${L('Клітинка', 'Cell')} ${r + 1}×${c + 1}">
             <span class="plus">+</span>${count}
           </button>`;
         }
@@ -533,14 +539,14 @@
     document.querySelector('[data-action="skip"]').disabled = !isMyTurn();
     const surrender = $('#surrender-btn');
     surrender.disabled = !playing || !active;
-    surrender.textContent = state.capacity > 2 ? 'Вийти з партії' : 'Здатися';
+    surrender.textContent = state.capacity > 2 ? L('Вийти з партії', 'Leave the game') : L('Здатися', 'Resign');
     const drawBtn = $('#draw-btn');
     const iOffered = state.drawVotes.includes(mySeat);
     drawBtn.disabled = !playing || !active || iOffered;
     const pointsMode = state.board.scoring === 'points';
     drawBtn.textContent = iOffered
-      ? (pointsMode ? 'Чекаємо згоди…' : 'Нічию запропоновано…')
-      : (pointsMode ? 'Завершити гру' : 'Запропонувати нічию');
+      ? (pointsMode ? L('Чекаємо згоди…', 'Waiting for agreement…') : L('Нічию запропоновано…', 'Draw offered…'))
+      : (pointsMode ? L('Завершити гру', 'End game') : L('Запропонувати нічию', 'Offer a draw'));
     $('#reactions').classList.toggle('hidden', state.seats.filter(Boolean).length < 2);
     if (!isMyTurn()) closePicker();
   }
@@ -556,13 +562,13 @@
     if (playing && voters.length && amActive()) {
       const names = voters.map((i) => escapeHtml(seatName(i))).join(', ');
       const progress = totalActive > 2 ? ` (${voters.length}/${totalActive})` : '';
-      const what = state.board.scoring === 'points' ? 'завершити гру й порахувати очки' : 'нічию';
+      const what = state.board.scoring === 'points' ? L('завершити гру й порахувати очки', 'to end the game and count the points') : L('нічию', 'a draw');
       html = voters.includes(mySeat)
-        ? `<span>🤝 Ти запропонував ${what} — чекаємо інших${progress}</span>`
-        : `<span>🤝 <b>${names}</b> ${voters.length > 1 ? 'пропонують' : 'пропонує'} ${what}${progress}</span>
+        ? `<span>🤝 ${L(`Ти запропонував ${what} — чекаємо інших`, `You offered ${what} — waiting for the others`)}${progress}</span>`
+        : `<span>🤝 <b>${names}</b> ${voters.length > 1 ? L('пропонують', 'offer') : L('пропонує', 'offers')} ${what}${progress}</span>
            <span class="banner-actions">
-             <button class="btn btn-primary" data-action="draw">Прийняти</button>
-             <button class="btn btn-secondary" data-action="decline-draw">Відхилити</button>
+             <button class="btn btn-primary" data-action="draw">${L('Прийняти', 'Accept')}</button>
+             <button class="btn btn-secondary" data-action="decline-draw">${L('Відхилити', 'Decline')}</button>
            </span>`;
     } else if (playing && absent.length && amActive()) {
       // виключити можна лише того, хто офлайн ≥ 2 хв і заважає грі: зараз його хід або пропустив кілька ходів поспіль
@@ -571,21 +577,21 @@
       const blocking = (i) => state.turn === i || state.missed[i] >= state.missedToKick;
       const kickable = absent.filter((i) => waitLeft(i) <= 0 && blocking(i));
       const names = absent.map((i) => `<b>${escapeHtml(state.seats[i].name)}</b>`).join(', ');
-      const verb = absent.length > 1 ? 'втратили' : 'втратив';
+      const verb = absent.length > 1 ? L('втратили', 'lost') : L('втратив', 'lost');
       if (kickable.length) {
-        const label = totalActive - kickable.length <= 1 ? 'Забрати перемогу' : 'Виключити з партії';
-        html = `<span>📡 ${kickable.map((i) => `<b>${escapeHtml(state.seats[i].name)}</b>`).join(', ')} не повертається і заважає грі</span>
+        const label = totalActive - kickable.length <= 1 ? L('Забрати перемогу', 'Claim the win') : L('Виключити з партії', 'Remove from the game');
+        html = `<span>📡 ${kickable.map((i) => `<b>${escapeHtml(state.seats[i].name)}</b>`).join(', ')} ${L('не повертається і заважає грі', (kickable.length > 1 ? 'are' : 'is') + ' not coming back and holding up the game')}</span>
            <span class="banner-actions"><button class="btn btn-primary" data-action="claim-win">${label}</button></span>`;
       } else if (absent.some(blocking)) {
         const sec = Math.max(1, Math.ceil(Math.min(...absent.filter(blocking).map(waitLeft)) / 1000));
-        const t = sec >= 60 ? `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}` : `${sec} с`;
-        html = `<span>📡 ${names} ${verb} з'єднання. Чекаємо… ${t}</span>`;
+        const t = sec >= 60 ? `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}` : `${sec} ${L('с', 's')}`;
+        html = `<span>📡 ${names} ${verb} ${L(`з'єднання. Чекаємо… ${t}`, `connection. Waiting… ${t}`)}</span>`;
       } else {
-        html = `<span>📡 ${names} ${verb} з'єднання — граємо далі, чекаємо, поки повернеться</span>`;
+        html = `<span>📡 ${names} ${verb} ${L("з'єднання — граємо далі, чекаємо, поки повернеться", 'connection — playing on, waiting for them to return')}</span>`;
       }
     } else if (state.status === 'finished' && resultDismissed) {
-      html = `<span>Гру завершено</span>
-        <span class="banner-actions"><button class="btn btn-primary" data-action="show-result">Реванш / вихід</button></span>`;
+      html = `<span>${L('Гру завершено', 'Game over')}</span>
+        <span class="banner-actions"><button class="btn btn-primary" data-action="show-result">${L('Реванш / вихід', 'Rematch / leave')}</button></span>`;
     }
     el.innerHTML = html;
     el.classList.toggle('hidden', !html);
@@ -601,42 +607,44 @@
     const who = seatName(ev.seat);
     switch (ev.type) {
       case 'miss': {
-        const why = ev.failed?.length ? ` — не «${ev.failed.join('» і не «')}»` : ' не підходить';
-        toast(`✗ ${who}: ${ev.player.uk}${why}`, 'bad', 8000);
+        const why = ev.failed?.length
+          ? L(` — не «${ev.failed.join('» і не «')}»`, ` — not “${ev.failed.join('” and not “')}”`)
+          : L(' не підходить', " doesn't fit");
+        toast(`✗ ${who}: ${pname(ev.player)}${why}`, 'bad', 8000);
         Sound.play('miss');
         document.querySelector(`[data-cell="${ev.cell}"]`)?.classList.add('flash-miss');
         break;
       }
       case 'start': {
         const names = ev.order.map((i) => `${SYMBOLS[i]} ${seatName(i)}`);
-        const first = ev.order[0] === mySeat ? 'ти' : state.seats[ev.order[0]]?.name || 'гравець';
-        toast(ev.order.length > 2 ? `🎲 Жереб: ${names.join(' → ')}` : `🎲 Жереб: першим ходить ${first}`, 'good', 5000);
+        const first = ev.order[0] === mySeat ? L('ти', 'you') : state.seats[ev.order[0]]?.name || L('гравець', 'player');
+        toast(ev.order.length > 2 ? `🎲 ${L('Жереб', 'Draw')}: ${names.join(' → ')}` : L(`🎲 Жереб: першим ходить ${first}`, `🎲 Draw: ${first} ${ev.order[0] === mySeat ? 'go' : 'goes'} first`), 'good', 5000);
         break;
       }
       case 'timeout':
-        toast(`⏱ ${who}: час вийшов — хід переходить`, 'bad');
+        toast(`⏱ ${who}: ${L('час вийшов — хід переходить', 'time is up — the turn passes')}`, 'bad');
         Sound.play('miss');
         break;
       case 'skip':
-        toast(`${who}: пропуск ходу`);
+        toast(`${who}: ${L('пропуск ходу', 'turn skipped')}`);
         break;
       case 'hit':
         if (state.status !== 'playing') break;
         Sound.play('hit');
-        if (ev.gained) toast(`${mine ? '🎯 Ти' : `🎯 ${who}`}: +${ev.gained} ${plural(ev.gained, 'очко', 'очки', 'очок')}!`, 'good');
-        else if (!mine) toast(`✓ ${who}: ${ev.player.uk}`, 'good');
+        if (ev.gained) toast(`🎯 ${who}: +${ev.gained} ${pl(ev.gained, ['очко', 'очки', 'очок'], ['point', 'points'])}!`, 'good');
+        else if (!mine) toast(`✓ ${who}: ${pname(ev.player)}`, 'good');
         break;
       case 'drawDeclined':
-        if (!mine) toast(`${who} відхилив пропозицію — граємо далі`);
+        if (!mine) toast(L(`${who} відхилив пропозицію — граємо далі`, `${who} declined the offer — playing on`));
         break;
       case 'surrender':
-        toast(`🏳 ${who} ${mine ? 'вибув' : 'вибуває'} з партії`);
+        toast(`🏳 ${who} ${mine ? L('вибув з партії', 'are out of the game') : L('вибуває з партії', 'is out of the game')}`);
         break;
       case 'left':
-        toast(`🚪 ${ev.name || 'Гравець'} вийшов з кімнати — граємо далі`);
+        toast(L(`🚪 ${ev.name || 'Гравець'} вийшов з кімнати — граємо далі`, `🚪 ${ev.name || 'A player'} left the room — playing on`));
         break;
       case 'kicked':
-        toast(`📡 ${ev.seats.map(seatName).join(', ')} — виключено з партії`);
+        toast(`📡 ${ev.seats.map(seatName).join(', ')} — ${L('виключено з партії', 'removed from the game')}`);
         break;
     }
   }
@@ -652,21 +660,21 @@
     const pointsMode = state.board.scoring === 'points';
     const iWon = winners.includes(mySeat);
     const draw = !winners.length;
-    const names = winners.map((i) => state.seats[i]?.name || 'Гравець').join(' і ');
+    const names = winners.map((i) => state.seats[i]?.name || L('Гравець', 'Player')).join(L(' і ', ' and '));
     const reasons = {
-      line: `${state.board.win} в ряд!`,
+      line: L(`${state.board.win} в ряд!`, `${state.board.win} in a row!`),
       surrender: iWon
-        ? (state.capacity > 2 ? 'Інші гравці вибули.' : 'Суперник здався.')
-        : state.out.includes(mySeat) ? 'Ти здався.' : 'Гравці вибули.',
+        ? (state.capacity > 2 ? L('Інші гравці вибули.', 'The other players are out.') : L('Суперник здався.', 'Your opponent resigned.'))
+        : state.out.includes(mySeat) ? L('Ти здався.', 'You resigned.') : L('Гравці вибули.', 'Players are out.'),
       abandoned: iWon
-        ? (state.capacity > 2 ? 'Інші гравці вийшли або зникли.' : 'Суперник вийшов або зник.')
-        : 'Ти надовго зник — перемогу віддано іншим.',
-      agreed: pointsMode ? 'Гру завершено за згодою — рахуємо очки.' : 'Усі погодились на нічию.',
-      full: pointsMode ? 'Поле заповнене — рахуємо очки.' : 'Поле заповнене.',
-      stuck: pointsMode ? 'Більше нема кого ставити — рахуємо очки.' : 'Більше нема кого ставити у вільні клітинки.',
+        ? (state.capacity > 2 ? L('Інші гравці вийшли або зникли.', 'The other players left or disappeared.') : L('Суперник вийшов або зник.', 'Your opponent left or disappeared.'))
+        : L('Ти надовго зник — перемогу віддано іншим.', 'You were gone too long — the win went to the others.'),
+      agreed: pointsMode ? L('Гру завершено за згодою — рахуємо очки.', 'Game ended by agreement — counting the points.') : L('Усі погодились на нічию.', 'Everyone agreed to a draw.'),
+      full: pointsMode ? L('Поле заповнене — рахуємо очки.', 'The board is full — counting the points.') : L('Поле заповнене.', 'The board is full.'),
+      stuck: pointsMode ? L('Більше нема кого ставити — рахуємо очки.', 'No more players fit — counting the points.') : L('Більше нема кого ставити у вільні клітинки.', 'No more players fit the free cells.'),
     };
     $('#result-emoji').textContent = draw ? '🤝' : iWon ? '🏆' : '😔';
-    $('#result-title').textContent = draw ? 'Нічия' : iWon ? (winners.length > 1 ? 'Ділиш перемогу!' : 'Перемога!') : `Переміг ${names}`;
+    $('#result-title').textContent = draw ? L('Нічия', 'Draw') : iWon ? (winners.length > 1 ? L('Ділиш перемогу!', 'Shared win!') : L('Перемога!', 'Victory!')) : L(`Переміг ${names}`, `${names} won`);
     $('#result-sub').textContent = reasons[state.endReason] || '';
 
     // таблиця місць
@@ -678,11 +686,11 @@
     $('#standings').innerHTML = seats
       .map((i, k) => {
         const val = pointsMode
-          ? `${state.points[i]} ${plural(state.points[i], 'очко', 'очки', 'очок')} · серія ${state.scores[i]}`
-          : `серія ${state.scores[i]}`;
+          ? `${state.points[i]} ${pl(state.points[i], ['очко', 'очки', 'очок'], ['point', 'points'])} · ${L('серія', 'series')} ${state.scores[i]}`
+          : `${L('серія', 'series')} ${state.scores[i]}`;
         return `<li class="seat-${i} ${winners.includes(i) ? 'win' : ''}">
           <span class="place">${k + 1}</span><span class="sym">${SYMBOLS[i]}</span>
-          <span class="nm">${escapeHtml(state.seats[i]?.name || 'вийшов')}${i === mySeat ? ' (ти)' : ''}</span>
+          <span class="nm">${escapeHtml(state.seats[i]?.name || L('вийшов', 'left'))}${i === mySeat ? YOU_MARK : ''}</span>
           <span class="val">${val}</span></li>`;
       })
       .join('');
@@ -694,18 +702,18 @@
     const note = $('#result-rematch');
     const btn = $('#rematch-btn');
     if (!full) {
-      note.textContent = 'Хтось вийшов з кімнати — для реваншу дочекайтесь нового гравця або почніть нову гру.';
+      note.textContent = L('Хтось вийшов з кімнати — для реваншу дочекайтесь нового гравця або почніть нову гру.', 'Someone left the room — wait for a new player for a rematch, or start a new game.');
       note.classList.remove('hidden');
       btn.disabled = true;
-      btn.textContent = 'Реванш';
+      btn.textContent = L('Реванш', 'Rematch');
     } else {
       const others = votes.filter((v) => v !== mySeat).map((v) => state.seats[v]?.name).filter(Boolean);
       note.classList.toggle('hidden', !votes.length);
       note.textContent = others.length
-        ? `🔁 ${others.join(', ')} ${others.length > 1 ? 'хочуть' : 'хоче'} реванш (${votes.length}/${state.capacity})`
-        : `Чекаємо відповіді інших… (${votes.length}/${state.capacity})`;
+        ? `🔁 ${others.join(', ')} ${others.length > 1 ? L('хочуть реванш', 'want a rematch') : L('хоче реванш', 'wants a rematch')} (${votes.length}/${state.capacity})`
+        : `${L('Чекаємо відповіді інших…', 'Waiting for the others…')} (${votes.length}/${state.capacity})`;
       btn.disabled = voted;
-      btn.textContent = voted ? 'Чекаємо інших…' : others.length ? 'Прийняти реванш' : 'Реванш';
+      btn.textContent = voted ? L('Чекаємо інших…', 'Waiting for the others…') : others.length ? L('Прийняти реванш', 'Accept rematch') : L('Реванш', 'Rematch');
     }
     el.classList.toggle('hidden', resultDismissed);
     closePicker();
@@ -744,12 +752,12 @@
 
   function renderChat() {
     if (!chatMessages.length) {
-      chatList.innerHTML = '<li class="chat-empty">Тут поки тихо. Напиши першим 🙂</li>';
+      chatList.innerHTML = `<li class="chat-empty">${L('Тут поки тихо. Напиши першим 🙂', 'Quiet so far. Say something first 🙂')}</li>`;
       return;
     }
     chatList.innerHTML = chatMessages
       .map((m) => `<li class="seat-${m.seat} ${m.seat === mySeat ? 'mine' : ''}">
-        <span class="chat-who"><span class="lm-sym">${SYMBOLS[m.seat] || ''}</span> ${escapeHtml(m.seat === mySeat ? 'Ти' : m.name)}</span>
+        <span class="chat-who"><span class="lm-sym">${SYMBOLS[m.seat] || ''}</span> ${escapeHtml(m.seat === mySeat ? L('Ти', 'You') : m.name)}</span>
         <span class="chat-text">${escapeHtml(m.text)}</span></li>`)
       .join('');
     chatList.scrollTop = chatList.scrollHeight;
@@ -861,20 +869,22 @@
       return;
     }
     if (!currentSuggestions.length) {
-      ul.innerHTML = '<li class="empty">Нікого не знайдено</li>';
+      ul.innerHTML = `<li class="empty">${L('Нікого не знайдено', 'No one found')}</li>`;
       return;
     }
     ul.innerHTML = currentSuggestions
       .map((p, i) => {
         const used = usedIds.has(p.id);
-        const sub = [p.name, p.born && `${p.born} р.н.`].filter(Boolean).join(' · ');
-        const avatar = `<span class="s-avatar"><span>${escapeHtml(initials(p.uk))}</span>${
+        // підпис — ім'я латиницею (в українській версії) і рік народження
+        const other = window.I18n.lang === 'en' ? null : p.name;
+        const sub = [other, p.born && L(`${p.born} р.н.`, `b. ${p.born}`)].filter(Boolean).join(' · ');
+        const avatar = `<span class="s-avatar"><span>${escapeHtml(initials(pname(p)))}</span>${
           p.thumb ? `<img src="${escapeHtml(p.thumb)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ''
         }</span>`;
         return `<li role="option" data-idx="${i}" class="${used ? 'used' : ''} ${i === suggestionIdx ? 'active' : ''}">
           ${avatar}
-          <div class="s-text"><div class="s-main">${escapeHtml(p.uk)}</div><div class="s-sub">${escapeHtml(sub)}</div></div>
-          ${used ? '<span class="s-flag">вже був у грі</span>' : ''}
+          <div class="s-text"><div class="s-main">${escapeHtml(pname(p))}</div><div class="s-sub">${escapeHtml(sub)}</div></div>
+          ${used ? `<span class="s-flag">${L('вже був у грі', 'already used')}</span>` : ''}
         </li>`;
       })
       .join('');
@@ -890,7 +900,7 @@
     const p = currentSuggestions[idx];
     if (!p || pickerCell === null) return;
     if (usedIds.has(p.id)) {
-      toast(`${p.uk} вже був у цій грі — обери іншого`, 'bad');
+      toast(L(`${p.uk} вже був у цій грі — обери іншого`, `${pname(p)} has already been used — pick someone else`), 'bad');
       return;
     }
     const cell = pickerCell;
@@ -900,7 +910,7 @@
         return;
       }
       closePicker();
-      if (res.correct && state.board.scoring !== 'points') toast(`✓ ${p.uk} — є!`, 'good');
+      if (res.correct && state.board.scoring !== 'points') toast(`✓ ${pname(p)} — ${L('є!', 'correct!')}`, 'good');
     });
   }
 
@@ -961,8 +971,8 @@
       case 'claim-win': socket.emit('claimWin', null, ack); break;
       case 'surrender': {
         const multi = state.capacity > 2 && activeSeats().length > 2;
-        const text = multi ? 'Вийти з цієї партії? Гра триватиме без тебе.' : 'Здатися? Перемогу отримає суперник.';
-        if (await askConfirm(text, multi ? 'Вийти з партії' : 'Здатися')) socket.emit('surrender', null, ack);
+        const text = multi ? L('Вийти з цієї партії? Гра триватиме без тебе.', 'Leave this game? It will go on without you.') : L('Здатися? Перемогу отримає суперник.', 'Resign? Your opponent gets the win.');
+        if (await askConfirm(text, multi ? L('Вийти з партії', 'Leave the game') : L('Здатися', 'Resign'))) socket.emit('surrender', null, ack);
         break;
       }
       case 'rematch': socket.emit('rematch', null, ack); break;
@@ -977,7 +987,7 @@
         renderBanner();
         break;
       case 'leave-confirm':
-        if (state?.status === 'playing' && !(await askConfirm('Вийти з кімнати? Ти покинеш поточну гру.', 'Вийти'))) break;
+        if (state?.status === 'playing' && !(await askConfirm(L('Вийти з кімнати? Ти покинеш поточну гру.', 'Leave the room? You will quit the current game.'), L('Вийти', 'Leave')))) break;
         leaveRoom();
         break;
       case 'leave':
@@ -1003,7 +1013,7 @@
     muteBtn.textContent = off ? '🔇' : vol < 40 ? '🔉' : '🔊';
     volumeInput.value = vol;
     $('#volume-val').textContent = `${vol}%`;
-    $('#mute-toggle').textContent = Sound.isMuted() ? '🔊 Увімкнути звук' : '🔇 Вимкнути звук';
+    $('#mute-toggle').textContent = Sound.isMuted() ? L('🔊 Увімкнути звук', '🔊 Sound on') : L('🔇 Вимкнути звук', '🔇 Sound off');
     volumeInput.disabled = Sound.isMuted();
   };
   renderSound();
@@ -1043,49 +1053,50 @@
     const nameEl = $('#invite-name');
     nameEl.value = nameInput.value || '';
     $('#invite-error').textContent = '';
-    $('#invite-sub').textContent = 'Завантажуємо кімнату…';
+    $('#invite-sub').textContent = L('Завантажуємо кімнату…', 'Loading the room…');
     $('#invite-config').innerHTML = '';
     $('#invite-slots').innerHTML = '';
     $('#invite-join').disabled = true;
     let info = null;
     try {
-      const res = await fetch(`/api/crossroads/room/${encodeURIComponent(code)}`);
+      const res = await fetch(`/api/crossroads/room/${encodeURIComponent(code)}?lang=${window.I18n.lang}`);
       if (res.ok) info = await res.json();
       if (!info?.found) info = null;
     } catch { /* мережа */ }
     inviteInfo = info;
     if (!info) {
-      $('#invite-title').textContent = 'Кімнату не знайдено';
-      $('#invite-sub').textContent = `Кімнати ${code} вже немає — можливо, гра закінчилась або сервер перезапускався. Попроси друга створити нову і надіслати свіже посилання, або створи свою гру.`;
+      $('#invite-title').textContent = L('Кімнату не знайдено', 'Room not found');
+      $('#invite-sub').textContent = L(`Кімнати ${code} вже немає — можливо, гра закінчилась або сервер перезапускався. Попроси друга створити нову і надіслати свіже посилання, або створи свою гру.`,
+        `Room ${code} no longer exists — maybe the game ended or the server restarted. Ask your friend to create a new one and send a fresh link, or start your own game.`);
       $('#invite-join').classList.add('hidden');
       $('#invite-name').closest('.field').classList.add('hidden');
       $('[data-action="rules-invite"]').classList.add('hidden');
       $('[data-action="go-home"]').className = 'btn btn-primary';
-      $('[data-action="go-home"]').textContent = 'Створити свою гру';
+      $('[data-action="go-home"]').textContent = L('Створити свою гру', 'Start your own game');
       return;
     }
     $('[data-action="rules-invite"]').classList.remove('hidden');
     $('[data-action="go-home"]').className = 'btn btn-ghost btn-sm';
-    $('[data-action="go-home"]').textContent = 'Або створити свою гру';
+    $('[data-action="go-home"]').textContent = L('Або створити свою гру', 'Or start your own game');
     const joined = info.players.length;
     const full = joined >= info.capacity;
     $('#invite-join').classList.remove('hidden');
     $('#invite-name').closest('.field').classList.remove('hidden');
-    $('#invite-title').textContent = info.players[0] ? `${info.players[0]} кличе тебе в гру` : 'Тебе запросили в гру';
+    $('#invite-title').textContent = info.players[0] ? L(`${info.players[0]} кличе тебе в гру`, `${info.players[0]} invites you to play`) : L('Тебе запросили в гру', "You've been invited to a game");
     $('#invite-config').innerHTML = configChips(info);
     $('#invite-slots').innerHTML = Array.from({ length: info.capacity }, (_, i) => info.players[i]
       ? `<li class="seat-${i}"><span class="sym">${SYMBOLS[i]}</span><span>${escapeHtml(info.players[i])}</span></li>`
-      : `<li class="empty"><span class="sym">${SYMBOLS[i]}</span><span>${i === joined ? 'Тут будеш ти' : 'Вільне місце'}</span></li>`).join('');
+      : `<li class="empty"><span class="sym">${SYMBOLS[i]}</span><span>${i === joined ? L('Тут будеш ти', "That's you") : L('Вільне місце', 'Free seat')}</span></li>`).join('');
     if (full || info.status !== 'waiting') {
       $('#invite-sub').textContent = info.status !== 'waiting'
-        ? 'Гра в цій кімнаті вже почалась — дочекайся кінця партії або створи свою гру.'
-        : 'Кімната вже заповнена — створи свою гру.';
+        ? L('Гра в цій кімнаті вже почалась — дочекайся кінця партії або створи свою гру.', 'The game in this room has already started — wait for it to finish or start your own.')
+        : L('Кімната вже заповнена — створи свою гру.', 'The room is full — start your own game.');
       $('#invite-join').disabled = true;
       return;
     }
     $('#invite-sub').textContent = info.capacity - joined === 1
-      ? 'Залишилось одне місце — твоє. Гра почнеться, щойно ти зайдеш.'
-      : `Вільних місць: ${info.capacity - joined}. Гра почнеться, коли зберуться всі.`;
+      ? L('Залишилось одне місце — твоє. Гра почнеться, щойно ти зайдеш.', 'One seat left — yours. The game starts as soon as you join.')
+      : L(`Вільних місць: ${info.capacity - joined}. Гра почнеться, коли зберуться всі.`, `Free seats: ${info.capacity - joined}. The game starts when everyone is in.`);
     $('#invite-join').disabled = false;
     if (!nameEl.value.trim()) nameEl.focus();
   }
@@ -1093,7 +1104,7 @@
   function joinFromInvite() {
     const name = $('#invite-name').value.trim();
     if (!name) {
-      $('#invite-error').textContent = "Введи своє ім'я — так тебе бачитимуть інші";
+      $('#invite-error').textContent = L("Введи своє ім'я — так тебе бачитимуть інші", 'Enter your name — this is how others will see you');
       $('#invite-name').focus();
       return;
     }

@@ -1,6 +1,8 @@
 // «Вгадай гравця»: профіль футболіста (збірна, позиція, рік, клуби, голи, вартість, трофеї) і порівняння спроби із загаданим.
 // Кожна клітинка: green — збіг, yellow — близько / колись перетиналися, grey — мимо; note — пояснення словами (чому жовта, у кого більше).
 const { careerOf, team, teams, POSITIONS } = require('../path/careers');
+const { T } = require('../../core/i18n');
+const { countryEn, teamEn } = require('../../data/names-en');
 
 // Британські збірні у Wikidata — окремі команди, але країна в усіх «Сполучене Королівство».
 const NATION_NAMES = { Q47762: 'Англія', Q34044: 'Шотландія', Q180857: 'Уельс', Q190978: 'Північна Ірландія' };
@@ -23,6 +25,12 @@ const SHORT = {
 const shortCountry = (name) => (name ? SHORT[name] || name : null);
 // Назва збірної: британські — окремо, довгі офіційні назви — коротко (СРСР, США…).
 const nationName = (q) => NATION_NAMES[q] || shortCountry(teams[q]?.country || teams[q]?.name);
+
+// Англійською — для показу (порівнюємо далі за українськими назвами). Короткі назви з SHORT, яких немає в names-en.
+const SHORT_EN = { 'Британія': 'Great Britain', 'ЦАР': 'CAR' };
+const placeEn = (uk) => SHORT_EN[uk] || countryEn(uk);
+const placeT = (uk) => (uk ? T(uk, placeEn(uk)) : uk);
+const clubT = (t) => T(team(t).name, teamEn(t, team(t)));
 
 // Чемпіонат клубу. У Wikidata всі британські клуби — «Сполучене Королівство», але чемпіонати різні:
 // шотландські й північноірландські — окремо, решта (і валлійські Кардіфф, Свонсі, Рексем…) грають в англійській лізі.
@@ -50,37 +58,44 @@ const CONFEDERATIONS = {
   AFC: 'Японія Південна_Корея Узбекистан Туркменістан Іран Таджикистан Киргизстан Таїланд Китай Австралія Саудівська_Аравія Катар ОАЕ',
   OFC: 'Нова_Зеландія',
 };
-const CONF_LABELS = { UEFA: 'Європа', CONMEBOL: 'Півд. Америка', CONCACAF: 'Півн. Америка', CAF: 'Африка', AFC: 'Азія', OFC: 'Океанія' };
+const CONF_LABELS = {
+  UEFA: T('Європа', 'Europe'), CONMEBOL: T('Півд. Америка', 'South America'), CONCACAF: T('Півн. Америка', 'North America'),
+  CAF: T('Африка', 'Africa'), AFC: T('Азія', 'Asia'), OFC: T('Океанія', 'Oceania'),
+};
 const confOf = new Map();
 for (const [conf, list] of Object.entries(CONFEDERATIONS)) for (const c of list.split(' ')) confOf.set(c.replace(/_/g, ' '), conf);
 
 // Головні трофеї — текстом (значки без підпису незрозумілі).
 const TROPHIES = [
-  { id: 'BALLON', label: "Золотий м'яч" },
-  { id: 'WC', label: 'Чемпіон світу' },
-  { id: 'EURO', label: 'Чемпіон Європи' },
-  { id: 'COPA', label: 'Кубок Америки' },
-  { id: 'UCL', label: 'Ліга чемпіонів' },
-  { id: 'UEL', label: 'Ліга Європи' },
+  { id: 'BALLON', label: "Золотий м'яч", en: "Ballon d'Or" },
+  { id: 'WC', label: 'Чемпіон світу', en: 'World Cup winner' },
+  { id: 'EURO', label: 'Чемпіон Європи', en: 'Euro winner' },
+  { id: 'COPA', label: 'Кубок Америки', en: 'Copa América' },
+  { id: 'UCL', label: 'Ліга чемпіонів', en: 'Champions League' },
+  { id: 'UEL', label: 'Ліга Європи', en: 'Europa League' },
 ];
 
 // Основна позиція — з Transfermarkt (точніша за перелік у Wikidata); група — для «близько»: та сама лінія на полі.
 const TM_POSITIONS = {
-  Goalkeeper: ['Воротар', 'GK'],
-  'Centre-Back': ['Центральний захисник', 'DEF'],
-  'Left-Back': ['Лівий захисник', 'DEF'],
-  'Right-Back': ['Правий захисник', 'DEF'],
-  'Defensive Midfield': ['Опорний півзахисник', 'MID'],
-  'Central Midfield': ['Центральний півзахисник', 'MID'],
-  'Attacking Midfield': ['Атакувальний півзахисник', 'MID'],
-  'Left Midfield': ['Лівий півзахисник', 'WING'],
-  'Right Midfield': ['Правий півзахисник', 'WING'],
-  'Left Winger': ['Лівий вінгер', 'WING'],
-  'Right Winger': ['Правий вінгер', 'WING'],
-  'Second Striker': ['Другий нападник', 'FWD'],
-  'Centre-Forward': ['Центральний нападник', 'FWD'],
+  Goalkeeper: ['Воротар', 'GK', 'Goalkeeper'],
+  'Centre-Back': ['Центральний захисник', 'DEF', 'Centre-back'],
+  'Left-Back': ['Лівий захисник', 'DEF', 'Left-back'],
+  'Right-Back': ['Правий захисник', 'DEF', 'Right-back'],
+  'Defensive Midfield': ['Опорний півзахисник', 'MID', 'Defensive midfielder'],
+  'Central Midfield': ['Центральний півзахисник', 'MID', 'Central midfielder'],
+  'Attacking Midfield': ['Атакувальний півзахисник', 'MID', 'Attacking midfielder'],
+  'Left Midfield': ['Лівий півзахисник', 'WING', 'Left midfielder'],
+  'Right Midfield': ['Правий півзахисник', 'WING', 'Right midfielder'],
+  'Left Winger': ['Лівий вінгер', 'WING', 'Left winger'],
+  'Right Winger': ['Правий вінгер', 'WING', 'Right winger'],
+  'Second Striker': ['Другий нападник', 'FWD', 'Second striker'],
+  'Centre-Forward': ['Центральний нападник', 'FWD', 'Centre-forward'],
 };
-const GROUPS = { GK: 'воротар', DEF: 'захисник', MID: 'центр поля', WING: 'фланг', FWD: 'нападник' };
+const GROUPS = {
+  GK: T('воротар', 'goalkeeper'), DEF: T('захисник', 'defender'), MID: T('центр поля', 'central midfield'),
+  WING: T('фланг', 'wide player'), FWD: T('нападник', 'forward'),
+};
+const POSITIONS_EN = { GK: 'Goalkeeper', DF: 'Defender', MF: 'Midfielder', FW: 'Forward' };
 // Запасний варіант (немає в Transfermarkt — зазвичай ветерани): позиції з Wikidata.
 const TAG_GROUPS = { GK: 'GK', DF: 'DEF', MF: 'MID', FW: 'FWD' };
 
@@ -104,9 +119,13 @@ const profiles = new Map();
 
 function positionOf(p) {
   const tm = TM_POSITIONS[transfers[p.id]?.pos];
-  if (tm) return { label: tm[0], groups: [tm[1]] };
+  if (tm) return { label: tm[0], en: tm[2], groups: [tm[1]] };
   const tags = ['GK', 'DF', 'MF', 'FW'].filter((t) => p.tags.has(t));
-  return { label: tags.length ? tags.map((t) => POSITIONS[t]).join(' / ') : '?', groups: tags.map((t) => TAG_GROUPS[t]) };
+  return {
+    label: tags.length ? tags.map((t) => POSITIONS[t]).join(' / ') : '?',
+    en: tags.length ? tags.map((t) => POSITIONS_EN[t]).join(' / ') : '?',
+    groups: tags.map((t) => TAG_GROUPS[t]),
+  };
 }
 
 function profileOf(p) {
@@ -154,7 +173,7 @@ function sharedClubs(a, b) {
       if (x.t !== y.t) continue;
       const together = Math.max(x.s, y.s) < Math.min(x.e, y.e);
       const prev = out.get(x.t);
-      out.set(x.t, { name: x.name, img: x.img, together: together || !!prev?.together });
+      out.set(x.t, { name: clubT(x.t), img: x.img, together: together || !!prev?.together });
     }
   }
   return [...out.values()];
@@ -165,103 +184,120 @@ function sharedClubs(a, b) {
 // note — словами, у кого більше (самі стрілки незрозумілі).
 function numberCell(guess, target, { green, yellow }) {
   const d = Math.abs(guess - target);
-  if (d === 0) return { color: 'green', note: 'точно' };
+  if (d === 0) return { color: 'green', note: T('точно', 'exact') };
   const near = green && d <= Math.max(green[0], target * green[1]);
   const color = near ? 'green' : d <= Math.max(yellow[0], target * yellow[1]) ? 'yellow' : 'grey';
-  const more = target > guess ? 'більше' : 'менше';
-  return { color, arrow: target > guess ? 'up' : 'down', note: near ? `майже, у загаданого трохи ${more}` : `у загаданого ${more}` };
+  const up = target > guess;
+  const more = up ? 'більше' : 'менше';
+  const moreEn = up ? 'more' : 'less';
+  return {
+    color, arrow: up ? 'up' : 'down',
+    note: near ? T(`майже, у загаданого трохи ${more}`, `close, mystery player has slightly ${moreEn}`) : T(`у загаданого ${more}`, `mystery player has ${moreEn}`),
+  };
 }
 
 const money = (v) => (v >= 1e6 ? `€${Number((v / 1e6).toFixed(v < 1e7 ? 1 : 0))} млн` : `€${Math.round(v / 1e3)} тис.`);
+const moneyEn = (v) => (v >= 1e6 ? `€${Number((v / 1e6).toFixed(v < 1e7 ? 1 : 0))}m` : `€${Math.round(v / 1e3)}k`);
+const moneyT = (v) => T(money(v), moneyEn(v));
 
 const COLUMNS = [
-  { id: 'nation', label: 'Збірна' },
-  { id: 'position', label: 'Позиція' },
-  { id: 'born', label: 'Рік народження' },
-  { id: 'last', label: 'Останній клуб' },
-  { id: 'league', label: 'Чемпіонат' },
-  { id: 'goals', label: 'Голи в чемпіонатах' },
-  { id: 'caps', label: 'Матчі за збірну' },
-  { id: 'natGoals', label: 'Голи за збірну' },
-  { id: 'assists', label: 'Асисти' }, // лише коли загаданий почав з 2012/13 — див. columnsFor
-  { id: 'value', label: 'Макс. вартість' },
-  { id: 'trophies', label: 'Трофеї' },
-  { id: 'shared', label: 'Спільні клуби' },
+  { id: 'nation', label: T('Збірна', 'Nation') },
+  { id: 'position', label: T('Позиція', 'Position') },
+  { id: 'born', label: T('Рік народження', 'Born') },
+  { id: 'last', label: T('Останній клуб', 'Last club') },
+  { id: 'league', label: T('Чемпіонат', 'League') },
+  { id: 'goals', label: T('Голи в чемпіонатах', 'League goals') },
+  { id: 'caps', label: T('Матчі за збірну', 'Caps') },
+  { id: 'natGoals', label: T('Голи за збірну', 'Intl goals') },
+  { id: 'assists', label: T('Асисти', 'Assists') }, // лише коли загаданий почав з 2012/13 — див. columnsFor
+  { id: 'value', label: T('Макс. вартість', 'Peak value') },
+  { id: 'trophies', label: T('Трофеї', 'Trophies') },
+  { id: 'shared', label: T('Спільні клуби', 'Shared clubs') },
 ];
 
 // Колонки раунду: асисти — лише для загаданих, що почали кар'єру з 2012-го.
 const columnsFor = (t) => COLUMNS.filter((c) => c.id !== 'assists' || t?.modern);
 
-// Рядок клітинок для спроби g проти загаданого t (обидва — профілі).
+const PLAYED_HERE = T('загаданий грав тут', 'mystery player played here');
+const NO_DATA = T('немає даних', 'no data');
+
+// Рядок клітинок для спроби g проти загаданого t (обидва — профілі). Тексти — парами T (мову обирає room-server).
 function compare(g, t) {
   const cells = {};
 
-  if (!g.nation) cells.nation = { text: 'не грав за збірну', color: t.nation ? 'grey' : 'green' };
+  if (!g.nation) cells.nation = { text: T('не грав за збірну', 'no caps'), color: t.nation ? 'grey' : 'green' };
   else {
     const same = t.nation && g.nation.name === t.nation.name;
     const near = t.nation && g.nation.conf && g.nation.conf === t.nation.conf;
-    cells.nation = { text: g.nation.name, img: g.nation.img, color: same ? 'green' : near ? 'yellow' : 'grey', note: near && !same ? `теж ${CONF_LABELS[g.nation.conf]}` : null };
+    const conf = CONF_LABELS[g.nation.conf];
+    cells.nation = {
+      text: placeT(g.nation.name), img: g.nation.img, color: same ? 'green' : near ? 'yellow' : 'grey',
+      note: near && !same ? T(`теж ${conf.uk}`, `also ${conf.en}`) : null,
+    };
   }
 
   // зелена — та сама позиція; жовта — та сама лінія (обидва захисники, обидва на фланзі…), пояснюємо словами
   const gp = g.position, tp = t.position;
   const common = gp.groups.find((x) => tp.groups.includes(x));
   const samePos = gp.label === tp.label;
-  cells.position = { text: gp.label, color: samePos ? 'green' : common ? 'yellow' : 'grey', note: !samePos && common ? `теж ${GROUPS[common]}` : null };
+  cells.position = {
+    text: T(gp.label, gp.en), color: samePos ? 'green' : common ? 'yellow' : 'grey',
+    note: !samePos && common ? T(`теж ${GROUPS[common].uk}`, `also a ${GROUPS[common].en}`) : null,
+  };
 
   if (g.born && t.born) {
     const d = Math.abs(g.born - t.born);
     cells.born = {
       text: String(g.born),
       color: d === 0 ? 'green' : d <= 2 ? 'yellow' : 'grey',
-      note: d === 0 ? 'однолітки' : t.born > g.born ? 'загаданий молодший' : 'загаданий старший',
+      note: d === 0 ? T('однолітки', 'same age') : t.born > g.born ? T('загаданий молодший', 'mystery player is younger') : T('загаданий старший', 'mystery player is older'),
     };
   } else cells.born = { text: g.born ? String(g.born) : '?', color: 'grey' };
 
   const playedThere = t.clubs.some((x) => x.t === g.last.t);
   cells.last = {
-    text: g.last.name,
+    text: clubT(g.last.t),
     img: g.last.img,
     color: g.last.t === t.last.t ? 'green' : playedThere ? 'yellow' : 'grey',
-    note: g.last.t !== t.last.t && playedThere ? 'загаданий грав тут' : g.last.current ? 'зараз' : 'завершив тут',
+    note: g.last.t !== t.last.t && playedThere ? PLAYED_HERE : g.last.current ? T('зараз', 'current') : T('завершив тут', 'ended career here'),
   };
 
   cells.league = {
-    text: g.country || '?',
+    text: placeT(g.country) || '?',
     color: g.country && g.country === t.country ? 'green' : g.country && t.countries.has(g.country) ? 'yellow' : 'grey',
-    note: g.country && g.country !== t.country && t.countries.has(g.country) ? 'загаданий грав тут' : null,
+    note: g.country && g.country !== t.country && t.countries.has(g.country) ? PLAYED_HERE : null,
   };
 
   cells.goals = { text: String(g.goals), ...numberCell(g.goals, t.goals, { yellow: [15, 0.25] }) };
   cells.caps = { text: String(g.caps), ...numberCell(g.caps, t.caps, { yellow: [10, 0.3] }) };
   cells.natGoals = { text: String(g.natGoals), ...numberCell(g.natGoals, t.natGoals, { yellow: [5, 0.3] }) };
 
-  if (!g.value) cells.value = { text: '?', color: 'grey', note: 'немає даних' };
-  else if (!t.value) cells.value = { text: money(g.value), color: 'grey', note: 'про загаданого немає даних' };
-  else cells.value = { text: money(g.value), ...numberCell(g.value, t.value, { green: [1e6, 0.1], yellow: [3e6, 0.35] }) };
+  if (!g.value) cells.value = { text: '?', color: 'grey', note: NO_DATA };
+  else if (!t.value) cells.value = { text: moneyT(g.value), color: 'grey', note: T('про загаданого немає даних', 'no data for the mystery player') };
+  else cells.value = { text: moneyT(g.value), ...numberCell(g.value, t.value, { green: [1e6, 0.1], yellow: [3e6, 0.35] }) };
 
   // трофеї — списком; ті, що є й у загаданого, позначені (match)
   const tt = new Set(t.trophies);
   const sameTrophies = g.trophies.length === tt.size && g.trophies.every((x) => tt.has(x));
   const someTrophies = g.trophies.some((x) => tt.has(x));
   cells.trophies = {
-    text: g.trophies.length ? '' : 'немає великих',
-    items: g.trophies.map((id) => ({ label: TROPHIES.find((x) => x.id === id).label, match: tt.has(id) })),
+    text: g.trophies.length ? '' : T('немає великих', 'no major ones'),
+    items: g.trophies.map((id) => { const x = TROPHIES.find((y) => y.id === id); return { label: T(x.label, x.en), match: tt.has(id) }; }),
     color: sameTrophies ? 'green' : someTrophies ? 'yellow' : 'grey',
-    note: !sameTrophies && someTrophies ? '✓ — є і в загаданого' : null,
+    note: !sameTrophies && someTrophies ? T('✓ — є і в загаданого', '✓ — mystery player has it too') : null,
   };
 
   const shared = sharedClubs(g, t);
   cells.shared = {
-    text: shared.length ? '' : 'немає',
+    text: shared.length ? '' : T('немає', 'none'),
     clubs: shared,
     color: shared.length ? 'yellow' : 'grey',
-    note: shared.some((x) => x.together) ? '🤝 — грали разом' : null,
+    note: shared.some((x) => x.together) ? T('🤝 — грали разом', '🤝 — played together') : null,
   };
 
   if (t.modern) {
-    if (!g.modern) cells.assists = { text: '—', color: 'grey', note: 'почав до 2012 — даних немає' };
-    else if (g.assists == null || t.assists == null) cells.assists = { text: g.assists == null ? '?' : String(g.assists), color: 'grey', note: 'немає даних' };
+    if (!g.modern) cells.assists = { text: '—', color: 'grey', note: T('почав до 2012 — даних немає', 'started before 2012 — no data') };
+    else if (g.assists == null || t.assists == null) cells.assists = { text: g.assists == null ? '?' : String(g.assists), color: 'grey', note: NO_DATA };
     else cells.assists = { text: String(g.assists), ...numberCell(g.assists, t.assists, { yellow: [10, 0.3] }) };
   }
   return columnsFor(t).map((c) => ({ id: c.id, ...cells[c.id] }));

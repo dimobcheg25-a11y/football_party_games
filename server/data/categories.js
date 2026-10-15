@@ -147,7 +147,42 @@ const positions = [
   { id: 'FW', label: 'Нападник', positionQid: 'Q280658', icon: '⚡' },
 ].map((c) => ({ ...c, type: 'position', colors: ['#9aa7ff', '#3a4699'] }));
 
+// Англійська версія (сайт двомовний): назва й коротка назва. label/short лишаються українськими рядками —
+// для англійської пари збирає той, хто показує (crossroads/room.js → T(label, en)).
+const EN = {
+  RMA: ['Real Madrid'], BAR: ['Barcelona'], ATM: ['Atlético Madrid', 'Atlético'], SEV: ['Sevilla'], VAL: ['Valencia'],
+  MUN: ['Manchester United', 'Man United'], LIV: ['Liverpool'], CHE: ['Chelsea'], ARS: ['Arsenal'], MCI: ['Manchester City', 'Man City'],
+  TOT: ['Tottenham'], NEW: ['Newcastle'], AVL: ['Aston Villa'], JUV: ['Juventus'], MIL: ['AC Milan'], INT: ['Inter'],
+  NAP: ['Napoli'], ROM: ['Roma'], LAZ: ['Lazio'], PAR: ['Parma'], BAY: ['Bayern Munich', 'Bayern'], BVB: ['Borussia Dortmund', 'Dortmund'],
+  PSG: ['PSG'], AJX: ['Ajax'], BEN: ['Benfica'], FCP: ['Porto'], DYN: ['Dynamo Kyiv'], SHA: ['Shakhtar Donetsk', 'Shakhtar'],
+  MET: ['Metalist Kharkiv', 'Metalist'], DNI: ['Dnipro'],
+  ESP: ['Spain'], FRA: ['France'], BRA: ['Brazil'], ARG: ['Argentina'], ENG: ['England'], GER: ['Germany'], ITA: ['Italy'],
+  POR: ['Portugal'], NED: ['Netherlands'], BEL: ['Belgium'], CRO: ['Croatia'], URU: ['Uruguay'], UKR: ['Ukraine'],
+  L_EPL: ['Played in the Premier League', 'Premier League'], L_SA: ['Played in Serie A', 'Serie A'], L_LL: ['Played in La Liga', 'La Liga'],
+  L_BL: ['Played in the Bundesliga', 'Bundesliga'], L_L1: ['Played in Ligue 1', 'Ligue 1'], L_MLS: ['Played in MLS (USA)', 'Played in MLS'],
+  L_CSL: ['Played in the Chinese Super League', 'Played in China'], L_UAE: ['Played in the UAE Pro League', 'Played in the UAE'],
+  BALLON: ["Ballon d'Or"], WC: ['World Cup winner'], UCL: ['Champions League winner', 'Won the UCL'], EURO: ['European Championship winner', 'Euro winner'],
+  COPA: ['Copa América winner', 'Copa América'], UEL: ['Europa League / UEFA Cup winner', 'Won the UEL'], BOOT: ['Golden Shoe'],
+  APL: ['Premier League champion'], CH_IT: ['Italian champion'], CH_ES: ['Spanish champion'], CH_DE: ['German champion'],
+  TS_EPL: ['Premier League season top scorer', 'PL top scorer'], TS_SA: ['Serie A season top scorer', 'Serie A top scorer'],
+  TS_LL: ['La Liga season top scorer', 'La Liga top scorer'], TS_BL: ['Bundesliga season top scorer', 'Bundesliga top scorer'],
+  TS_L1: ['Ligue 1 season top scorer', 'Ligue 1 top scorer'], GBOY: ['Golden Boy'],
+  G300: ['300+ career goals', '300+ goals'], G50N: ['50+ international goals'], CAPS100: ['100+ international caps'],
+  A100: ['100+ assists'], T100: ['€100m+ transfer', 'Transfer €100m+'], T80: ['€80m+ transfer', 'Transfer €80m+'],
+  UCL30: ['30+ Champions League goals', '30+ UCL goals'], JOURNEY: ['Journeyman: 10+ clubs', 'Journeyman 10+ clubs'],
+  CO_GUA: ['Played under Guardiola'], CO_FER: ['Played under Ferguson'], CO_MOU: ['Played under Mourinho'], CO_ZID: ['Played under Zidane'],
+  CO_KLO: ['Played under Klopp'], CO_ANC: ['Played under Ancelotti'], CO_WEN: ['Played under Wenger'],
+  CO_LUE: ['Played under Luis Enrique', 'Under Luis Enrique'], CO_LOB: ['Played under Lobanovskyi', 'Under Lobanovskyi'],
+  AC_BAR: ['Barcelona academy graduate', 'Barça academy'], AC_RMA: ['Real Madrid academy graduate', 'Real academy'],
+  AC_AJX: ['Ajax academy graduate', 'Ajax academy'], AC_MUN: ['Man United academy graduate', 'Man United academy'],
+  AC_DYN: ['Dynamo Kyiv academy graduate', 'Dynamo academy'], AC_BEN: ['Benfica academy graduate', 'Benfica academy'],
+  AC_SCP: ['Sporting academy graduate', 'Sporting academy'], AC_OL: ['Lyon academy graduate', 'Lyon academy'],
+  AC_BAY: ['Bayern academy graduate', 'Bayern academy'],
+  GK: ['Goalkeeper'], DF: ['Defender'], MF: ['Midfielder'], FW: ['Forward'],
+};
+
 const categories = [...clubs, ...nations, ...leagues, ...awards, ...stats, ...coaches, ...academies, ...positions];
+for (const c of categories) [c.en, c.enShort] = EN[c.id] || [c.label];
 const categoryById = new Map(categories.map((c) => [c.id, c]));
 
 module.exports = { categories, categoryById };

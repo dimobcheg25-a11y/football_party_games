@@ -374,6 +374,33 @@ async function main() {
   assert.strictEqual(firsts.size, 3, 'першим ходить будь-хто');
   console.log('✓ жереб черговості ходів');
 
+  // англійська: гравець з auth.lang 'en' отримує стан, події й помилки англійською (кирилиця — лише в іменах гравців бази)
+  const CYR = /[А-Яа-яІіЇїЄєҐґ]/;
+  const noCyr = (x, what) => {
+    const strip = (v) => (Array.isArray(v) ? v.map(strip) : v && typeof v === 'object'
+      ? Object.fromEntries(Object.entries(v).filter(([k]) => k !== 'uk' && k !== 'ru' && k !== 'aliases').map(([k, w]) => [k, strip(w)])) : v);
+    const text = JSON.stringify(strip(x));
+    assert.ok(!CYR.test(text), `${what}: кирилиця в англійській версії — ${text.match(/.{0,40}[А-Яа-яІіЇїЄєҐґ].{0,40}/)?.[0]}`);
+  };
+  const enGames = await (await fetch(`${URL}/api/games?lang=en`)).json();
+  assert.strictEqual(enGames.find((g) => g.id === 'crossroads').title, 'Football Crossroads');
+  const en1 = io(GAME, { auth: { lang: 'en' } });
+  const en2 = io(GAME, { auth: { lang: 'en' } });
+  const enRoom = await emit(en1, 'create', { name: 'Ann', turnSeconds: 0 });
+  const enStarted = nextState(en1, (s) => s.status === 'playing');
+  await emit(en2, 'join', { code: enRoom.code, name: 'Bob' });
+  let es = await enStarted;
+  noCyr(es, 'стан гри');
+  const first = es.turn === 0 ? en1 : en2;
+  const enMiss = nextState(en1, (s) => s.lastEvent?.type === 'miss');
+  await emit(first, 'move', { cell: 0, playerId: wrongFor(es, 0).id });
+  es = await enMiss;
+  noCyr(es, 'подія промаху');
+  const notTurn = await emit(first, 'move', { cell: 1, playerId: answerFor(es, 1).id });
+  assert.ok(notTurn.error && !CYR.test(notTurn.error), 'помилка англійською: ' + notTurn.error);
+  console.log('✓ англійська:', es.grid.rows.map((r) => r.label).join(', '), '| не «' + es.lastEvent.failed.join('», не «') + '» |', notTurn.error);
+  en1.close(); en2.close();
+
   console.log('\nУСІ ПЕРЕВІРКИ ПРОЙШЛИ');
   [a2, b, c, d, e, f].forEach((s) => s.close());
 }

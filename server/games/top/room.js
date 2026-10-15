@@ -3,6 +3,7 @@
 // Режими кімнати: own — кожен заповнює свій топ (чужі відповіді не видно, лише скільки знайшли);
 // turns — один топ на всіх, називаєте по черзі, помилки забирають життя. Соло — own на одного.
 // Обмеження налаштовуються: життя (помилки) і таймер раунду (own) або ходу (turns).
+const { T } = require('../../core/i18n'); // тексти помилок — парами (укр, англ)
 const { playerById } = require('../../data');
 const { BaseRoom } = require('../../core/base-room');
 const { topicById, topicsFor, fitsSize, SIZES, CATEGORIES, LEVELS } = require('./tops');
@@ -78,7 +79,7 @@ class TopRoom extends BaseRoom {
     let seat = this.rejoin(token, name);
     if (seat === -1) {
       seat = this.takeSeat(token, name);
-      if (seat === -1) return { error: 'Кімната вже заповнена — створи свою гру' };
+      if (seat === -1) return { error: T('Кімната вже заповнена — створи свою гру', 'The room is full — start your own game') };
       this.scores[seat] = 0;
     }
     this.touch();
@@ -113,13 +114,13 @@ class TopRoom extends BaseRoom {
 
   // ── серія
   start(seat) {
-    if (this.status === 'playing') return { error: 'Гра вже йде' };
-    if (seat !== this.host()) return { error: 'Почати гру може той, хто її створив' };
+    if (this.status === 'playing') return { error: T('Гра вже йде', 'The game is already on') };
+    if (seat !== this.host()) return { error: T('Почати гру може той, хто її створив', 'Only the room creator can start the game') };
     return this.startSeries();
   }
 
   startSeries() {
-    if (!topicsFor(this.options.categories, this.options.size).length) return { error: 'Немає тем для цих налаштувань' };
+    if (!topicsFor(this.options.categories, this.options.size).length) return { error: T('Немає тем для цих налаштувань', 'No topics for these settings') };
     this.scores = Array(this.capacity).fill(0);
     this.history = [];
     this.roundNo = 0;
@@ -153,13 +154,13 @@ class TopRoom extends BaseRoom {
 
   // Господар обирає тему (або випадкову — topicId не вказано).
   pickTopic(seat, topicId) {
-    if (this.phase !== 'pick') return { error: 'Зараз не обираємо тему' };
-    if (seat !== this.host()) return { error: 'Тему обирає господар кімнати' };
+    if (this.phase !== 'pick') return { error: T('Зараз не обираємо тему', 'Not picking a topic right now') };
+    if (seat !== this.host()) return { error: T('Тему обирає господар кімнати', 'The host picks the topic') };
     let topic;
     if (topicId == null) topic = this.randomTopic();
     else {
       topic = topicById.get(topicId);
-      if (!topic || !fitsSize(topic, this.options.size)) return { error: 'Такої теми немає' };
+      if (!topic || !fitsSize(topic, this.options.size)) return { error: T('Такої теми немає', 'No such topic') };
     }
     this.beginRound(topic);
     return { ok: true };
@@ -205,9 +206,9 @@ class TopRoom extends BaseRoom {
 
   // ── відповідь
   guess(seat, playerId) {
-    if (this.status !== 'playing' || this.phase !== 'guess') return { error: 'Зараз не можна відповідати' };
+    if (this.status !== 'playing' || this.phase !== 'guess') return { error: T('Зараз не можна відповідати', 'You can’t answer right now') };
     const player = playerById.get(playerId);
-    if (!player) return { error: 'Обери гравця зі списку' };
+    if (!player) return { error: T('Обери гравця зі списку', 'Pick a player from the list') };
     const places = this.slotsOf(player.id);
     this.touch();
     return this.options.mode === 'turns' ? this.guessTurns(seat, player, places) : this.guessOwn(seat, player, places);
@@ -215,8 +216,8 @@ class TopRoom extends BaseRoom {
 
   guessOwn(seat, player, places) {
     const b = this.board(seat);
-    if (b.done) return { error: 'Твій топ у цьому раунді вже закрито' };
-    if (places.some((i) => b.found.has(i)) || b.wrong.includes(player.id)) return { error: 'Цього гравця ти вже називав' };
+    if (b.done) return { error: T('Твій топ у цьому раунді вже закрито', 'Your top is already closed this round') };
+    if (places.some((i) => b.found.has(i)) || b.wrong.includes(player.id)) return { error: T('Цього гравця ти вже називав', 'You already named this player') };
     let res;
     if (places.length) {
       places.forEach((i) => b.found.add(i));
@@ -233,9 +234,9 @@ class TopRoom extends BaseRoom {
   }
 
   guessTurns(seat, player, places) {
-    if (this.order[this.turn] !== seat) return { error: 'Зараз не твій хід' };
-    if (places.some((i) => this.found.has(i))) return { error: 'Він уже на дошці' };
-    if (this.wrong.some((w) => w.playerId === player.id)) return { error: 'Його вже називали — його немає в топі' };
+    if (this.order[this.turn] !== seat) return { error: T('Зараз не твій хід', 'It’s not your turn') };
+    if (places.some((i) => this.found.has(i))) return { error: T('Він уже на дошці', 'He’s already on the board') };
+    if (this.wrong.some((w) => w.playerId === player.id)) return { error: T('Його вже називали — його немає в топі', 'Already named — he’s not in the top') };
     let res;
     if (places.length) {
       places.forEach((i) => this.found.set(i, seat));
@@ -253,7 +254,7 @@ class TopRoom extends BaseRoom {
 
   // Пас (по черзі) — як помилка: інакше можна було б пасувати безкінечно.
   pass(seat) {
-    if (this.options.mode !== 'turns' || this.phase !== 'guess' || this.order[this.turn] !== seat) return { error: 'Зараз не твій хід' };
+    if (this.options.mode !== 'turns' || this.phase !== 'guess' || this.order[this.turn] !== seat) return { error: T('Зараз не твій хід', 'It’s not your turn') };
     this.wrong.push({ seat, playerId: null });
     this.loseLife(seat);
     this.nextTurn();
@@ -288,7 +289,7 @@ class TopRoom extends BaseRoom {
 
   // Своїм топом у раунді більше не граєш (own).
   giveUp(seat) {
-    if (this.options.mode !== 'own' || this.phase !== 'guess') return { error: 'Зараз не можна' };
+    if (this.options.mode !== 'own' || this.phase !== 'guess') return { error: T('Зараз не можна', 'Not right now') };
     this.board(seat).done = true;
     this.checkProgress();
     this.changed();
@@ -296,7 +297,7 @@ class TopRoom extends BaseRoom {
   }
 
   next(seat) {
-    if (this.status !== 'playing' || this.phase !== 'reveal') return { error: 'Раунд ще йде' };
+    if (this.status !== 'playing' || this.phase !== 'reveal') return { error: T('Раунд ще йде', 'The round is still on') };
     this.nextVotes.add(seat);
     this.checkProgress();
     if (this.phase === 'reveal') this.changed();

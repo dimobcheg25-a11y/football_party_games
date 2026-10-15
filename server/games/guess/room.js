@@ -5,6 +5,7 @@ const { playerById } = require('../../data');
 const { BaseRoom } = require('../../core/base-room');
 const { poolFor, careerOf, ERAS, DIFFICULTIES } = require('../path/careers');
 const { profileOf, compare, columnsFor } = require('./compare');
+const { T } = require('../../core/i18n');
 
 // Очки: з першої спроби — MAX, з останньої — LAST, між ними рівномірно.
 const MAX_POINTS = 100;
@@ -35,7 +36,7 @@ function answerCells(target) {
   return compare(target, target).map((c) => {
     const cell = { ...c, color: 'green', arrow: null, note: null };
     if (c.items) cell.items = c.items.map((x) => ({ ...x, match: false }));
-    if (c.id === 'shared') Object.assign(cell, { clubs: c.clubs.map((x) => ({ ...x, together: false })), note: "уся кар'єра" });
+    if (c.id === 'shared') Object.assign(cell, { clubs: c.clubs.map((x) => ({ ...x, together: false })), note: T("уся кар'єра", 'whole career') });
     if (c.id === 'last') cell.note = c.note;
     return cell;
   });
@@ -78,7 +79,7 @@ class GuessRoom extends BaseRoom {
     let seat = this.rejoin(token, name);
     if (seat === -1) {
       seat = this.takeSeat(token, name);
-      if (seat === -1) return { error: 'Кімната вже заповнена — створи свою гру' };
+      if (seat === -1) return { error: T('Кімната вже заповнена — створи свою гру', 'The room is full — start your own game') };
       this.scores[seat] = 0;
     }
     this.touch();
@@ -108,8 +109,8 @@ class GuessRoom extends BaseRoom {
 
   // ── серія
   start(seat) {
-    if (this.status === 'playing') return { error: 'Гра вже йде' };
-    if (seat !== this.host()) return { error: 'Почати гру може той, хто її створив' };
+    if (this.status === 'playing') return { error: T('Гра вже йде', 'The game is already on') };
+    if (seat !== this.host()) return { error: T('Почати гру може той, хто її створив', 'Only the host can start the game') };
     return this.startSeries();
   }
 
@@ -117,7 +118,7 @@ class GuessRoom extends BaseRoom {
     const { era, difficulty, rounds } = this.options;
     // загадуємо лише тих, хто грав за збірну, — інакше колонка «Збірна» нічого не дає
     const pool = poolFor(era, difficulty).filter((p) => careerOf(p).nation && profileOf(p));
-    if (!pool.length) return { error: 'Немає гравців для цих налаштувань' };
+    if (!pool.length) return { error: T('Немає гравців для цих налаштувань', 'No players for these settings') };
     this.picks = shuffle(pool).slice(0, rounds);
     this.scores = Array(this.capacity).fill(0);
     this.history = [];
@@ -145,14 +146,14 @@ class GuessRoom extends BaseRoom {
   }
 
   guess(seat, playerId) {
-    if (this.status !== 'playing' || this.phase !== 'guess') return { error: 'Зараз не можна відповідати' };
-    if (this.done(seat)) return { error: 'Спроби в цьому раунді закінчились' };
+    if (this.status !== 'playing' || this.phase !== 'guess') return { error: T('Зараз не можна відповідати', "You can't answer right now") };
+    if (this.done(seat)) return { error: T('Спроби в цьому раунді закінчились', 'No attempts left this round') };
     const player = playerById.get(playerId);
     const profile = player && profileOf(player);
-    if (!player) return { error: 'Обери гравця зі списку' };
-    if (!profile) return { error: 'Про цього гравця бракує даних — обери іншого' };
+    if (!player) return { error: T('Обери гравця зі списку', 'Pick a player from the list') };
+    if (!profile) return { error: T('Про цього гравця бракує даних — обери іншого', 'Not enough data on this player — pick another one') };
     const mine = this.tries.get(seat) || [];
-    if (mine.some((t) => t.playerId === player.id)) return { error: 'Цього гравця ти вже називав' };
+    if (mine.some((t) => t.playerId === player.id)) return { error: T('Цього гравця ти вже називав', 'You already named this player') };
     const correct = player.id === this.answer.id;
     const cells = correct ? null : compare(profile, this.target);
     mine.push({ playerId: player.id, cells: correct ? answerCells(this.target) : cells, correct });
@@ -169,7 +170,7 @@ class GuessRoom extends BaseRoom {
   }
 
   giveUp(seat) {
-    if (this.status !== 'playing' || this.phase !== 'guess') return { error: 'Зараз не можна' };
+    if (this.status !== 'playing' || this.phase !== 'guess') return { error: T('Зараз не можна', 'Not right now') };
     if (this.done(seat)) return { ok: true };
     this.gaveUp.add(seat);
     this.touch();
@@ -179,7 +180,7 @@ class GuessRoom extends BaseRoom {
   }
 
   next(seat) {
-    if (this.status !== 'playing' || this.phase !== 'reveal') return { error: 'Раунд ще йде' };
+    if (this.status !== 'playing' || this.phase !== 'reveal') return { error: T('Раунд ще йде', 'The round is still on') };
     this.nextVotes.add(seat);
     this.checkProgress();
     if (this.phase === 'reveal') this.changed();

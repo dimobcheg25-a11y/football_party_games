@@ -25,8 +25,8 @@ const nextState = (s, pred = () => true) =>
     const h = (st) => { if (pred(st)) { s.off('state', h); res(st); } };
     s.on('state', h);
   });
-function bot() {
-  const s = io(GAME);
+function bot(lang) {
+  const s = io(GAME, lang ? { auth: { lang } } : undefined);
   s.on('state', (st) => last.set(s, st));
   return s;
 }
@@ -161,6 +161,32 @@ async function main() {
   console.log(`✓ турнір: матчів — ${st.history.length}, переможець — ${st.seats[st.winner].name} (${st.scores[st.winner]})`);
 
   for (const s of all) s.close();
+
+  // ── англійська: каталог, помилки й стан — без кирилиці (крім імен: поля uk/name); англійське ім'я в підказці теж заборонене
+  const CYR = /[А-Яа-яІіЇїЄєҐґ]/;
+  const noNames = (x) => JSON.stringify(x, (k, v) => (k === 'uk' || k === 'name' ? undefined : v));
+  const gamesEn = await (await fetch(`${URL}/api/games?lang=en`)).json();
+  assert.strictEqual(gamesEn.find((g) => g.id === 'spy').title, 'Football Spy');
+  const [e1, e2, e3] = [bot('en'), bot('en'), bot('en')];
+  const er = await emit(e1, 'create', { name: 'Ann', circles: 1, target: 7, difficulty: 'easy' });
+  await emit(e2, 'join', { code: er.code, name: 'Bob' });
+  const tooFew = await emit(e1, 'start');
+  assert.ok(tooFew.error && !CYR.test(tooFew.error), `помилка англійською: ${tooFew.error}`);
+  await emit(e3, 'join', { code: er.code, name: 'Cid' });
+  assert.ok((await emit(e1, 'start')).ok);
+  const es = await nextState(e1, (x) => x.status === 'playing');
+  assert.ok(!CYR.test(noNames(es)), `стан англійською: ${noNames(es).match(/.{0,40}[А-Яа-яІіЇїЄєҐґ].{0,40}/)?.[0]}`);
+  const eBy = [e1, e2, e3];
+  const turn = es.order[0];
+  if (turn !== es.testSpy) {
+    const word = playerById.get(es.testAnswer).name.split(' ').filter((w) => w.length >= 4).pop();
+    if (word) {
+      const bad = await emit(eBy[turn], 'clue', { text: `plays like ${word}` });
+      assert.ok(bad.error && !CYR.test(bad.error), `англійське ім'я в підказці заборонене: ${bad.error}`);
+    }
+  }
+  eBy.forEach((s) => s.close());
+  console.log('✓ англійська: каталог, помилки, стан, заборона імені');
   console.log('\nУСІ ПЕРЕВІРКИ «ШПИГУНА» ПРОЙШЛИ');
 }
 

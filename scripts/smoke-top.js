@@ -157,6 +157,29 @@ async function main() {
   c.close();
   d.close();
 
+  // ── англійська: теми, тексти рядків і помилки — англійською (назви клубів — з team-names-en.json, можуть бути неповні)
+  const cyr = /[А-Яа-яІіЇїЄєҐґ]/;
+  const listEn = await (await fetch(`${URL}/api/top/topics?categories=transfers,goals,assists,apps,cards&size=10&lang=en`)).json();
+  const badEn = listEn.filter((t) => t.kind !== 'club' && cyr.test(`${t.title} ${t.country || ''}`));
+  assert.deepStrictEqual(badEn.map((t) => t.title), [], 'теми (крім клубних) — англійською');
+  const en = io(GAME, { auth: { lang: 'en' } });
+  en.on('state', (x) => last.set(en, x));
+  res = await emit(en, 'create', { name: 'En', solo: true, size: 5, lives: 3, rounds: 1, categories: ['goals'], pick: 'host', roundSeconds: 0 });
+  assert.ok(res.ok);
+  st = await nextState(en, (x) => x.phase === 'pick');
+  res = await emit(en, 'pickTopic', { topicId: 'tournament:wc' });
+  assert.ok(res.ok, 'вибір теми');
+  st = await nextState(en, (x) => x.phase === 'guess');
+  assert.strictEqual(st.topic.title, 'All-time top scorers: World Cup');
+  assert.ok(!cyr.test(st.topic.note), 'примітка англійською');
+  res = await emit(en, 'guess', { playerId: 'no-such-player' });
+  assert.strictEqual(res.error, 'Pick a player from the list');
+  await emit(en, 'giveUp');
+  st = await nextState(en, (x) => x.phase === 'reveal');
+  assert.ok(st.slots.every((x) => !cyr.test(`${x.text} ${x.detail || ''}`)), 'рядки топу англійською');
+  en.disconnect();
+  console.log(`✓ англійська: ${listEn.length} тем, «${st.topic.title}», помилки й рядки — англійською`);
+
   console.log('\nУСІ ПЕРЕВІРКИ «ТОП-10» ПРОЙШЛИ');
 }
 

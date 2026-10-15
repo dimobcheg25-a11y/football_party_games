@@ -24,7 +24,7 @@
 .dot-p { width: 10px; height: 10px; border-radius: 50%; background: var(--pc); flex: none; }
 
 /* ── гра */
-.game-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; padding-right: 50px; }
+.game-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; padding-right: 100px; }
 .round-info { display: grid; gap: 2px; }
 .round-info b { font-family: var(--display); font-size: 18px; }
 .round-info span { font-size: 13px; color: var(--muted); }

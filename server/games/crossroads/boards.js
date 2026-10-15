@@ -2,11 +2,13 @@
 //   line   — перемагає той, хто першим збере `win` у ряд (горизонталь, вертикаль, діагональ);
 //   points — гра йде до кінця, кожна лінія з `win` своїх клітинок поспіль = 1 очко, перемагає той, у кого більше.
 
+const { T } = require('../../core/i18n');
+
 const BOARDS = {
-  classic: { size: 3, win: 3, scoring: 'line', maxPlayers: 2, label: 'Класика 3×3' },
-  five: { size: 5, win: 4, scoring: 'line', maxPlayers: 4, label: '5×5 · 4 в ряд' },
-  six: { size: 6, win: 4, scoring: 'line', maxPlayers: 4, label: '6×6 · 4 в ряд' },
-  lines: { size: 6, win: 3, scoring: 'points', maxPlayers: 4, label: '6×6 · збір ліній' },
+  classic: { size: 3, win: 3, scoring: 'line', maxPlayers: 2, label: T('Класика 3×3', 'Classic 3×3') },
+  five: { size: 5, win: 4, scoring: 'line', maxPlayers: 4, label: T('5×5 · 4 в ряд', '5×5 · 4 in a row') },
+  six: { size: 6, win: 4, scoring: 'line', maxPlayers: 4, label: T('6×6 · 4 в ряд', '6×6 · 4 in a row') },
+  lines: { size: 6, win: 3, scoring: 'points', maxPlayers: 4, label: T('6×6 · збір ліній', '6×6 · line hunt') },
 };
 
 // Усі відрізки довжини k на полі n×n (кожен — масив індексів клітинок).
