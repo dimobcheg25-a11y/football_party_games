@@ -34,13 +34,20 @@ async function fetchLabels(ids, out) {
 }
 
 (async () => {
-  const qids = Object.keys(teams).filter((q) => !teams[q].national);
-  const out = {};
+  // Продовжуємо з уже зібраного (перерване збирання не починається з нуля); --fresh — заново.
+  let out = {};
+  if (!process.argv.includes('--fresh')) try { out = JSON.parse(fs.readFileSync(OUT, 'utf8')); } catch { /* немає файлу */ }
+  for (const q in out) out[q] = short(out[q]) || out[q]; // старі записи — за поточними правилами short()
+  const qids = Object.keys(teams).filter((q) => !teams[q].national && !out[q]);
+  console.log(`Уже є ${Object.keys(out).length}, лишилось ${qids.length}`);
   for (let i = 0; i < qids.length; i += 50) {
     await fetchLabels(qids.slice(i, i + 50), out);
-    if (i % 500 === 0) console.log(`  ${i + 50}/${qids.length}`);
-    await sleep(150);
+    if (i % 500 === 0) {
+      console.log(`  ${Math.min(i + 50, qids.length)}/${qids.length}`);
+      fs.writeFileSync(OUT, JSON.stringify(out)); // проміжне збереження
+    }
+    await sleep(1000); // Wikidata швидко відповідає 429 на часті запити
   }
   fs.writeFileSync(OUT, JSON.stringify(out));
-  console.log(`Готово: ${Object.keys(out).length} з ${qids.length} клубів → ${path.relative(process.cwd(), OUT)}`);
+  console.log(`Готово: ${Object.keys(out).length} з ${Object.values(teams).filter((t) => !t.national).length} клубів → ${path.relative(process.cwd(), OUT)}`);
 })();

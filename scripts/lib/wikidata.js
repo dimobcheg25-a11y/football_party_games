@@ -1,6 +1,6 @@
 // Запити до Wikidata/Вікіпедії з повторами при обривах і лімітах. Спільне для скриптів збирання бази.
 
-const UA = 'football-games-grid9/1.0 (hobby project)';
+const UA = 'football-party-games/1.0 (https://github.com/dimobcheg25-a11y/football_party_games; hobby project)';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function getJson(url, headers = {}, attempt = 0) {
