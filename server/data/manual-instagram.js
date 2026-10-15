@@ -1,9 +1,10 @@
 // Підписники в Instagram для гри «Один на один» — з таблиці користувача «Top 200 Footballers Instagram Followers» (2025).
-// Зіставлено з базою за іменем; не знайшлись у базі: Cenk Tosun, Burak Yılmaz, Kaoru Mitoma, Mohamed Kudus.
+// Зіставлено з базою за іменем; не знайшлись у базі: Cenk Tosun, Burak Yılmaz, Kaoru Mitoma.
 // Оновлювати вручну: ключ — id гравця з players.json, значення — кількість підписників.
 module.exports = {
   date: '2025',
   followers: {
+    'mohammed-kudus': 2000000, // Mohammed Kudus (у таблиці — «Mohamed»)
     'cristiano-ronaldo': 640500000, // Cristiano Ronaldo
     'lionel-messi': 504000000, // Lionel Messi
     'neymar': 225000000, // Neymar

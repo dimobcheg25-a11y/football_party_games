@@ -261,7 +261,8 @@ class DuelRoom extends BaseRoom {
       round: this.pairNo || 0,
       rounds: this.streak ? null : this.options.rounds,
       question: q ? { id: q.id, group: q.group, title: q.title, unit: q.unit, note: q.note } : null,
-      pair: this.pair ? this.pair.map((x) => publicPlayer(x.p)) : null,
+      // «Хто старший?» — рік народження під іменем видав би відповідь, тож до відкриття його не показуємо
+      pair: this.pair ? this.pair.map((x) => ({ ...publicPlayer(x.p), ...(this.phase === 'guess' && this.question?.id === 'older' ? { born: null } : {}) })) : null,
       champion: this.streak && this.champion && this.pair?.[this.champion.side]?.p === this.champion.p ? this.champion.side : -1,
       // відповідь — лише після пари
       values: reveal ? this.pair.map((x) => ({ ...q.show(x.v, x.p) })) : null,
