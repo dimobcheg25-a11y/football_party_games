@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Футбольні ігри</title>
-  <meta name="description" content="Футбольні ігри онлайн з друзями: Футбольне перехрестя та інші." />
+  <meta name="description" content="Футбольні ігри онлайн — самому або з друзями: Футбольне перехрестя, Шлях футболіста, Вгадай гравця, Футбольний шпигун, Топ-10." />
   <meta name="theme-color" content="#0a1a12" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -18,14 +18,23 @@
   <main class="hub">
     <header class="hub-hero">
       <h1 class="hub-title">Футбольні <b>ігри</b></h1>
-      <p class="hub-tagline">Онлайн з друзями: створи кімнату, надішли посилання — і грайте.</p>
+      <p class="hub-tagline">Грай сам або з друзями: для гри разом створи кімнату й надішли посилання.</p>
     </header>
-    <section id="games" class="hub-games" aria-label="Ігри">
-      <a class="game-card" href="/crossroads/">
-        <span class="game-icon" aria-hidden="true">✕</span>
-        <span class="game-body"><b>Футбольне перехрестя</b><span>Хрестики-нулики футболістами.</span></span>
-      </a>
-    </section>
+    <div id="games" class="hub-games">
+      <section class="hub-group" aria-labelledby="solo-title">
+        <h2 class="group-title" id="solo-title"><span class="group-icon">🎮</span>Можна грати самому <small>і з друзями теж</small></h2>
+        <div class="group-list" id="solo-games"></div>
+      </section>
+      <section class="hub-group" aria-labelledby="friends-title">
+        <h2 class="group-title" id="friends-title"><span class="group-icon">👥</span>Тільки з друзями <small>потрібна компанія</small></h2>
+        <div class="group-list" id="friends-games">
+          <a class="game-card" href="/crossroads/">
+            <span class="game-icon" aria-hidden="true">✕</span>
+            <span class="game-body"><b>Футбольне перехрестя</b><span>Хрестики-нулики футболістами.</span></span>
+          </a>
+        </div>
+      </section>
+    </div>
   </main>
   <script src="/hub.js"></script>
 </body>

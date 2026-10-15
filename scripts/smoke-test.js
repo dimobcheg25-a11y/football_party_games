@@ -34,7 +34,8 @@ function wrongFor(state, cell) {
   const n = state.grid.size;
   const r = state.grid.rows[Math.floor(cell / n)].id;
   const c = state.grid.cols[cell % n].id;
-  return players.find((p) => !(matches(p, r) && matches(p, c)));
+  const used = new Set(state.usedIds || []); // уже названий гравець — це «повтор», а не помилка
+  return players.find((p) => !(matches(p, r) && matches(p, c)) && !used.has(p.id));
 }
 
 async function main() {
@@ -382,4 +383,7 @@ main()
     console.error('✗', err.message);
     process.exitCode = 1;
   })
-  .finally(() => server.kill());
+  .finally(() => {
+    server.kill();
+    if (process.exitCode) process.exit(); // при помилці відкриті сокети не мають тримати процес
+  });

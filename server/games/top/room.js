@@ -1,0 +1,398 @@
+// Партія «Топ-10»: серія раундів, у кожному — тема-топ (найдорожчі трансфери, бомбардири клубу…) і N порожніх рядків.
+// Гравці називають футболістів; хто в топі — стає на своє місце. Нижчі місця дають більше очок (перше всі знають).
+// Режими кімнати: own — кожен заповнює свій топ (чужі відповіді не видно, лише скільки знайшли);
+// turns — один топ на всіх, називаєте по черзі, помилки забирають життя. Соло — own на одного.
+// Обмеження налаштовуються: життя (помилки) і таймер раунду (own) або ходу (turns).
+const { playerById } = require('../../data');
+const { BaseRoom } = require('../../core/base-room');
+const { topicById, topicsFor, SIZES, CATEGORIES } = require('./tops');
+
+const MAX_PLAYERS = 8;
+const ALLOWED_LIVES = [0, 1, 3, 5]; // 0 — без обмеження помилок
+const ALLOWED_ROUND_SECONDS = [0, 120, 180, 300];
+const ALLOWED_TURN_SECONDS = [0, 20, 30, 60];
+const ALLOWED_ROUNDS = [3, 5, 10];
+
+// Очки за місце: перше — 1, останнє — 10, між ними рівномірно.
+const pointsFor = (i, size) => (size === 1 ? 10 : 1 + Math.round((9 * i) / (size - 1)));
+
+function publicPlayer(p) {
+  return { id: p.id, name: p.name, uk: p.uk, photo: p.photo };
+}
+
+const pick = (list) => list[Math.floor(Math.random() * list.length)];
+
+class TopRoom extends BaseRoom {
+  constructor(code, onChange, opts = {}) {
+    super(code, onChange, opts.solo ? 1 : MAX_PLAYERS);
+    this.solo = !!opts.solo;
+    const categories = (Array.isArray(opts.categories) ? opts.categories : []).filter((c) => CATEGORIES[c]);
+    const mode = !this.solo && opts.mode === 'turns' ? 'turns' : 'own';
+    let lives = ALLOWED_LIVES.includes(Number(opts.lives)) ? Number(opts.lives) : 3;
+    if (mode === 'turns' && !lives) lives = 3; // по черзі без життів раунд ніколи б не скінчився
+    this.options = {
+      categories: categories.length ? [...new Set(categories)] : Object.keys(CATEGORIES),
+      size: SIZES.includes(Number(opts.size)) ? Number(opts.size) : 10,
+      mode,
+      lives,
+      roundSeconds: ALLOWED_ROUND_SECONDS.includes(Number(opts.roundSeconds)) ? Number(opts.roundSeconds) : this.solo ? 0 : 180,
+      turnSeconds: ALLOWED_TURN_SECONDS.includes(Number(opts.turnSeconds)) ? Number(opts.turnSeconds) : 30,
+      rounds: ALLOWED_ROUNDS.includes(Number(opts.rounds)) ? Number(opts.rounds) : 5,
+      pick: opts.pick === 'host' ? 'host' : 'random',
+    };
+    this.status = 'waiting'; // waiting | playing | finished
+    this.scores = Array(this.capacity).fill(0);
+    this.history = []; // [{ title, results: { seat: очки } }]
+    this.usedTopics = new Set();
+    this.resetRound();
+  }
+
+  resetRound() {
+    clearTimeout(this.timer);
+    this.phase = null; // pick | guess | reveal
+    this.topic = null;
+    this.slots = [];
+    this.roundPoints = {};
+    this.nextVotes = new Set();
+    this.deadline = null;
+    // own: свій топ кожного
+    this.boards = new Map(); // seat → { found: Set(місце), wrong: [id], done }
+    // turns: спільний топ
+    this.found = new Map(); // місце → seat
+    this.wrong = []; // [{ seat, playerId }]
+    this.lives = new Map(); // seat → скільки лишилось
+    this.order = [];
+    this.turn = -1;
+  }
+
+  // Господар — перший, хто зараз онлайн (щоб офлайн-господар не тримав вибір теми).
+  host() {
+    const present = this.presentSeats();
+    return present.find((i) => this.seats[i].connected) ?? present[0] ?? -1;
+  }
+
+  // ── вхід/вихід
+  join(token, name) {
+    let seat = this.rejoin(token, name);
+    if (seat === -1) {
+      seat = this.takeSeat(token, name);
+      if (seat === -1) return { error: 'Кімната вже заповнена — створи свою гру' };
+      this.scores[seat] = 0;
+    }
+    this.touch();
+    if (this.solo && this.status === 'waiting') {
+      const res = this.startSeries();
+      if (res.error) return res;
+    } else {
+      this.changed();
+    }
+    return { seat };
+  }
+
+  leave(seat) {
+    this.seats[seat] = null;
+    this.boards.delete(seat);
+    this.touch();
+    if (this.status === 'playing') {
+      if (this.options.mode === 'turns' && this.phase === 'guess' && this.order[this.turn] === seat) this.nextTurn();
+      this.checkProgress();
+    }
+    this.changed();
+  }
+
+  setConnected(token, connected) {
+    const seat = this.seatOf(token);
+    if (seat === -1) return;
+    Object.assign(this.seats[seat], { connected, offlineSince: connected ? null : Date.now() });
+    this.touch();
+    if (this.status === 'playing') this.checkProgress();
+    this.changed();
+  }
+
+  // ── серія
+  start(seat) {
+    if (this.status === 'playing') return { error: 'Гра вже йде' };
+    if (seat !== this.host()) return { error: 'Почати гру може той, хто її створив' };
+    return this.startSeries();
+  }
+
+  startSeries() {
+    if (!topicsFor(this.options.categories, this.options.size).length) return { error: 'Немає тем для цих налаштувань' };
+    this.scores = Array(this.capacity).fill(0);
+    this.history = [];
+    this.roundNo = 0;
+    this.status = 'playing';
+    this.nextRound();
+    return { ok: true };
+  }
+
+  nextRound() {
+    this.resetRound();
+    if (this.roundNo >= this.options.rounds) return this.finish();
+    this.roundNo++;
+    if (this.options.pick === 'host') {
+      this.phase = 'pick';
+      return this.changed();
+    }
+    this.beginRound(this.randomTopic());
+  }
+
+  randomTopic() {
+    const all = topicsFor(this.options.categories, this.options.size);
+    // спершу обираємо категорію (щоб трансферних тем-клубів не було в рази більше), потім тему
+    const cats = [...new Set(all.map((t) => t.category))];
+    const cat = pick(cats);
+    const fresh = all.filter((t) => t.category === cat && !this.usedTopics.has(t.id));
+    return pick(fresh.length ? fresh : all.filter((t) => t.category === cat));
+  }
+
+  // Господар обирає тему (або випадкову — topicId не вказано).
+  pickTopic(seat, topicId) {
+    if (this.phase !== 'pick') return { error: 'Зараз не обираємо тему' };
+    if (seat !== this.host()) return { error: 'Тему обирає господар кімнати' };
+    let topic;
+    if (topicId == null) topic = this.randomTopic();
+    else {
+      topic = topicById.get(topicId);
+      if (!topic || topic.entries.length < this.options.size) return { error: 'Такої теми немає' };
+    }
+    this.beginRound(topic);
+    return { ok: true };
+  }
+
+  beginRound(topic) {
+    this.topic = topic;
+    this.usedTopics.add(topic.id);
+    this.slots = topic.entries.slice(0, this.options.size);
+    this.phase = 'guess';
+    if (this.options.mode === 'turns') {
+      // черга зсувається з кожним раундом, щоб першим ходив не завжди той самий
+      const present = this.presentSeats();
+      const shift = (this.roundNo - 1) % Math.max(1, present.length);
+      this.order = [...present.slice(shift), ...present.slice(0, shift)];
+      for (const s of this.order) this.lives.set(s, this.options.lives);
+      this.turn = -1;
+      this.nextTurn();
+    } else {
+      const sec = this.options.roundSeconds;
+      this.deadline = sec ? Date.now() + sec * 1000 : null;
+      if (sec) this.timer = setTimeout(() => this.endRound(), sec * 1000);
+    }
+    this.changed();
+  }
+
+  slotsOf(playerId) {
+    return this.slots.map((e, i) => (e.p.id === playerId ? i : -1)).filter((i) => i >= 0);
+  }
+
+  board(seat) {
+    if (!this.boards.has(seat)) this.boards.set(seat, { found: new Set(), wrong: [], done: false });
+    return this.boards.get(seat);
+  }
+
+  addPoints(seat, places) {
+    const pts = places.reduce((s, i) => s + pointsFor(i, this.slots.length), 0);
+    this.scores[seat] += pts;
+    this.roundPoints[seat] = (this.roundPoints[seat] || 0) + pts;
+    return pts;
+  }
+
+  // ── відповідь
+  guess(seat, playerId) {
+    if (this.status !== 'playing' || this.phase !== 'guess') return { error: 'Зараз не можна відповідати' };
+    const player = playerById.get(playerId);
+    if (!player) return { error: 'Обери гравця зі списку' };
+    const places = this.slotsOf(player.id);
+    this.touch();
+    return this.options.mode === 'turns' ? this.guessTurns(seat, player, places) : this.guessOwn(seat, player, places);
+  }
+
+  guessOwn(seat, player, places) {
+    const b = this.board(seat);
+    if (b.done) return { error: 'Твій топ у цьому раунді вже закрито' };
+    if (places.some((i) => b.found.has(i)) || b.wrong.includes(player.id)) return { error: 'Цього гравця ти вже називав' };
+    let res;
+    if (places.length) {
+      places.forEach((i) => b.found.add(i));
+      res = { ok: true, correct: true, places, points: this.addPoints(seat, places) };
+      if (b.found.size === this.slots.length) b.done = true;
+    } else {
+      b.wrong.push(player.id);
+      if (this.options.lives && b.wrong.length >= this.options.lives) b.done = true;
+      res = { ok: true, correct: false };
+    }
+    this.checkProgress();
+    this.changed();
+    return res;
+  }
+
+  guessTurns(seat, player, places) {
+    if (this.order[this.turn] !== seat) return { error: 'Зараз не твій хід' };
+    if (places.some((i) => this.found.has(i))) return { error: 'Він уже на дошці' };
+    if (this.wrong.some((w) => w.playerId === player.id)) return { error: 'Його вже називали — його немає в топі' };
+    let res;
+    if (places.length) {
+      places.forEach((i) => this.found.set(i, seat));
+      res = { ok: true, correct: true, places, points: this.addPoints(seat, places) };
+    } else {
+      this.wrong.push({ seat, playerId: player.id });
+      this.loseLife(seat);
+      res = { ok: true, correct: false };
+    }
+    if (this.found.size === this.slots.length) this.endRound();
+    else this.nextTurn();
+    this.changed();
+    return res;
+  }
+
+  // Пас (по черзі) — як помилка: інакше можна було б пасувати безкінечно.
+  pass(seat) {
+    if (this.options.mode !== 'turns' || this.phase !== 'guess' || this.order[this.turn] !== seat) return { error: 'Зараз не твій хід' };
+    this.wrong.push({ seat, playerId: null });
+    this.loseLife(seat);
+    this.nextTurn();
+    this.changed();
+    return { ok: true };
+  }
+
+  loseLife(seat) {
+    this.lives.set(seat, Math.max(0, (this.lives.get(seat) || 0) - 1));
+  }
+
+  // Наступний у черзі, хто ще в грі (має життя, онлайн); нікого — раунд закінчено.
+  nextTurn() {
+    clearTimeout(this.timer);
+    const n = this.order.length;
+    for (let k = 1; k <= n; k++) {
+      const s = this.order[(this.turn + k) % n];
+      if (this.seats[s]?.connected && this.lives.get(s) > 0) {
+        this.turn = (this.turn + k) % n;
+        const sec = this.options.turnSeconds;
+        this.deadline = sec ? Date.now() + sec * 1000 : null;
+        if (sec) {
+          this.timer = setTimeout(() => {
+            this.pass(this.order[this.turn]);
+          }, sec * 1000);
+        }
+        return;
+      }
+    }
+    this.endRound();
+  }
+
+  // Своїм топом у раунді більше не граєш (own).
+  giveUp(seat) {
+    if (this.options.mode !== 'own' || this.phase !== 'guess') return { error: 'Зараз не можна' };
+    this.board(seat).done = true;
+    this.checkProgress();
+    this.changed();
+    return { ok: true };
+  }
+
+  next(seat) {
+    if (this.status !== 'playing' || this.phase !== 'reveal') return { error: 'Раунд ще йде' };
+    this.nextVotes.add(seat);
+    this.checkProgress();
+    if (this.phase === 'reveal') this.changed();
+    return { ok: true };
+  }
+
+  checkProgress() {
+    const online = this.presentSeats().filter((i) => this.seats[i].connected);
+    if (this.phase === 'guess') {
+      if (this.options.mode === 'own') {
+        if (online.length && online.every((i) => this.board(i).done)) this.endRound();
+      } else if (!this.seats[this.order[this.turn]]?.connected) {
+        this.nextTurn();
+      }
+    } else if (this.phase === 'reveal') {
+      if (online.length && online.every((i) => this.nextVotes.has(i))) this.nextRound();
+    }
+  }
+
+  endRound() {
+    if (this.phase !== 'guess') return;
+    clearTimeout(this.timer);
+    this.phase = 'reveal';
+    this.deadline = null;
+    this.history.push({ title: this.topic.title, results: { ...this.roundPoints } });
+    this.changed();
+  }
+
+  finish() {
+    clearTimeout(this.timer);
+    this.status = 'finished';
+    this.phase = null;
+    this.deadline = null;
+    this.changed();
+  }
+
+  slotFull(i) {
+    const e = this.slots[i];
+    return { player: publicPlayer(e.p), text: e.text, detail: e.detail, points: pointsFor(i, this.slots.length) };
+  }
+
+  publicState() {
+    const reveal = this.phase === 'reveal';
+    const turns = this.options.mode === 'turns';
+    const slots = this.slots.map((_, i) => {
+      if (reveal) {
+        const by = turns ? (this.found.has(i) ? [this.found.get(i)] : []) : [...this.boards].filter(([, b]) => b.found.has(i)).map(([s]) => s);
+        return { ...this.slotFull(i), by };
+      }
+      if (turns && this.found.has(i)) return { ...this.slotFull(i), by: [this.found.get(i)] };
+      return { points: pointsFor(i, this.slots.length) };
+    });
+    const progress = {};
+    if (!turns) {
+      for (const i of this.presentSeats()) {
+        const b = this.boards.get(i);
+        progress[i] = { found: b ? b.found.size : 0, wrong: b ? b.wrong.length : 0, done: b ? b.done : false };
+      }
+    }
+    const state = {
+      code: this.code,
+      solo: this.solo,
+      options: this.options,
+      capacity: this.capacity,
+      seats: this.publicSeats(),
+      host: this.host(),
+      status: this.status,
+      phase: this.phase,
+      round: this.roundNo || 0,
+      rounds: this.options.rounds,
+      topic: this.topic ? { id: this.topic.id, title: this.topic.title, note: this.topic.note, category: this.topic.category } : null,
+      slots,
+      progress,
+      // по черзі: хто ходить, життя, хто кого назвав мимо
+      order: this.order,
+      active: turns && this.phase === 'guess' ? this.order[this.turn] ?? -1 : -1,
+      lives: Object.fromEntries(this.lives),
+      wrong: turns ? this.wrong.map((w) => ({ seat: w.seat, player: w.playerId ? publicPlayer(playerById.get(w.playerId)) : null })) : [],
+      roundPoints: this.roundPoints,
+      nextVotes: [...this.nextVotes],
+      scores: this.scores,
+      deadline: this.deadline,
+      serverNow: Date.now(),
+      history: this.status === 'finished' ? this.history : [],
+    };
+    if (process.env.TOP_TEST_ANSWER === '1' && this.slots.length) state.testAnswer = this.slots.map((e) => e.p.id); // лише для автотесту
+    return state;
+  }
+
+  // own: свої знайдені й помилки бачить лише сам гравець.
+  privateState(seat) {
+    if (this.options.mode !== 'own' || !this.boards.has(seat)) return { mine: null };
+    const b = this.boards.get(seat);
+    return {
+      mine: {
+        found: [...b.found].map((i) => ({ i, ...this.slotFull(i) })),
+        wrong: b.wrong.map((id) => publicPlayer(playerById.get(id))),
+        done: b.done,
+        livesLeft: this.options.lives ? Math.max(0, this.options.lives - b.wrong.length) : null,
+      },
+    };
+  }
+}
+
+module.exports = { TopRoom, pointsFor, ALLOWED_LIVES, ALLOWED_ROUND_SECONDS, ALLOWED_TURN_SECONDS, ALLOWED_ROUNDS };

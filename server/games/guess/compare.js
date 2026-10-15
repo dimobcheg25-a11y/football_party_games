@@ -21,6 +21,8 @@ const SHORT = {
   'Центральноафриканська Республіка': 'ЦАР',
 };
 const shortCountry = (name) => (name ? SHORT[name] || name : null);
+// Назва збірної: британські — окремо, довгі офіційні назви — коротко (СРСР, США…).
+const nationName = (q) => NATION_NAMES[q] || shortCountry(teams[q]?.country || teams[q]?.name);
 
 // Чемпіонат клубу. У Wikidata всі британські клуби — «Сполучене Королівство», але чемпіонати різні:
 // шотландські й північноірландські — окремо, решта (і валлійські Кардіфф, Свонсі, Рексем…) грають в англійській лізі.
@@ -105,7 +107,7 @@ function profileOf(p) {
   let nation = null;
   if (c.nation) {
     const t = teams[c.nation.t] || {};
-    const name = NATION_NAMES[c.nation.t] || shortCountry(t.country || t.name);
+    const name = nationName(c.nation.t);
     const flag = NATION_FLAGS[c.nation.t];
     nation = {
       name,
@@ -245,4 +247,4 @@ function compare(g, t) {
   return COLUMNS.map((c) => ({ id: c.id, ...cells[c.id] }));
 }
 
-module.exports = { profileOf, compare, COLUMNS, TROPHIES, money };
+module.exports = { profileOf, compare, leagueOf, nationName, COLUMNS, TROPHIES, money };

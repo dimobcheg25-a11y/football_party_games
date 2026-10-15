@@ -1,6 +1,8 @@
 // Трансфери й ринкова вартість з відкритого набору transfermarkt-datasets (CC0, github.com/dcaribou/transfermarkt-datasets)
 // → server/data/transfers.json: { [id гравця]: { maxValue, value, topFee, topFrom, topTo, topSeason, totalFees, paid, pos } } (євро;
-//   pos — основна позиція з Transfermarkt англійською, напр. «Left Winger»: точніша за перелік позицій у Wikidata).
+//   pos — основна позиція з Transfermarkt англійською, напр. «Left Winger»: точніша за перелік позицій у Wikidata;
+//   fees — усі платні трансфери [сума, клуб-продавець, клуб-покупець, сезон] з id клубів Transfermarkt)
+// → server/data/transfer-clubs.json: { [id клубу TM]: { name, league (код ліги TM, якщо відстежується), team (наш qid, якщо зіставили) } }.
 // Гравців зіставляємо за ID Transfermarkt у Wikidata (P2446), запасний варіант — ім'я + рік народження.
 // Покриття: ті, хто грав у відстежуваних лігах приблизно з 2012 р.; легенди 90-х здебільшого без даних.
 // Запуск: npm run build-transfers (після build-players).
@@ -9,10 +11,12 @@ const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
 const { sparql, values, qidOf, sleep } = require('./lib/wikidata');
-const { players, normalize } = require('../server/data');
+const { players, playerById, normalize } = require('../server/data');
+const { careerOf } = require('../server/games/path/careers');
 
 const BASE = 'https://pub-e682421888d945d684bcae8890b0ec20.r2.dev/data/';
 const OUT = path.join(__dirname, '..', 'server', 'data', 'transfers.json');
+const OUT_CLUBS = path.join(__dirname, '..', 'server', 'data', 'transfer-clubs.json');
 
 async function downloadCsv(name) {
   console.log(`Завантажую ${name}…`);
@@ -59,7 +63,7 @@ async function transfermarktIds() {
 const num = (s) => (s ? Math.round(Number(s)) : 0);
 
 async function main() {
-  const [tmPlayers, tmTransfers, tmIds] = [await downloadCsv('players.csv.gz'), await downloadCsv('transfers.csv.gz'), await transfermarktIds()];
+  const [tmPlayers, tmTransfers, tmClubs, tmIds] = [await downloadCsv('players.csv.gz'), await downloadCsv('transfers.csv.gz'), await downloadCsv('clubs.csv.gz'), await transfermarktIds()];
   const byTm = new Map(tmPlayers.map((p) => [p.player_id, p]));
 
   // запасний ключ: ім'я + рік народження (лише якщо такий гравець у TM один)
@@ -76,6 +80,8 @@ async function main() {
   }
 
   const result = {};
+  const clubNames = new Map(); // id клубу TM → назва
+  const votes = new Map(); // id клубу TM → { n, teams: Map(qid → скільки гравців) }
   let viaWikidata = 0, viaName = 0;
   for (const p of players) {
     let tm = tmIds.has(p.qid) ? byTm.get(tmIds.get(p.qid)) : null;
@@ -97,8 +103,45 @@ async function main() {
       pos: tm.sub_position || null,
     };
     if (top) Object.assign(entry, { topFee: num(top.transfer_fee), topFrom: top.from_club_name, topTo: top.to_club_name, topSeason: top.transfer_season });
+    if (list.length) entry.fees = list.map((t) => [num(t.transfer_fee), Number(t.from_club_id), Number(t.to_club_id), t.transfer_season]);
     if (entry.maxValue || entry.paid) result[p.id] = entry;
+    for (const t of list) {
+      clubNames.set(Number(t.from_club_id), t.from_club_name);
+      clubNames.set(Number(t.to_club_id), t.to_club_name);
+      // клуб TM → наш клуб: які клуби з кар'єри цього гравця (з Вікіпедії) могли бути ним
+      for (const id of [Number(t.from_club_id), Number(t.to_club_id)]) {
+        if (!votes.has(id)) votes.set(id, { n: 0, teams: new Map() });
+        const v = votes.get(id);
+        v.n++;
+        for (const q of new Set((careerOf(p)?.clubs || []).map((x) => x.t))) v.teams.set(q, (v.teams.get(q) || 0) + 1);
+      }
+    }
   }
+
+  // Ручні доповнення: відомі трансфери, яких немає в наборі (переважно гравці, що вже завершили кар'єру).
+  const idByName = new Map([...clubNames].map(([id, name]) => [name, id]));
+  for (const [id, fee, from, to, season] of require('../server/data/manual-transfers')) {
+    const [f, t] = [idByName.get(from), idByName.get(to)];
+    if (!playerById.has(id) || f == null || t == null) { console.warn(`  ручний трансфер пропущено: ${id} ${from} → ${to}`); continue; }
+    const tm = (result[id] ||= { tm: null, maxValue: null, value: null, totalFees: 0, paid: 0, pos: null });
+    tm.fees ||= [];
+    if (tm.fees.some((x) => x[2] === t && x[3] === season)) continue;
+    tm.fees.push([Math.round(fee * 1e6), f, t, season]);
+    tm.totalFees += Math.round(fee * 1e6);
+    tm.paid++;
+    if (!tm.topFee || fee * 1e6 > tm.topFee) Object.assign(tm, { topFee: Math.round(fee * 1e6), topFrom: from, topTo: to, topSeason: season });
+  }
+
+  // Наш клуб для клубу TM — той, що є в кар'єрах більшості гравців, які туди/звідти переходили (і щонайменше 3 таких гравці).
+  const leagueOf = new Map(tmClubs.map((c) => [Number(c.club_id), c.domestic_competition_id]));
+  const clubs = {};
+  for (const [id, name] of clubNames) {
+    const v = votes.get(id);
+    const [team, n] = [...(v?.teams || [])].sort((a, b) => b[1] - a[1])[0] || [];
+    clubs[id] = { name, league: leagueOf.get(id) || null, team: n >= 3 && n >= v.n * 0.6 ? team : null };
+  }
+  fs.writeFileSync(OUT_CLUBS, JSON.stringify(clubs));
+  console.log(`Клубів: ${clubNames.size}, зіставлено з нашими: ${Object.values(clubs).filter((c) => c.team).length}`);
 
   fs.writeFileSync(OUT, JSON.stringify(result));
   console.log(`Готово: ${Object.keys(result).length} з ${players.length} гравців (Wikidata: ${viaWikidata}, за іменем: ${viaName}) → ${path.relative(process.cwd(), OUT)}`);

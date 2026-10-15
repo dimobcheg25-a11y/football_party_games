@@ -1,204 +1,37 @@
+// «Шлях футболіста» — клієнт. Спільне (налаштування, вхід, лобі, чат, вихід) — /shared/room-client.js; тут — етапи кар'єри, підказки, підсумок.
 (() => {
-  const $ = (sel) => document.querySelector(sel);
-  const socket = io('/path');
+  const { ERA: ERA_LABELS, DIFF: DIFF_LABELS } = RoomClient.LABELS;
+  const TOGGLE_LABELS = { showYears: 'Роки', showStats: 'Матчі й голи' };
 
-  // ── локальне сховище (може бути недоступне в приватному режимі)
-  const store = {
-    get(key) { try { return localStorage.getItem(key); } catch { return null; } },
-    set(key, value) { try { localStorage.setItem(key, value); } catch { /* ignore */ } },
-    del(key) { try { localStorage.removeItem(key); } catch { /* ignore */ } },
-  };
-
-  const DIFFICULTY_HINTS = {
-    easy: 'Топ-400 найвідоміших: зірки й основні гравці топ-клубів.',
-    normal: 'Топ-800: відомі гравці топ-ліг і збірних (українців — трохи більше).',
-    fan: 'Топ-1300: для тих, хто дивиться футбол щотижня.',
-    hard: 'Топ-1900: включно з гравцями УПЛ 2000-х і середняками топ-ліг.',
-    expert: 'Уся база — включно з тими, кого пам’ятають лише справжні фанати.',
-  };
-  const ERA_LABELS = { all: 'Усі гравці', modern: 'Сучасні', retired: 'Завершили кар’єру' };
-  const DIFF_LABELS = { easy: '🟢 Легкий', normal: '🟡 Звичайний', fan: '🟣 Фанат', hard: '🔴 Складний', expert: '⚫ Експерт' };
-  const SEAT_COLORS = ['#4fb3ff', '#ff6b8b', '#ffb547', '#a98bff', '#5fe0b5', '#ff8a4c', '#e0e86a', '#f08fe0'];
-
-  // налаштування нової гри (запам'ятовуємо між візитами)
-  const defaults = { era: 'all', difficulty: 'normal', start: 'first', rounds: '10', turnSeconds: '30', showYears: true, showStats: true };
-  let setup = { ...defaults };
-  try { setup = { ...defaults, ...JSON.parse(store.get('path:setup') || '{}') }; } catch { /* ignore */ }
-  if (!ERA_LABELS[setup.era]) setup.era = 'all';
-  if (!DIFF_LABELS[setup.difficulty]) setup.difficulty = 'normal';
-
-  let session = null; // { code, token }
-  try { session = JSON.parse(store.get('path:session') || 'null'); } catch { /* ignore */ }
   let state = null;
   let mySeat = -1;
-  let clockOffset = 0;
-  let inviteCode = new URLSearchParams(location.search).get('room');
 
-  // ── дрібниці
-  const escapeHtml = (s) =>
-    String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const initials = (name) => {
-    const parts = String(name).split(/\s+/).filter(Boolean);
-    return (parts.length > 1 ? parts[0][0] + parts[parts.length - 1][0] : String(name).slice(0, 2)).toUpperCase();
-  };
-  const plural = (n, one, few, many) => {
-    const m10 = n % 10, m100 = n % 100;
-    if (m10 === 1 && m100 !== 11) return one;
-    if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
-    return many;
-  };
-  const seatName = (i) => (i === mySeat ? 'Ти' : state?.seats[i]?.name || 'Гравець');
-  const seatStyle = (i) => `--pc:${SEAT_COLORS[i % SEAT_COLORS.length]}`;
-  const roomLink = (code) => `${location.origin}${location.pathname}?room=${code}`;
-  const emit = (event, data) => new Promise((res) => socket.emit(event, data, (r) => res(r || {})));
-
-  function showScreen(name) {
-    for (const s of ['home', 'lobby', 'game', 'final']) $(`#screen-${s}`).classList.toggle('hidden', s !== name);
-    const inRoom = name !== 'home' && state && !state.solo;
-    $('#chat-fab').classList.toggle('hidden', !inRoom);
-    if (!inRoom) toggleChat(false);
-  }
-
-  let toastTimer = null;
-  function toast(text, kind = '') {
-    const el = $('#toast');
-    el.textContent = text;
-    el.className = `toast show ${kind}`;
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => (el.className = 'toast'), 2600);
-  }
-
-  // ── головний екран
-  function renderSetup() {
-    document.querySelectorAll('[data-opt]').forEach((group) => {
-      const key = group.dataset.opt;
-      group.querySelectorAll('.chip').forEach((chip) => {
-        const on = String(setup[key]) === chip.dataset.val;
-        chip.classList.toggle('active', on);
-        chip.setAttribute('role', 'radio');
-        chip.setAttribute('aria-checked', on);
+  const g = RoomClient.create({
+    id: 'path',
+    title: 'Шлях футболіста',
+    defaults: { era: 'all', difficulty: 'normal', start: 'first', rounds: '10', turnSeconds: '30', showYears: true, showStats: true },
+    fixSetup(setup) {
+      if (!ERA_LABELS[setup.era]) setup.era = 'all';
+      if (!DIFF_LABELS[setup.difficulty]) setup.difficulty = 'normal';
+    },
+    onSetup(setup) {
+      document.querySelectorAll('[data-toggle]').forEach((chip) => {
+        chip.textContent = `${setup[chip.dataset.toggle] ? '✓ ' : ''}${TOGGLE_LABELS[chip.dataset.toggle]}`;
       });
-    });
-    document.querySelectorAll('[data-toggle]').forEach((chip) => {
-      const on = !!setup[chip.dataset.toggle];
-      chip.classList.toggle('active', on);
-      chip.setAttribute('aria-pressed', on);
-      chip.textContent = `${on ? '✓ ' : ''}${chip.dataset.toggle === 'showYears' ? 'Роки' : 'Матчі й голи'}`;
-    });
-    $('#difficulty-hint').textContent = DIFFICULTY_HINTS[setup.difficulty];
-    store.set('path:setup', JSON.stringify(setup));
-  }
-
-  document.querySelectorAll('[data-opt] .chip').forEach((chip) =>
-    chip.addEventListener('click', () => {
-      setup[chip.parentElement.dataset.opt] = chip.dataset.val;
-      renderSetup();
-    }),
-  );
-  document.querySelectorAll('[data-toggle]').forEach((chip) =>
-    chip.addEventListener('click', () => {
-      setup[chip.dataset.toggle] = !setup[chip.dataset.toggle];
-      renderSetup();
-    }),
-  );
-
-  const nameInput = $('#name-input');
-  nameInput.value = store.get('games:name') || store.get('g9:name') || '';
-
-  function requireName() {
-    const name = nameInput.value.trim();
-    if (!name) {
-      $('#home-error').textContent = 'Введи ім’я';
-      nameInput.focus();
-      return null;
-    }
-    $('#home-error').textContent = '';
-    store.set('games:name', name);
-    return name;
-  }
-
-  function options() {
-    return { ...setup, rounds: Number(setup.rounds), turnSeconds: Number(setup.turnSeconds) };
-  }
-
-  async function create(solo) {
-    const name = requireName();
-    if (!name) return;
-    const res = await emit('create', { ...options(), solo, name });
-    onEntered(res);
-  }
-  $('#solo-btn').addEventListener('click', () => create(true));
-  $('#create-btn').addEventListener('click', () => create(false));
-
-  $('#join-btn').addEventListener('click', async () => {
-    const name = requireName();
-    if (!name) return;
-    const token = session?.code === inviteCode ? session.token : undefined;
-    onEntered(await emit('join', { code: inviteCode, name, token }));
+    },
+    createOptions: (s) => ({ ...s, rounds: Number(s.rounds), turnSeconds: Number(s.turnSeconds) }),
+    optionList: (o) => [ERA_LABELS[o.era], DIFF_LABELS[o.difficulty], o.start === 'first' ? 'з першого клубу' : 'з останнього клубу',
+      `${o.rounds} ${plural(o.rounds, 'раунд', 'раунди', 'раундів')}`, o.turnSeconds ? `${o.turnSeconds} с на етап` : 'без таймера',
+      !o.showYears && 'без років', !o.showStats && 'без матчів і голів'].filter(Boolean),
+    onState(s, prev) {
+      state = s;
+      mySeat = s.you;
+      playSounds(prev, s);
+    },
+    renderGame,
+    renderFinal,
   });
-
-  $('#resume-btn').addEventListener('click', async () => {
-    const res = await emit('join', { code: session.code, token: session.token, name: nameInput.value.trim() });
-    if (res.error) {
-      store.del('path:session');
-      session = null;
-      renderHome();
-      return toast(res.error, 'bad');
-    }
-    onEntered(res);
-  });
-
-  function onEntered(res) {
-    if (res.error) {
-      $('#home-error').textContent = res.error;
-      return;
-    }
-    session = { code: res.code, token: res.token };
-    store.set('path:session', JSON.stringify(session));
-    inviteCode = null;
-    history.replaceState(null, '', `?room=${res.code}`);
-  }
-
-  // Запрошення за посиланням: лише ім'я і «Приєднатися»; налаштування — від того, хто створив кімнату.
-  async function renderHome() {
-    const invite = !!inviteCode;
-    $('#setup-options').classList.toggle('hidden', invite);
-    $('#start-buttons').classList.toggle('hidden', invite);
-    $('#join-btn').classList.toggle('hidden', !invite);
-    $('#invite-note').classList.add('hidden');
-    $('#resume-btn').classList.toggle('hidden', invite || !session);
-    if (session && !invite) $('#resume-btn').textContent = 'Повернутися до своєї гри';
-    if (!invite) return;
-    try {
-      const info = await (await fetch(`/api/path/room/${encodeURIComponent(inviteCode)}`)).json();
-      const note = $('#invite-note');
-      note.classList.remove('hidden');
-      if (!info.found) {
-        note.textContent = 'Цієї кімнати вже немає — створи свою гру.';
-        inviteCode = null;
-        history.replaceState(null, '', location.pathname);
-        return renderHome();
-      }
-      const o = info.options;
-      note.innerHTML = `${escapeHtml(info.players[0] || 'Друг')} кличе грати!<br><small>${ERA_LABELS[o.era]} · ${DIFF_LABELS[o.difficulty]} · ${o.rounds} ${plural(o.rounds, 'раунд', 'раунди', 'раундів')}</small>`;
-    } catch { /* мережа — просто без опису */ }
-  }
-
-  // ── стан кімнати
-  socket.on('connect', () => {
-    // перепідключення: сервер пам'ятає нас за токеном
-    if (state && session) emit('join', { code: session.code, token: session.token });
-  });
-
-  let prev = null;
-  socket.on('state', (s) => {
-    prev = state;
-    state = s;
-    mySeat = s.you;
-    clockOffset = s.serverNow - Date.now();
-    playSounds(prev, s);
-    render();
-  });
+  const { $, emit, store, toast, escapeHtml, initials, plural, seatName, seatStyle } = g;
 
   function playSounds(p, s) {
     if (!p) return;
@@ -208,47 +41,7 @@
     if (s.phase === 'guess' && (p.phase !== 'guess' || p.round !== s.round)) window.Sound.play('whistle');
   }
 
-  function render() {
-    if (!state) return showScreen('home');
-    if (state.status === 'waiting') return renderLobby();
-    if (state.status === 'finished') return renderFinal();
-    renderGame();
-  }
-
-  function optionChips(o) {
-    return [ERA_LABELS[o.era], DIFF_LABELS[o.difficulty], o.start === 'first' ? 'з першого клубу' : 'з останнього клубу',
-      `${o.rounds} ${plural(o.rounds, 'раунд', 'раунди', 'раундів')}`, o.turnSeconds ? `${o.turnSeconds} с на етап` : 'без таймера',
-      !o.showYears && 'без років', !o.showStats && 'без матчів і голів']
-      .filter(Boolean).map((t) => `<span>${escapeHtml(t)}</span>`).join('');
-  }
-
-  function renderLobby() {
-    showScreen('lobby');
-    $('#lobby-code').textContent = state.code;
-    $('#lobby-options').innerHTML = optionChips(state.options);
-    $('#lobby-players').innerHTML = state.seats
-      .map((s, i) => (s ? `<li style="${seatStyle(i)}"><span class="dot-p"></span>${escapeHtml(s.name)}${i === mySeat ? ' <small>(ти)</small>' : ''}${i === state.host ? ' <small>· створив гру</small>' : ''}${s.connected ? '' : ' <small class="muted">· офлайн</small>'}</li>` : ''))
-      .join('');
-    const isHost = mySeat === state.host;
-    const count = state.seats.filter(Boolean).length;
-    $('#start-btn').classList.toggle('hidden', !isHost);
-    $('#start-btn').textContent = count > 1 ? `Почати гру (${count} ${plural(count, 'гравець', 'гравці', 'гравців')})` : 'Почати гру';
-    $('#lobby-wait').textContent = isHost
-      ? count > 1 ? 'Можна починати — або дочекайтесь ще когось.' : 'Надішли запрошення друзям. Хто зайде пізніше — приєднається до гри, що вже йде.'
-      : `Чекаємо, поки ${state.seats[state.host]?.name || 'господар'} почне гру.`;
-  }
-
-  $('#copy-link').addEventListener('click', async () => {
-    const link = roomLink(state.code);
-    try {
-      if (navigator.share && matchMedia('(pointer: coarse)').matches) await navigator.share({ title: 'Шлях футболіста', url: link });
-      else { await navigator.clipboard.writeText(link); toast('Посилання скопійовано', 'good'); }
-    } catch { /* скасовано */ }
-  });
-  $('#start-btn').addEventListener('click', async () => {
-    const res = await emit('start');
-    if (res.error) toast(res.error, 'bad');
-  });
+  $('#points-rule').textContent = '100 за перший клуб, далі рівномірно менше — до 10 за останній (скільки клубів у кар’єрі, видно одразу)';
 
   // ── гра
   function stageHtml(st, i, current) {
@@ -266,7 +59,6 @@
   }
 
   function renderGame() {
-    showScreen('game');
     const s = state;
     const reveal = s.phase === 'reveal';
     $('#round-info').innerHTML = `<b>Раунд ${s.round} з ${s.rounds}</b><span>${DIFF_LABELS[s.options.difficulty]} · ${reveal ? 'відповідь' : `клуб ${s.stage + 1} з ${s.totalStages}${s.stage === s.totalStages - 1 ? ' — останній' : ''}`}</span>`;
@@ -379,7 +171,7 @@
   function tick() {
     const el = $('#timer');
     if (!state || state.status !== 'playing' || !state.deadline) { el.textContent = ''; return; }
-    const left = Math.max(0, Math.ceil((state.deadline - (Date.now() + clockOffset)) / 1000));
+    const left = Math.max(0, Math.ceil((state.deadline - g.serverNow()) / 1000));
     el.textContent = state.phase === 'reveal' ? `далі через ${left} с` : `⏱ ${left} с`;
     el.classList.toggle('low', state.phase === 'guess' && left <= 5);
   }
@@ -433,7 +225,6 @@
 
   // ── підсумок
   function renderFinal() {
-    showScreen('final');
     const s = state;
     const seats = s.seats.map((x, i) => (x ? i : -1)).filter((i) => i >= 0).sort((a, b) => s.scores[b] - s.scores[a]);
     const max = s.rounds * s.maxPoints;
@@ -457,97 +248,5 @@
     const isHost = mySeat === s.host;
     $('#again-btn').classList.toggle('hidden', !isHost);
     $('#again-wait').textContent = isHost || s.solo ? '' : `${s.seats[s.host]?.name || 'Господар'} може почати ще одну гру.`;
-  }
-
-  $('#again-btn').addEventListener('click', async () => {
-    const res = await emit('start');
-    if (res.error) toast(res.error, 'bad');
-  });
-
-  // ── вихід
-  document.querySelectorAll('[data-action="leave"]').forEach((b) => b.addEventListener('click', leave));
-  async function leave() {
-    if (state?.status === 'playing' && !state.solo && !confirm('Вийти з гри? Твої очки пропадуть.')) return;
-    await emit('leave');
-    state = null;
-    session = null;
-    store.del('path:session');
-    history.replaceState(null, '', location.pathname);
-    showScreen('home');
-    renderHome();
-  }
-
-  // ── чат і реакції
-  const chatPanel = $('#chat-panel');
-  let chat = [];
-  let unread = 0;
-  function toggleChat(open) {
-    chatPanel.classList.toggle('hidden', !open);
-    if (open) { unread = 0; renderChat(); $('#chat-input').focus(); }
-    $('#chat-badge').classList.toggle('hidden', !unread);
-    $('#chat-badge').textContent = unread;
-  }
-  function renderChat() {
-    $('#chat-list').innerHTML = chat.length
-      ? chat.map((m) => `<li class="${m.seat === mySeat ? 'mine' : ''}" style="${seatStyle(m.seat)}"><span class="chat-who">${escapeHtml(m.seat === mySeat ? 'Ти' : m.name)}</span><span class="chat-text">${escapeHtml(m.text)}</span></li>`).join('')
-      : '<li class="chat-empty">Тут ще тихо</li>';
-    $('#chat-list').scrollTop = 1e6;
-  }
-  socket.on('chatHistory', (list) => { chat = list; renderChat(); });
-  socket.on('chat', (m) => {
-    chat.push(m);
-    if (chatPanel.classList.contains('hidden') && m.seat !== mySeat) unread++;
-    renderChat();
-    toggleChat(!chatPanel.classList.contains('hidden'));
-  });
-  $('#chat-fab').addEventListener('click', () => toggleChat(chatPanel.classList.contains('hidden')));
-  $('#chat-close').addEventListener('click', () => toggleChat(false));
-  $('#chat-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const text = $('#chat-input').value.trim();
-    if (!text) return;
-    const res = await emit('chat', text);
-    if (res.error) return toast(res.error, 'bad');
-    $('#chat-input').value = '';
-  });
-
-  const REACTIONS = ['👍', '😂', '😮', '😡', '🔥', '👏'];
-  $('#reactions').innerHTML = REACTIONS.map((r) => `<button type="button" data-r="${r}">${r}</button>`).join('');
-  $('#reactions').addEventListener('click', (e) => {
-    const b = e.target.closest('button[data-r]');
-    if (b) socket.emit('react', b.dataset.r);
-  });
-  socket.on('reaction', ({ seat, emoji }) => {
-    const li = $(`#scoreboard li[data-seat="${seat}"]`);
-    const bubble = document.createElement('span');
-    bubble.className = 'reaction-bubble';
-    bubble.textContent = emoji;
-    (li || $('#scoreboard')).appendChild(bubble);
-    setTimeout(() => bubble.remove(), 1800);
-  });
-
-  // ── звук
-  const muteBtn = $('#mute-btn');
-  const renderMute = () => (muteBtn.textContent = window.Sound.isMuted() ? '🔇' : '🔊');
-  muteBtn.addEventListener('click', () => { window.Sound.setMuted(!window.Sound.isMuted()); renderMute(); });
-  renderMute();
-
-  // ── старт сторінки
-  $('#points-rule').textContent = '100 за перший клуб, далі рівномірно менше — до 10 за останній (скільки клубів у кар’єрі, видно одразу)';
-  renderSetup();
-  renderHome();
-  showScreen('home');
-  // повернення після перезавантаження сторінки посеред гри
-  if (session && (!inviteCode || inviteCode === session.code)) {
-    emit('join', { code: session.code, token: session.token, name: nameInput.value.trim() }).then((res) => {
-      if (res.error) {
-        store.del('path:session');
-        session = null;
-        renderHome();
-      } else {
-        inviteCode = null;
-        history.replaceState(null, '', `?room=${res.code}`);
-      }
-    });
   }
 })();

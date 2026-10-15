@@ -1,0 +1,66 @@
+/* Топ-10. Лобі, таблиця, поле відповіді, підсумок — з /path/style.css; тут — тема, дошка топу, вибір теми. */
+
+.top-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+#round-box { display: flex; flex-direction: column; gap: 12px; }
+#round-box.hidden { display: none; }
+.pc { color: var(--pc); }
+
+.topic h2 { margin: 0; font-family: var(--display); font-size: 22px; line-height: 1.25; }
+.topic small { display: block; margin-top: 4px; color: var(--muted); font-size: 12.5px; }
+.answer-box { margin-top: 0; }
+.turn-line:empty { display: none; }
+.turn-line { font-size: 15px; }
+.answer-actions { align-items: center; gap: 8px; }
+.lives { margin-right: auto; font-size: 14px; letter-spacing: 1px; }
+
+/* дошка: рядок = місце, фото, гравець, значення, очки за місце */
+.top-board { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
+.slot {
+  display: grid; grid-template-columns: 28px 40px minmax(0, 1fr) auto auto auto; align-items: center; gap: 10px;
+  min-height: 52px; padding: 6px 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line);
+}
+.slot .place { font-family: var(--display); font-weight: 800; color: var(--muted); text-align: center; }
+.slot .pts { font-size: 12px; font-weight: 800; color: var(--gold); white-space: nowrap; }
+.empty-slot { grid-template-columns: 28px minmax(0, 1fr) auto; border-style: dashed; }
+.empty-slot .blank { color: var(--muted); opacity: .5; font-weight: 800; }
+.slot.got { border-color: rgba(182,243,106,0.45); background: rgba(182,243,106,0.07); }
+.slot.missed { opacity: .6; }
+.slot.fresh { animation: rise .35s ease-out; }
+.g-photo {
+  width: 40px; height: 40px; border-radius: 50%; overflow: hidden; display: grid; place-items: center;
+  background: #1d3a2a; border: 1px solid var(--line); font-weight: 800; font-size: 13px;
+}
+.g-photo img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.slot .who { display: grid; min-width: 0; }
+.slot .who b { font-size: 15px; overflow-wrap: anywhere; }
+.slot .who small { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.slot .val { font-family: var(--display); font-weight: 800; font-size: 14px; color: var(--accent); white-space: nowrap; text-align: right; }
+.slot .by { display: flex; gap: 2px; }
+.slot .by .dot-p { width: 8px; height: 8px; }
+
+.misses { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.misses:empty { display: none; }
+.misses .field-label { margin-right: 4px; }
+.miss { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 700; padding: 3px 9px; border-radius: 99px; background: rgba(255,107,107,0.08); border: 1px solid rgba(255,107,107,0.3); text-decoration: line-through; text-decoration-color: rgba(255,107,107,0.6); }
+
+.reveal-bar { display: grid; gap: 10px; padding: 14px; border-radius: var(--radius); background: rgba(182,243,106,0.06); border: 1px solid rgba(182,243,106,0.35); animation: rise .3s ease-out; }
+.reveal-bar.hidden { display: none; }
+.reveal-bar .verdict { margin: 0; font-size: 17px; }
+.reveal-actions { display: flex; justify-content: flex-end; }
+
+/* вибір теми господарем */
+.stage-box { display: grid; gap: 12px; padding: 16px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line); }
+.stage-box p { margin: 0; }
+.stage-box .row { display: flex; gap: 8px; }
+.stage-box .row input { flex: 1; min-width: 0; }
+.topic-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; max-height: 420px; overflow-y: auto; }
+.topic-list li { display: flex; gap: 10px; align-items: center; padding: 9px 12px; border-radius: 10px; background: rgba(255,255,255,0.04); border: 1px solid var(--line); cursor: pointer; font-weight: 700; font-size: 14px; }
+.topic-list li:hover { border-color: var(--accent); }
+.topic-list li.empty { cursor: default; color: var(--muted); justify-content: center; }
+
+@media (max-width: 560px) {
+  .slot { grid-template-columns: 22px 34px minmax(0, 1fr) auto; gap: 8px; padding: 6px 8px; }
+  .empty-slot { grid-template-columns: 22px minmax(0, 1fr) auto; }
+  .slot .by, .slot:not(.empty-slot) .pts { display: none; }
+  .g-photo { width: 34px; height: 34px; }
+}
