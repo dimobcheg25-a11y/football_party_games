@@ -13,7 +13,9 @@ const ALLOWED_ROUNDS = [10, 20];
 const ALLOWED_SECONDS = [0, 5, 10, 15]; // 0 — без таймера
 const ALLOWED_LIVES = [1, 3];
 const LEVELS = ['easy', 'hard', 'mix'];
-const CHAMP_MAX = 3; // серія: один гравець перемагає щонайбільше 3 пари поспіль, далі — нова пара
+// серія: шанс, що переможець лишиться на рингу після wins перемог поспіль — перші рази завжди, далі щоразу менше
+// (довга серія одного гравця можлива, але рідко, і заздалегідь не вгадати, коли він піде)
+const keepChance = (wins) => (wins < 4 ? 1 : 0.7 ** (wins - 3));
 const REVEAL_MS = Number(process.env.DUEL_REVEAL_MS) || 7000; // кімната: скільки показуємо відповідь, якщо не всі натиснули «далі»
 
 const rand = (list) => list[Math.floor(Math.random() * list.length)];
@@ -223,10 +225,10 @@ class DuelRoom extends BaseRoom {
       this.best = Math.max(this.best, this.run);
       if (this.streak && !ok) this.livesLeft--;
       // серія: переможець пари лишається (навіть якщо ти помилився — він же переміг)
-      // але не довше CHAMP_MAX пар поспіль — потім обидва нові
+      // але чим довше він виграє поспіль, тим імовірніше прийде нова пара (keepChance)
       const p = this.pair[this.winner].p;
       const wins = this.champion?.p === p ? this.champion.wins + 1 : 1;
-      this.champion = this.streak && wins < CHAMP_MAX ? { p, side: this.winner, wins } : null;
+      this.champion = this.streak && Math.random() < keepChance(wins) ? { p, side: this.winner, wins } : null;
     }
     this.history.push({
       question: this.question.title,
