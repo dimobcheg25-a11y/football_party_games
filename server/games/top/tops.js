@@ -174,6 +174,19 @@ for (const [qid, list] of byNation) {
   addTopic(`nation-caps:${qid}`, 'apps', `Найбільше матчів за збірну: ${name}`, list.map((x) => ({ p: x.p, value: x.a, text: `${x.a} ${appsWord(x.a)}`, detail: `${x.g} ${goalsWord(x.g)}` })), NOTES.nation);
 }
 
+// Для вибору теми господарем: тип (загальні / клуб / ліга / збірна / турнір), країна й клуб — щоб фільтрувати список.
+const LEAGUE_COUNTRY = { GB1: 'Англія', ES1: 'Іспанія', IT1: 'Італія', L1: 'Німеччина', FR1: 'Франція', UKR1: 'Україна', PO1: 'Португалія', NL1: 'Нідерланди', TR1: 'Туреччина' };
+for (const t of topics) {
+  const [kind, key] = t.id.split(':');
+  if (kind === 'buys' || kind === 'sales') Object.assign(t, { kind: 'club', country: leagueOf(tmClubs[key].team), club: clubName(Number(key)) });
+  else if (kind === 'club-goals' || kind === 'club-apps') Object.assign(t, { kind: 'club', country: leagueOf(key), club: clubTitle(key) });
+  else if (kind === 'league-buys') Object.assign(t, { kind: 'league', country: LEAGUE_COUNTRY[key] });
+  else if (kind === 'league-goals') Object.assign(t, { kind: 'league', country: key });
+  else if (kind.startsWith('nation')) Object.assign(t, { kind: 'nation', country: nationName(key) });
+  else if (kind === 'tournament') t.kind = 'tournament';
+  else t.kind = 'general';
+}
+
 const topicById = new Map(topics.map((t) => [t.id, t]));
 
 // Теми, з яких можна скласти топ такого розміру.

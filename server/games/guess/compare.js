@@ -37,6 +37,7 @@ const UK_LEAGUES = new Map([
 function leagueOf(t) {
   const country = team(t).country;
   if (country === 'Сполучене Королівство') return UK_LEAGUES.get(t) || 'Англія';
+  if (country === 'Монако') return 'Франція'; // Монако грає в чемпіонаті Франції
   return shortCountry(country);
 }
 

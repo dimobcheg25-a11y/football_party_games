@@ -71,9 +71,11 @@
     tick();
   }
 
-  // Вибір теми господарем: пошук за назвою + випадкова.
+  // Вибір теми господарем: фільтри (категорія, тип, країна) + пошук; список згрупований за клубами / типами.
+  const KIND_LABELS = { general: '⭐ Загальні', club: '🏟 Клуби', league: '🏆 Чемпіонати', nation: '🌍 Збірні', tournament: '🏅 Турніри' };
   let topicList = null;
   let topicKey = '';
+  const filter = { category: 'all', kind: 'all', country: 'all' }; // пам'ятаємо між раундами
   async function renderPicker() {
     const box = $('#picker');
     const isHost = mySeat === state.host;
@@ -84,15 +86,23 @@
     }
     if (box.dataset.mode === 'pick') return; // уже намальовано — не збиваємо пошук
     box.dataset.mode = 'pick';
-    box.innerHTML = `<div class="stage-box">
-      <p><b>Обери тему раунду</b> — або довірся випадку.</p>
-      <div class="row"><input id="topic-filter" placeholder="Пошук: клуб, збірна, «трансфери»…" autocomplete="off" /><button class="btn btn-primary" id="random-topic">🎲 Випадкова</button></div>
-      <ul class="topic-list" id="topic-list"><li class="empty">Завантаження…</li></ul></div>`;
+    box.innerHTML = `<div class="stage-box picker-box">
+      <div class="picker-head"><p><b>Обери тему раунду</b> — або довірся випадку.</p><button class="btn btn-primary" id="random-topic">🎲 Випадкова</button></div>
+      <input id="topic-filter" placeholder="Пошук: клуб, збірна, країна…" autocomplete="off" />
+      <div id="topic-filters" class="topic-filters"></div>
+      <p class="hint" id="topic-count"></p>
+      <div class="topic-list" id="topic-list"><p class="empty">Завантаження…</p></div></div>`;
     $('#random-topic').addEventListener('click', () => chooseTopic(null));
     $('#topic-filter').addEventListener('input', drawTopics);
+    $('#topic-filters').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-f]');
+      if (!b) return;
+      filter[b.dataset.f] = b.dataset.v;
+      drawTopics();
+    });
     $('#topic-list').addEventListener('click', (e) => {
-      const li = e.target.closest('li[data-id]');
-      if (li) chooseTopic(li.dataset.id);
+      const item = e.target.closest('[data-id]');
+      if (item) chooseTopic(item.dataset.id);
     });
     const key = `${state.options.categories.join(',')}|${state.options.size}`;
     if (key !== topicKey) {
@@ -104,16 +114,60 @@
     }
     drawTopics();
   }
+
+  // Рядок чипів-фільтра: «Усі» + варіанти (у порядку values) з кількістю тем.
+  function chipRow(label, field, values, names) {
+    const uniq = [...new Set(values)];
+    if (uniq.length < 2 && filter[field] === 'all') return '';
+    const count = (v) => values.filter((x) => x === v).length;
+    return `<div class="f-row"><span class="field-label">${label}</span><div class="chips">
+      <button type="button" class="chip ${filter[field] === 'all' ? 'active' : ''}" data-f="${field}" data-v="all">Усі</button>
+      ${uniq.map((v) => `<button type="button" class="chip ${filter[field] === v ? 'active' : ''}" data-f="${field}" data-v="${escapeHtml(v)}">${escapeHtml(names?.[v] || v)} <small>${count(v)}</small></button>`).join('')}
+    </div></div>`;
+  }
+
   function drawTopics() {
     const list = $('#topic-list');
     if (!list || !topicList) return;
-    const q = window.Players.normalize ? window.Players.normalize($('#topic-filter').value) : $('#topic-filter').value.toLowerCase();
-    const norm = (t) => (window.Players.normalize ? window.Players.normalize(t) : t.toLowerCase());
-    const found = topicList.filter((t) => !q || norm(t.title).includes(q)).slice(0, 60);
+    const norm = window.Players.normalize;
+    const q = norm($('#topic-filter').value);
+    const byText = topicList.filter((t) => !q || norm(`${t.title} ${t.country || ''}`).includes(q));
+    // кожен фільтр рахуємо з урахуванням решти — у чипах лише ті варіанти, що дають теми
+    const pass = (t, skip) => (skip === 'category' || filter.category === 'all' || t.category === filter.category)
+      && (skip === 'kind' || filter.kind === 'all' || t.kind === filter.kind)
+      && (skip === 'country' || filter.country === 'all' || t.country === filter.country);
+    const catOrder = Object.keys(CATEGORY_LABELS);
+    const kindOrder = Object.keys(KIND_LABELS);
+    const cats = byText.filter((t) => pass(t, 'category')).map((t) => t.category).sort((a, b) => catOrder.indexOf(a) - catOrder.indexOf(b));
+    const kinds = byText.filter((t) => pass(t, 'kind')).map((t) => t.kind).sort((a, b) => kindOrder.indexOf(a) - kindOrder.indexOf(b));
+    const countries = byText.filter((t) => pass(t, 'country') && t.country).map((t) => t.country);
+    // країни: Україна першою, далі — де більше тем
+    const freq = {};
+    countries.forEach((c) => (freq[c] = (freq[c] || 0) + 1));
+    countries.sort((a, b) => (b === 'Україна') - (a === 'Україна') || freq[b] - freq[a] || a.localeCompare(b, 'uk'));
+    // вибраний варіант зник (інші фільтри його відсікли) — скидаємо на «Усі»
+    for (const [field, values] of [['category', cats], ['kind', kinds], ['country', countries]]) {
+      if (filter[field] !== 'all' && !values.includes(filter[field])) { filter[field] = 'all'; return drawTopics(); }
+    }
+    $('#topic-filters').innerHTML = chipRow('Категорія', 'category', cats, CATEGORY_LABELS) + chipRow('Тип', 'kind', kinds, KIND_LABELS)
+      + (filter.kind === 'general' || filter.kind === 'tournament' ? '' : chipRow('Країна', 'country', countries));
+
+    const found = byText.filter((t) => pass(t));
+    $('#topic-count').textContent = `${found.length} ${plural(found.length, 'тема', 'теми', 'тем')}`;
+    // групи: клуби — за назвою клубу (усередині — коротка назва теми), решта — за типом
+    const groups = new Map();
+    for (const t of found) {
+      const name = t.kind === 'club' ? `${t.club}${filter.country === 'all' && t.country && !t.club.includes('(') ? ` · ${t.country}` : ''}` : KIND_LABELS[t.kind];
+      if (!groups.has(name)) groups.set(name, []);
+      groups.get(name).push(t);
+    }
+    const short = (t) => (t.kind === 'club' ? t.title.replace(/:\s.*$/, '') : t.title);
     list.innerHTML = found.length
-      ? found.map((t) => `<li data-id="${escapeHtml(t.id)}"><span>${CATEGORY_LABELS[t.category].split(' ')[0]}</span>${escapeHtml(t.title)}</li>`).join('')
-      : '<li class="empty">Нічого не знайдено</li>';
+      ? [...groups].map(([name, items]) => `<section class="t-group"><h4>${escapeHtml(name)}</h4><div class="t-items">${items
+        .map((t) => `<button type="button" class="t-item" data-id="${escapeHtml(t.id)}"><span>${CATEGORY_LABELS[t.category].split(' ')[0]}</span>${escapeHtml(short(t))}</button>`).join('')}</div></section>`).join('')
+      : '<p class="empty">Нічого не знайдено — зміни фільтри або пошук</p>';
   }
+
   async function chooseTopic(id) {
     const res = await emit('pickTopic', { topicId: id });
     if (res.error) toast(res.error, 'bad');
