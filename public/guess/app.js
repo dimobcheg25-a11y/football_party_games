@@ -267,7 +267,7 @@
     const reveal = s.phase === 'reveal';
     const mine = s.progress[mySeat] || { colors: [], solved: null, done: false };
     const used = s.myTries.length;
-    $('#round-info').innerHTML = `<b>Раунд ${s.round} з ${s.rounds}</b><span>${reveal ? 'відповідь' : `спроба ${Math.min(used + 1, s.options.attempts)} з ${s.options.attempts}`}</span>`;
+    $('#round-info').innerHTML = `<b>Раунд ${s.round} з ${s.rounds}</b><span>${DIFF_LABELS[s.options.difficulty]} · ${reveal ? 'відповідь' : `спроба ${Math.min(used + 1, s.options.attempts)} з ${s.options.attempts}`}</span>`;
 
     // поле відповіді
     $('#answer-box').classList.toggle('hidden', reveal);

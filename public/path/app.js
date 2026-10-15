@@ -269,7 +269,7 @@
     showScreen('game');
     const s = state;
     const reveal = s.phase === 'reveal';
-    $('#round-info').innerHTML = `<b>Раунд ${s.round} з ${s.rounds}</b><span>${reveal ? 'відповідь' : `клуб ${s.stage + 1} з ${s.totalStages}${s.stage === s.totalStages - 1 ? ' — останній' : ''}`}</span>`;
+    $('#round-info').innerHTML = `<b>Раунд ${s.round} з ${s.rounds}</b><span>${DIFF_LABELS[s.options.difficulty]} · ${reveal ? 'відповідь' : `клуб ${s.stage + 1} з ${s.totalStages}${s.stage === s.totalStages - 1 ? ' — останній' : ''}`}</span>`;
     // смужка кар'єри: скільки всього клубів, скільки вже відкрито — щоб знати, до чого готуватися
     $('#career-bar').innerHTML = Array.from({ length: s.totalStages }, (_, i) =>
       `<span class="${i < s.stages.length ? 'open' : ''} ${!reveal && i === s.stage ? 'now' : ''}" title="Клуб ${i + 1}: ${s.points[i]} очок"></span>`).join('');

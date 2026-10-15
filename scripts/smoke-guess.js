@@ -56,8 +56,12 @@ async function main() {
   const trophies = cell('lionel-messi', 'neymar', 'trophies');
   assert.ok(trophies.items.some((x) => x.label === 'Ліга чемпіонів' && x.match), 'трофеї текстом, спільні позначені');
   const value = cell('neymar', 'kylian-mbappe', 'value');
-  assert.ok(/^€\d+ млн$/.test(value.text) && value.note === 'у загаданого більше', 'макс. вартість: ' + value.text);
+  assert.ok(/^€\d+ млн$/.test(value.text) && /у загаданого (трохи )?більше$/.test(value.note), 'макс. вартість: ' + value.text);
   assert.ok(cell('lionel-messi', 'neymar', 'caps').text !== '100', 'матчі за збірну не обрізані на 100');
+  const capsOf = (id) => profileOf(playerById.get(id)).caps;
+  if (capsOf('lionel-messi') !== capsOf('neymar')) assert.notStrictEqual(cell('lionel-messi', 'neymar', 'caps').color, 'green', 'зелена — лише точна кількість');
+  assert.strictEqual(cell('neymar', 'neymar', 'caps').color, 'green');
+  assert.ok(!profileOf(playerById.get('wayne-rooney')).countries.has('Британія'), 'чемпіонат — Англія/Шотландія, не «Британія»');
   assert.strictEqual(cell('neymar', 'neymar', 'last').color, 'green');
   assert.strictEqual(cell('andriy-shevchenko', 'neymar', 'shared').color, 'grey');
   const eng = cell('david-beckham', 'wayne-rooney', 'nation');

@@ -22,6 +22,22 @@ const SHORT = {
 };
 const shortCountry = (name) => (name ? SHORT[name] || name : null);
 
+// Чемпіонат клубу. У Wikidata всі британські клуби — «Сполучене Королівство», але чемпіонати різні:
+// шотландські й північноірландські — окремо, решта (і валлійські Кардіфф, Свонсі, Рексем…) грають в англійській лізі.
+const SCOTLAND = 'Q192597 Q19593 Q19597 Q219241 Q852753 Q192873 Q335483 Q187326 Q319136 Q180420 Q822722 Q202093 Q390256 Q210961 Q5328723 Q309059 Q268776 Q5019424 Q1046939';
+const N_IRELAND = 'Q3997037 Q312360';
+const GIBRALTAR = 'Q15732501 Q13423234';
+const UK_LEAGUES = new Map([
+  ...SCOTLAND.split(' ').map((q) => [q, 'Шотландія']),
+  ...N_IRELAND.split(' ').map((q) => [q, 'Північна Ірландія']),
+  ...GIBRALTAR.split(' ').map((q) => [q, 'Гібралтар']),
+]);
+function leagueOf(t) {
+  const country = team(t).country;
+  if (country === 'Сполучене Королівство') return UK_LEAGUES.get(t) || 'Англія';
+  return shortCountry(country);
+}
+
 // Конфедерації — для «близько» у збірній (той самий континент).
 const CONFEDERATIONS = {
   UEFA: 'Україна Англія Шотландія Уельс Північна_Ірландія Британія Італія Іспанія Франція Німеччина Нідерланди Португалія Хорватія Грузія Бельгія СРСР Сербія Румунія Польща Росія Білорусь Швеція Данія Туреччина Молдова Швейцарія Чехія Чехословаччина Албанія Югославія Вірменія Боснія_і_Герцеговина Ірландія Греція Північна_Македонія Норвегія Болгарія Литва Австрія Словенія Словаччина Угорщина Азербайджан Чорногорія Латвія Казахстан Ісландія Фінляндія Естонія Ізраїль Косово Кіпр Люксембург',
@@ -104,8 +120,8 @@ function profileOf(p) {
     position: positionOf(p),
     born: p.born || null,
     last: { t: last.t, ...team(last.t), current: last.e == null },
-    country: shortCountry(team(last.t).country),
-    countries: new Set(c.clubs.map((x) => shortCountry(team(x.t).country)).filter(Boolean)),
+    country: leagueOf(last.t),
+    countries: new Set(c.clubs.map((x) => leagueOf(x.t)).filter(Boolean)),
     clubs,
     goals: c.clubs.reduce((s, x) => s + (x.g || 0), 0),
     caps: c.nation?.a || 0,
@@ -132,12 +148,15 @@ function sharedClubs(a, b) {
 }
 
 // Близькість чисел: відносно загаданого, але не менше абсолютного порогу (щоб 0 і 2 гола були «близько»).
+// Зелена — лише точний збіг; green (поріг «майже») — тільки для вартості, де точний збіг неможливий.
 // note — словами, у кого більше (самі стрілки незрозумілі).
 function numberCell(guess, target, { green, yellow }) {
   const d = Math.abs(guess - target);
-  const color = d === 0 || d <= Math.max(green[0], target * green[1]) ? 'green' : d <= Math.max(yellow[0], target * yellow[1]) ? 'yellow' : 'grey';
-  if (guess === target) return { color, note: 'точно' };
-  return { color, arrow: target > guess ? 'up' : 'down', note: target > guess ? 'у загаданого більше' : 'у загаданого менше' };
+  if (d === 0) return { color: 'green', note: 'точно' };
+  const near = green && d <= Math.max(green[0], target * green[1]);
+  const color = near ? 'green' : d <= Math.max(yellow[0], target * yellow[1]) ? 'yellow' : 'grey';
+  const more = target > guess ? 'більше' : 'менше';
+  return { color, arrow: target > guess ? 'up' : 'down', note: near ? `майже, у загаданого трохи ${more}` : `у загаданого ${more}` };
 }
 
 const money = (v) => (v >= 1e6 ? `€${Number((v / 1e6).toFixed(v < 1e7 ? 1 : 0))} млн` : `€${Math.round(v / 1e3)} тис.`);
@@ -196,9 +215,9 @@ function compare(g, t) {
     note: g.country && g.country !== t.country && t.countries.has(g.country) ? 'загаданий грав тут' : null,
   };
 
-  cells.goals = { text: String(g.goals), ...numberCell(g.goals, t.goals, { green: [3, 0.1], yellow: [15, 0.25] }) };
-  cells.caps = { text: String(g.caps), ...numberCell(g.caps, t.caps, { green: [3, 0.1], yellow: [10, 0.3] }) };
-  cells.natGoals = { text: String(g.natGoals), ...numberCell(g.natGoals, t.natGoals, { green: [1, 0.1], yellow: [5, 0.3] }) };
+  cells.goals = { text: String(g.goals), ...numberCell(g.goals, t.goals, { yellow: [15, 0.25] }) };
+  cells.caps = { text: String(g.caps), ...numberCell(g.caps, t.caps, { yellow: [10, 0.3] }) };
+  cells.natGoals = { text: String(g.natGoals), ...numberCell(g.natGoals, t.natGoals, { yellow: [5, 0.3] }) };
 
   if (!g.value) cells.value = { text: '?', color: 'grey', note: 'немає даних' };
   else if (!t.value) cells.value = { text: money(g.value), color: 'grey', note: 'про загаданого немає даних' };
