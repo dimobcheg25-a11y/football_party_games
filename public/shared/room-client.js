@@ -15,7 +15,7 @@
 //     lobbyExtra(seat) → html,                 // необов'язково: дописати до гравця в лобі
 //   });
 //   g.$, g.emit, g.act (emit + тост помилки), g.toast, g.escapeHtml, g.initials, g.plural, g.seatName, g.seatStyle, g.SEAT_COLORS,
-//   g.state, g.mySeat, g.serverNow(), g.showScreen, g.store, g.socket.
+//   g.state, g.mySeat, g.serverNow(), g.showScreen, g.store, g.socket, g.setup, g.renderSetup().
 // Розмітка сторінки — як у public/top/index.html (id елементів ті самі).
 window.RoomClient = (() => {
   const { L } = window.I18n; // мова сторінки — /shared/i18n.js (підключати раніше за цей файл)
@@ -81,6 +81,7 @@ window.RoomClient = (() => {
       toast,
       showScreen,
       render,
+      renderSetup, // перемалювати чипи налаштувань (напр., коли гра довантажила, які варіанти доступні)
     };
 
     function showScreen(name) {

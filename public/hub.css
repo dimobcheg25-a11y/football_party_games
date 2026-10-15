@@ -194,6 +194,26 @@ body {
 .a-plates s { flex: 1; background: #2b1f6e; border: 1px solid rgba(255, 255, 255, 0.15); }
 .a-plates i:first-child s { background: linear-gradient(90deg, #ff3aa0, #7b2cff); }
 
+/* ── Один на один: афіша боксерського поєдинку */
+.s-duel {
+  --st-bg: #15110e; --st-fg: #f8f2e9; --st-muted: #c9b9a3; --st-name: italic 900 34px/0.9 'Alumni Sans', sans-serif;
+  background-image: radial-gradient(ellipse at 50% -10%, rgba(255, 236, 196, 0.25), transparent 60%),
+    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.06) 1px, transparent 0);
+  background-size: auto, 6px 6px;
+}
+.s-duel .st-name { text-transform: uppercase; color: #f2c230; }
+.s-duel .mode.solo { background: #f2c230; color: #1b1306; }
+.a-bout { position: relative; display: grid; grid-template-columns: 1fr 1fr; width: 100%; height: 100%; }
+.a-bout i {
+  display: grid; align-items: end; padding: 8px 12px; font: italic 900 22px/1 'Alumni Sans', sans-serif; text-transform: uppercase; color: #fff;
+  background: radial-gradient(ellipse at 50% 30%, #f0444c, #8d1219 80%); clip-path: polygon(0 0, 100% 0, calc(100% - 16px) 100%, 0 100%);
+}
+.a-bout i.b { background: radial-gradient(ellipse at 50% 30%, #4a86f2, #133a85 80%); margin-left: -12px; clip-path: polygon(16px 0, 100% 0, 100% 100%, 0 100%); text-align: right; }
+.a-bout b {
+  position: absolute; z-index: 2; left: 50%; top: 50%; translate: -50% -50%; display: grid; place-items: center; width: 54px; height: 54px; border-radius: 50%;
+  background: #f2c230; color: #1b1306; border: 3px solid #15110e; box-shadow: 0 0 0 2px #f2c230; font: italic 900 28px/1 'Alumni Sans', sans-serif;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sticker, .sticker::after { transition: none; }
 }

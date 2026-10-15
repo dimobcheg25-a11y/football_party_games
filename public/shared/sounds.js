@@ -101,6 +101,14 @@ window.Sound = (() => {
       tone(140, { dur: 0.16, type: 'sine', vol: 0.3, slideTo: 60 });
       tone(900, { dur: 0.04, type: 'square', vol: 0.05, slideTo: 300 });
     },
+    // боксерський гонг: два удари по дзвону з довгим затуханням і металевими обертонами ('Один на один')
+    gong() {
+      [0, 0.32].forEach((start) => {
+        tone(620, { start, dur: 0.9, type: 'sine', vol: 0.16 });
+        tone(1556, { start, dur: 0.55, type: 'sine', vol: 0.05 });
+        tone(2470, { start, dur: 0.3, type: 'triangle', vol: 0.025 });
+      });
+    },
     pop() {
       tone(600, { dur: 0.09, vol: 0.1, slideTo: 1100 });
     },

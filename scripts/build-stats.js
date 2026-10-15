@@ -2,7 +2,7 @@
 // голи, асисти, картки) → server/data/stats.json з уже готовими топами (до TOP рядків), щоб не тримати сирі дані:
 //   { names: { [tm id]: ім'я }, comp: { [змагання]: { assists, ga, yellow, red, seasonGoals, seasonAssists } },
 //     club: { [tm id клубу]: { assists, ga } },
-//     players: { [tm id гравця з нашої бази]: { t: [голи, асисти, матчі] — усі змагання, c: { [tm id клубу]: [голи, асисти, матчі] — лише чемпіонат } } } };
+//     players: { [tm id гравця з нашої бази]: { t: [голи, асисти, матчі, жовті картки] — усі змагання, c: { [tm id клубу]: [голи, асисти, матчі] — лише чемпіонат } } } };
 //   рядок топу — [tm id гравця, значення] або [tm id, значення, сезон «22/23»]. players — усі клубні змагання й турніри збірних з 2012/13.
 // Гравців зіставляє з базою server/games/top/tops.js (за tm у transfers.json); кого в базі немає — показується з іменем звідси.
 // Запуск: npm run build-stats (≈2 хв; файл ~45 МБ читається потоком, щоб не забивати пам'ять).
@@ -82,10 +82,10 @@ async function main() {
     const d = { g: Number(f[head.goals]) || 0, a: Number(f[head.assists]) || 0, y: Number(f[head.yellow_cards]) || 0, r: Number(f[head.red_cards]) || 0 };
     // підсумки гравців бази — з усіх змагань (ліги, кубки, єврокубки, турніри збірних)
     if (ourTm.has(player)) {
-      if (!perPlayer.has(player)) perPlayer.set(player, { t: [0, 0, 0], c: {} });
+      if (!perPlayer.has(player)) perPlayer.set(player, { t: [0, 0, 0, 0], c: {} });
       const pp = perPlayer.get(player);
       const club = f[head.player_club_id];
-      pp.t[0] += d.g; pp.t[1] += d.a; pp.t[2]++;
+      pp.t[0] += d.g; pp.t[1] += d.a; pp.t[2]++; pp.t[3] += d.y;
       // по клубах — лише чемпіонат (коди ліг: GB1, ES1, UKR1… — з цифрою), як матчі й голи з Вікіпедії
       if (/\d$/.test(comp)) {
         const c = (pp.c[club] ||= [0, 0, 0]);

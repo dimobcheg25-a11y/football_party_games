@@ -1,0 +1,203 @@
+/* Один на один. Лобі, таблиця, підсумок — з /path/style.css; тут — тема, ринг із двома кутами, числа.
+
+   ── Оформлення гри: афіша боксерського поєдинку / зважування. Темна арена під прожектором, екран навпіл —
+   червоний і синій кути з великими фото на всю половину, по центру золоте «VS». Важкий вузький постерний шрифт
+   Alumni Sans (кирилиця), усе великими літерами. Фірмова анімація: обидва числа крутяться лічильником,
+   половина переможця спалахує, переможений тьмяніє (spin() в app.js; без руху — prefers-reduced-motion). Звук — gong(). */
+:root {
+  --bg: #110e0c; --bg-2: #241c16;
+  --surface: rgba(34, 27, 22, 0.92); --surface-solid: #221b16; --surface-2: #31281f;
+  --line: rgba(255, 228, 196, 0.12); --line-strong: rgba(255, 228, 196, 0.26);
+  --text: #f8f2e9; --muted: #bcad99;
+  --accent: #f2c230; --accent-ink: #1b1306;
+  --gold: #f2c230;
+  --radius: 10px;
+  --display: 'Alumni Sans', 'Manrope', system-ui, sans-serif;
+  --red: #d7232d; --blue: #1d5fd4;
+  --cut: 26px; /* скіс між кутами */
+}
+.pitch-bg {
+  background:
+    radial-gradient(ellipse 46% 38% at 50% -6%, rgba(255, 236, 196, 0.22), transparent 72%), /* прожектор над рингом */
+    radial-gradient(ellipse 40% 45% at -6% 100%, color-mix(in srgb, var(--red) 30%, transparent), transparent 70%),
+    radial-gradient(ellipse 40% 45% at 106% 100%, color-mix(in srgb, var(--blue) 32%, transparent), transparent 70%),
+    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.05) 1px, transparent 0) 0 0 / 7px 7px, /* друк афіші — растр */
+    linear-gradient(180deg, var(--bg-2), var(--bg));
+}
+input::placeholder { color: var(--muted); }
+
+/* постерний шрифт — великими літерами, вузький, тому крупніше */
+.round-info b, .room-code, .timer, .final h2, .rules-card h3, .scoreboard b, .table-title { font-family: var(--display); text-transform: uppercase; }
+.round-info b { font-size: 26px; font-weight: 900; letter-spacing: .02em; }
+.round-info b .run { font-style: normal; color: var(--accent); }
+.round-info .lost { font-style: normal; filter: grayscale(1); opacity: .35; }
+.timer { font-size: 30px; font-weight: 900; color: var(--accent); }
+.timer.soft { font: 600 14px/1.2 var(--font); text-transform: none; color: var(--muted); }
+.room-code { font-size: 56px; font-weight: 900; }
+.final h2 { font-size: 40px; font-weight: 900; letter-spacing: .01em; }
+.rules-card h3 { font-size: 22px; font-weight: 900; letter-spacing: .04em; }
+.scoreboard b { font-size: 22px; font-weight: 900; }
+.table-title { font-size: 15px; letter-spacing: .14em; }
+
+/* ── логотип: «ОДИН» червоним, «НА» — золота плашка, «ОДИН» синім */
+.bout-logo { font-family: var(--display); font-weight: 900; font-style: italic; text-transform: uppercase; font-size: clamp(54px, 15vw, 104px); gap: .2em; }
+.bout-logo small { font-style: normal; letter-spacing: .5em; color: var(--accent); font-size: .19em; }
+.bout-logo span { display: inline-flex; align-items: center; gap: .14em; letter-spacing: 0; }
+.bout-logo i { font-style: italic; }
+.bout-logo i.red { color: var(--red); text-shadow: 0 0 28px color-mix(in srgb, var(--red) 55%, transparent); }
+.bout-logo i.blue { color: #3d7cf0; text-shadow: 0 0 28px color-mix(in srgb, var(--blue) 55%, transparent); }
+.bout-logo b { font-size: .5em; padding: .08em .22em; transform: rotate(-6deg); background: var(--accent); color: var(--accent-ink); border-radius: 4px; }
+
+/* ── гра */
+.screen-game { max-width: 1040px; }
+.screen-game.solo .game-layout { grid-template-columns: minmax(0, 1fr); }
+.screen-game.solo .side-col { display: none; }
+.duel-col { display: grid; gap: 12px; min-width: 0; }
+.question {
+  margin: 0; text-align: center; font-family: var(--display); font-weight: 900; text-transform: uppercase;
+  font-size: clamp(28px, 4.4vw, 42px); line-height: 1; letter-spacing: .01em; color: var(--text);
+}
+
+/* ринг навпіл: два кути зі скосом між ними, «VS» по центру */
+.ring { position: relative; display: grid; grid-template-columns: 1fr 1fr; }
+.corner {
+  --c: var(--red);
+  position: relative; display: block; width: 100%; height: clamp(360px, 58vh, 540px); padding: 0; margin: 0;
+  border: 0; overflow: hidden; cursor: pointer; text-align: left; font: inherit; color: #fff;
+  background: radial-gradient(ellipse at 50% 30%, color-mix(in srgb, var(--c) 70%, #fff 6%), color-mix(in srgb, var(--c) 55%, #000) 75%);
+  clip-path: polygon(0 0, 100% 0, calc(100% - var(--cut)) 100%, 0 100%);
+  transition: filter .5s ease, opacity .3s ease;
+}
+.corner.blue { --c: var(--blue); margin-left: calc(var(--cut) * -1 + 6px); width: calc(100% + var(--cut) - 6px); clip-path: polygon(var(--cut) 0, 100% 0, 100% 100%, 0 100%); }
+.corner:disabled { cursor: default; color: #fff; }
+.corner:focus-visible { outline: none; filter: brightness(1.15); }
+/* фото — на всю половину; знизу — тінь кольору кута, щоб читалося ім'я */
+.c-photo { position: absolute; inset: 0; display: grid; place-items: center; }
+.c-photo img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 16%; filter: contrast(1.08) saturate(.9); transition: transform .4s ease; }
+.c-initials { font-family: var(--display); font-weight: 900; font-size: 140px; line-height: 1; color: rgba(255, 255, 255, 0.85); }
+.corner::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--c) 35%, transparent) 0, transparent 22%, transparent 42%, color-mix(in srgb, var(--c) 55%, #000) 78%, color-mix(in srgb, var(--c) 40%, #000) 100%);
+}
+.corner:not(:disabled):hover .c-photo img { transform: scale(1.04); }
+.c-label, .c-champ, .c-mine, .c-info, .c-picks { position: absolute; z-index: 2; }
+.c-label {
+  top: 12px; left: 14px; padding: 3px 10px; background: var(--c); border: 2px solid #fff;
+  font: 900 17px/1 var(--display); letter-spacing: .14em; text-transform: uppercase;
+}
+.corner.blue .c-label { left: auto; right: 14px; }
+.c-champ { top: 46px; left: 14px; padding: 3px 9px; background: var(--accent); color: var(--accent-ink); font: 900 17px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; }
+.corner.blue .c-champ { left: auto; right: 14px; }
+.c-info { left: 18px; right: calc(var(--cut) + 12px); bottom: 16px; display: grid; gap: 4px; }
+.corner.blue .c-info { left: calc(var(--cut) + 12px); right: 18px; text-align: right; justify-items: end; }
+.c-name {
+  font: 900 clamp(34px, 4.6vw, 54px)/.88 var(--display); text-transform: uppercase; letter-spacing: .005em;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.55); overflow-wrap: anywhere;
+}
+.c-meta { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 13.5px; font-weight: 700; color: rgba(255, 255, 255, 0.86); text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6); }
+.c-meta img { width: 22px; height: 15px; object-fit: cover; border-radius: 2px; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3); }
+
+/* число після відповіді: як на табло зважування */
+.c-value:empty { display: none; }
+.c-value { display: grid; gap: 2px; margin-top: 6px; }
+.v-num {
+  font: 900 clamp(54px, 7.5vw, 92px)/.85 var(--display); color: var(--accent); font-variant-numeric: tabular-nums;
+  text-shadow: 0 3px 0 rgba(0, 0, 0, 0.45), 0 0 26px rgba(0, 0, 0, 0.5);
+}
+.v-aff { font-size: .5em; margin-left: .12em; letter-spacing: .02em; }
+.v-aff.pre { margin: 0 .1em 0 0; }
+.v-unit { font: 900 17px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; color: #fff; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7); }
+.v-detail { font-size: 13px; font-weight: 700; color: rgba(255, 255, 255, 0.85); text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7); max-width: 34ch; }
+
+/* хто кого обрав (кімната) */
+.c-picks { top: 46px; right: calc(var(--cut) + 10px); left: 40%; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; }
+.corner.blue .c-picks { right: 14px; left: calc(var(--cut) + 10px); justify-content: flex-start; }
+.corner.blue .c-champ ~ .c-picks, .corner.red .c-champ ~ .c-picks { top: 80px; }
+.pick { padding: 3px 8px; border-radius: 99px; background: rgba(0, 0, 0, 0.62); border: 2px solid var(--pc); font-size: 13px; font-weight: 800; white-space: nowrap; }
+.c-mine {
+  display: none; top: 12px; right: calc(var(--cut) + 12px); padding: 3px 10px; background: #fff; color: #111;
+  font: 900 17px/1 var(--display); text-transform: uppercase; letter-spacing: .08em;
+}
+.corner.blue .c-mine { right: auto; left: calc(var(--cut) + 12px); }
+.corner.mine .c-mine { display: block; }
+
+/* VS — золота печатка афіші */
+.vs { position: absolute; left: 50%; top: 50%; z-index: 4; translate: -50% -50%; pointer-events: none; }
+.vs span {
+  display: grid; place-items: center; width: 84px; height: 84px; border-radius: 50%;
+  background: var(--accent); color: var(--accent-ink); border: 4px solid #110e0c; box-shadow: 0 0 0 3px var(--accent), 0 10px 30px rgba(0, 0, 0, 0.6);
+  font: italic 900 46px/1 var(--display); letter-spacing: -.02em; padding-right: 3px;
+}
+.ring.fresh .vs span { animation: vs-punch .45s cubic-bezier(.2, 1.6, .4, 1) both; }
+@keyframes vs-punch { from { transform: scale(2.4) rotate(-12deg); opacity: 0; } to { transform: none; opacity: 1; } }
+.ring.revealed .vs { opacity: .25; transition: opacity .4s; }
+
+/* обрав — інший кут притухає; відповідь — переможець спалахує, переможений тьмяніє (коли лічильник зупинився) */
+.ring.picked:not(.revealed) .corner:not(.mine) { opacity: .55; }
+.ring.settled .corner.lose { filter: grayscale(.9) brightness(.5); }
+.ring.settled .corner.win { animation: win-flash .9s ease-out; }
+.ring.settled .corner.win::before {
+  content: ""; position: absolute; inset: 0; z-index: 3; pointer-events: none;
+  box-shadow: inset 0 0 0 5px var(--accent), inset 0 0 60px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+@keyframes win-flash { 0% { filter: brightness(2.2) saturate(1.3); } 100% { filter: none; } }
+
+/* під рингом */
+.after { display: grid; gap: 8px; justify-items: center; text-align: center; min-height: 24px; }
+.after .center { text-align: center; }
+.verdict { margin: 0; font: 900 34px/1 var(--display); text-transform: uppercase; letter-spacing: .02em; }
+.verdict.good { color: var(--accent); }
+.verdict.bad { color: #ff6b6b; }
+.q-note { margin: 0; max-width: 62ch; font-size: 13.5px; color: var(--muted); }
+.after .btn-lg { min-width: 240px; }
+
+/* підсумок: питання й пара */
+.history .nm small { display: block; font-weight: 600; color: var(--muted); font-size: 13px; }
+.history .nm small b { color: var(--text); }
+
+@media (prefers-reduced-motion: reduce) {
+  .corner, .c-photo img, .ring.revealed .vs { transition: none; }
+  .ring.fresh .vs span, .ring.settled .corner.win { animation: none; }
+}
+
+/* ── телефон: кути один над одним, усе з рингом — без прокрутки */
+@media (max-width: 760px) {
+  .table-card { order: 1; } /* таблиця кімнати — під рингом (path/style.css ставить її вгору) */
+}
+@media (max-width: 640px) {
+  .screen-game { padding-top: 12px; }
+  /* верхній рядок — в один рядок поруч із кнопками звуку й мови (вони fixed справа) */
+  .game-top { min-height: 42px; margin-bottom: 6px; }
+  .round-info { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 8px; }
+  .round-info b { font-size: 22px; }
+  .round-info span { font-size: 12px; }
+  .duel-col { gap: 8px; }
+  .question { font-size: 27px; }
+  .ring { grid-template-columns: 1fr; --cut: 18px; }
+  .corner, .corner.blue {
+    height: max(170px, calc((100svh - 215px) / 2)); width: 100%; margin-left: 0;
+  }
+  .corner { clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--cut)), 0 100%); }
+  .corner.blue { margin-top: calc(var(--cut) * -1 + 5px); height: calc(max(170px, calc((100svh - 215px) / 2)) + var(--cut) - 5px); clip-path: polygon(0 var(--cut), 100% 0, 100% 100%, 0 100%); }
+  .c-photo img { object-position: 50% 22%; }
+  .c-info { right: 14px; bottom: calc(var(--cut) + 6px); }
+  .corner.blue .c-info { left: 14px; bottom: 12px; }
+  .corner.blue .c-label, .corner.blue .c-mine { top: calc(var(--cut) + 6px); }
+  .corner.blue .c-champ { top: calc(var(--cut) + 40px); }
+  .corner.blue .c-picks { top: calc(var(--cut) + 40px); }
+  .c-mine { right: 12px; }
+  .c-name { font-size: 36px; }
+  .v-num { font-size: 58px; }
+  .vs span { width: 62px; height: 62px; font-size: 34px; }
+  .verdict { font-size: 26px; }
+  /* після відповіді кути нижчі — вердикт, пояснення й «далі» теж на екрані */
+  .ring.revealed .corner { height: max(150px, calc((100svh - 215px) / 2 - 72px)); }
+  .ring.revealed .corner.blue { height: calc(max(150px, calc((100svh - 215px) / 2 - 72px)) + var(--cut) - 5px); }
+  .ring.revealed .c-name { font-size: 28px; }
+  .ring.revealed .c-meta { display: none; }
+  .corner { transition: filter .5s ease, opacity .3s ease, height .35s ease; }
+  .q-note { font-size: 12px; line-height: 1.35; }
+  .after { gap: 6px; }
+  .after .btn-lg { padding: 12px 22px; }
+}
+@media (prefers-reduced-motion: reduce) { .corner { transition: none !important; } }

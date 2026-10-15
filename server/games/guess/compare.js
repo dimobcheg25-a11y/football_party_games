@@ -303,4 +303,4 @@ function compare(g, t) {
   return columnsFor(t).map((c) => ({ id: c.id, ...cells[c.id] }));
 }
 
-module.exports = { profileOf, compare, columnsFor, leagueOf, nationName, COLUMNS, TROPHIES, money };
+module.exports = { profileOf, compare, columnsFor, leagueOf, nationName, placeT, COLUMNS, TROPHIES, money };

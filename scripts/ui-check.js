@@ -1,6 +1,6 @@
 // Перевірка інтерфейсу у справжньому Chrome (без вікна): проходить основні екрани ігор, ловить помилки JS
 // і зберігає знімки в .shots/ (їх дивиться Claude перед пушем — лише нові/змінені екрани, щоб не витрачати токени).
-// Запуск: npm run ui-check -- [hub|top|spy|guess|path|crossroads ...] [--mobile]   (без назв — усе)
+// Запуск: npm run ui-check -- [hub|top|spy|guess|duel|path|crossroads ...] [--mobile]   (без назв — усе)
 // Chrome: встановлений у системі (або шлях у змінній CHROME). Браузер не завантажується — лише playwright-core.
 
 const fs = require('fs');
@@ -206,6 +206,52 @@ const scenarios = {
     await shot(p, `crossroads-game${sfx}`, { full: true });
     bot.close();
     await p.context().close();
+  },
+
+  // Один на один: соло-серія (пара → відповідь → числа), кімната з другом (хто кого обрав), телефон — ринг без прокрутки.
+  async duel(browser) {
+    const p = await person(browser, 'duel');
+    await p.goto(`${URL}/duel/`);
+    await p.waitForSelector('[data-multi="groups"] .chip.active');
+    await shot(p, 'duel-home', { full: true });
+    await p.fill('#name-input', 'Тест');
+    await p.click('[data-opt="mode"] [data-val="streak"]');
+    await p.click('#solo-btn');
+    await p.waitForSelector('#corner-0 .c-name');
+    await shot(p, 'duel-pair');
+    await p.click('#corner-0');
+    await p.waitForSelector('#ring.settled');
+    await shot(p, 'duel-reveal');
+    await p.context().close();
+
+    const { host, guests } = await room(browser, 'duel', 2);
+    await host.click('#start-btn');
+    for (const x of [host, ...guests]) await x.waitForSelector('#corner-0 .c-name');
+    await host.click('#corner-1');
+    await guests[0].click('#corner-0');
+    await host.waitForSelector('#ring.settled');
+    await shot(host, 'duel-room-reveal', { full: true });
+    for (const x of [host, ...guests]) await x.context().close();
+
+    await phoneShot(browser, 'duel', '/duel/', async (x) => {
+      await x.fill('#name-input', 'Тест');
+      await x.click('#solo-btn');
+      await x.waitForSelector('#corner-1 .c-name');
+    });
+    if (mobile) {
+      // телефон: ринг цілком на екрані (без прокрутки) і відповідь
+      const x = await person(browser, 'duel-phone2', PHONE);
+      await x.goto(`${URL}/duel/`);
+      await x.fill('#name-input', 'Тест');
+      await x.click('#solo-btn');
+      await x.waitForSelector('#corner-1 .c-name');
+      const bottom = await x.evaluate(() => document.querySelector('#corner-1').getBoundingClientRect().bottom);
+      if (bottom > PHONE.height) errors.push(`[duel-phone] ринг не вміщається: низ синього кута ${Math.round(bottom)} > ${PHONE.height}`);
+      await x.click('#corner-1');
+      await x.waitForSelector('#ring.settled');
+      await shot(x, 'duel-reveal-phone');
+      await x.context().close();
+    }
   },
 
   async path(browser) {
