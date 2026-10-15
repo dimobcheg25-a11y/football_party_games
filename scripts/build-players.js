@@ -120,6 +120,7 @@ async function fetchCandidates() {
   const rows = await sparql(`SELECT DISTINCT ?p ?sl WHERE {
     { ${block(CLUB_QIDS, MIN_SITELINKS_CLUB)} } UNION { ${block(NATION_QIDS, MIN_SITELINKS_NATION)} } UNION { ${block(UA_QIDS, MIN_SITELINKS_UKRAINE)} }
     ?p wdt:P106 wd:Q937857 .
+    FILTER NOT EXISTS { ?p wdt:P21 ?g . FILTER(?g IN (wd:Q6581072, wd:Q1052281)) } # лише чоловічий футбол
   }`);
   return new Map(rows.map((r) => [qidOf(r.p), Number(r.sl)]));
 }

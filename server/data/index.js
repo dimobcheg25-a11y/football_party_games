@@ -40,7 +40,8 @@ try {
 const COACH_FAME = 0.6;
 
 // fame — у скількох мовних розділах Вікіпедії є стаття (грубий показник світової відомості); rawFame — без знижки тренерам.
-const players = rawPlayers.map((p) => ({
+const { EXCLUDED } = require('./derived-tags');
+const players = rawPlayers.filter((p) => !EXCLUDED.has(p.qid)).map((p) => ({
   ...p, tags: new Set(p.tags), photo: photos[p.id] || null,
   rawFame: p.fame, coach: coaches.has(p.qid), fame: coaches.has(p.qid) ? Math.round(p.fame * COACH_FAME) : p.fame,
 }));

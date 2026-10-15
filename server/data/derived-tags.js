@@ -15,8 +15,13 @@ const JOURNEY_CLUBS = 10;
 
 // Клуби, де гравець не зіграв жодного матчу (підписав, але не грав; оренда без матчів) — це не етап кар'єри.
 // Лишаємо лише поточний клуб (ще без матчів). Той самий об'єкт careers.json бачать усі ігри (кеш require), тож чистимо один раз.
+// Футболістки, що потрапили в базу до фільтра статі в build-players (за P21) — прибираються з бази й кар'єр;
+// після наступного npm run build-players їх там не буде й без цього списку.
+const EXCLUDED = new Set(['Q27995553', 'Q266873', 'Q273530', 'Q6698219']);
+
 function cleanCareers(careers) {
   if (!careers || careers.cleaned) return;
+  for (const q of EXCLUDED) delete careers.careers?.[q];
   for (const c of Object.values(careers.careers || {})) {
     const kept = c.clubs.filter((x, i) => x.a !== 0 || (i === c.clubs.length - 1 && x.e == null));
     if (kept.length) c.clubs = kept;
@@ -47,4 +52,4 @@ function addDerivedTags(players) {
   }
 }
 
-module.exports = { addDerivedTags, cleanCareers };
+module.exports = { addDerivedTags, cleanCareers, EXCLUDED };
