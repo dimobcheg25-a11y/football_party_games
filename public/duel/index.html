@@ -112,11 +112,12 @@
         </div>
 
         <div class="field">
-          <span class="field-label" data-en="Time to answer (with friends)">Час на відповідь (з друзями)</span>
+          <span class="field-label" data-en="Time to answer">Час на відповідь</span>
           <div class="chips" data-opt="seconds" role="radiogroup" aria-label="Час на відповідь" data-en-aria-label="Time to answer">
             <button type="button" class="chip" data-val="5" data-en="5 s">5 с</button>
             <button type="button" class="chip" data-val="10" data-en="10 s">10 с</button>
             <button type="button" class="chip" data-val="15" data-en="15 s">15 с</button>
+            <button type="button" class="chip" data-val="0" data-en="∞ no timer">∞ без таймера</button>
           </div>
         </div>
       </div>
@@ -167,6 +168,7 @@
     <div class="game-layout">
       <section class="duel-col">
         <h2 class="question" id="question"></h2>
+        <div class="time-bar hidden" id="time-bar" aria-hidden="true"><i></i></div>
         <div class="ring" id="ring">
           <button type="button" class="corner red" data-side="0" id="corner-0"></button>
           <div class="vs" aria-hidden="true"><span>VS</span></div>

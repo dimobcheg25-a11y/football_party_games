@@ -109,12 +109,22 @@ async function main() {
   console.log(`✓ соло «Серія»: перемога, ${st.pair ? '' : ''}чемпіон лишився, помилка — кінець (рахунок ${st.scores[0]})`);
   s1.close();
 
+  // ── соло з таймером: час вийшов без відповіді — помилка, серія закінчилась
+  const s3 = bot();
+  await emit(s3, 'create', { name: 'Таймер', solo: true, mode: 'streak', lives: 1, seconds: 5, difficulty: 'easy', level: 'easy' });
+  st = await nextState(s3, (x) => x.phase === 'guess');
+  assert.ok(st.deadline > Date.now(), 'соло з таймером — є дедлайн');
+  st = await nextState(s3, (x) => x.phase === 'reveal', 9000);
+  assert.strictEqual(st.lives, 0, 'не відповів вчасно — мінус життя');
+  console.log('✓ соло з таймером: час вийшов — помилка');
+  s3.close();
+
   // ── соло «Раунди»: 10 пар
   const s2 = bot();
-  await emit(s2, 'create', { name: 'Раунди', solo: true, mode: 'rounds', rounds: 10, difficulty: 'easy', level: 'easy' });
+  await emit(s2, 'create', { name: 'Раунди', solo: true, mode: 'rounds', rounds: 10, seconds: 0, difficulty: 'easy', level: 'easy' });
   for (let i = 1; i <= 10; i++) {
     st = await nextState(s2, (x) => x.phase === 'guess' && x.round === i);
-    assert.strictEqual(st.deadline, null, 'соло — без таймера');
+    assert.strictEqual(st.deadline, null, '«без таймера» (seconds: 0) — дедлайну немає');
     await emit(s2, 'answer', { side: i === 3 ? 1 - st.testAnswer : st.testAnswer });
     await nextState(s2, (x) => x.phase === 'reveal' && x.round === i);
     await emit(s2, 'next');

@@ -45,7 +45,8 @@
     createOptions: (s) => ({ ...s, rounds: Number(s.rounds), lives: Number(s.lives), seconds: Number(s.seconds) }),
     optionList: (o, solo) => [
       solo ? (o.mode === 'streak' ? L(`🔥 Серія · ${o.lives} ${pl(o.lives, ['помилка', 'помилки', 'помилок'], [])}`, `🔥 Streak · ${o.lives} ${pl(o.lives, [], ['mistake', 'mistakes'])}`)
-        : L(`${o.rounds} пар`, `${o.rounds} pairs`)) : L(`${o.rounds} пар · ${o.seconds} с на відповідь`, `${o.rounds} pairs · ${o.seconds} s to answer`),
+        : L(`${o.rounds} пар`, `${o.rounds} pairs`)) : L(`${o.rounds} пар`, `${o.rounds} pairs`),
+      o.seconds ? L(`⏱ ${o.seconds} с на відповідь`, `⏱ ${o.seconds} s to answer`) : L('без таймера', 'no timer'),
       DIFF_LABELS[o.difficulty], LEVEL_LABELS[o.level],
       (o.groups || []).map((id) => groups?.find((x) => x.id === id)?.title || id).join(', '),
     ],
@@ -236,6 +237,16 @@
   let lastTick = -1;
   function tick() {
     const el = $('#timer');
+    const bar = $('#time-bar');
+    // смуга часу над рингом: зменшується до нуля, останні 3 с — червона й пульсує
+    const answering = state?.status === 'playing' && state.phase === 'guess' && state.deadline && state.options?.seconds;
+    bar.classList.toggle('hidden', !answering);
+    if (answering) {
+      const msLeft = Math.max(0, state.deadline - g.serverNow());
+      bar.firstElementChild.style.transform = `scaleX(${Math.min(1, msLeft / (state.options.seconds * 1000))})`;
+      bar.classList.toggle('low', msLeft <= 3000);
+      $('#ring').classList.toggle('hurry', msLeft <= 3000 && state.myPick == null);
+    } else $('#ring').classList.remove('hurry');
     if (!state || state.status !== 'playing' || !state.deadline) { el.textContent = ''; el.classList.remove('low'); return; }
     const left = Math.max(0, Math.ceil((state.deadline - g.serverNow()) / 1000));
     el.textContent = state.phase === 'reveal' ? L(`далі через ${left} с`, `next in ${left}s`) : `⏱ ${left}`;
@@ -245,7 +256,7 @@
     if (low && left !== lastTick && left > 0 && state.myPick == null) window.Sound.play('tick');
     lastTick = left;
   }
-  setInterval(tick, 250);
+  setInterval(tick, 100);
 
   // ── відповідь: клік по куту або клавіші ← → (1 / 2); Enter — далі
   async function answer(side) {

@@ -124,6 +124,24 @@ const QUESTIONS = [
     value: (p) => careerOf(p)?.nation?.g ?? null,
     show: plain, gap: RATIO,
   },
+  {
+    id: 'natRate', group: 'nation',
+    title: T('Хто частіше забивав за збірну?', 'Who scored more often for their country?'), unit: T('гола за матч у збірній', 'international goals per game'),
+    note: T('Голи за збірну, поділені на матчі за неї. Лише гравці з 20+ матчами за збірну.', 'International goals divided by caps. Only players with 20+ caps.'),
+    value: (p) => { const n = careerOf(p)?.nation; return n && n.a >= 20 && n.g != null ? Math.round((n.g / n.a) * 100) / 100 : null; },
+    show: (v) => ({ num: v, dec: 2 }), gap: RATIO,
+  },
+  {
+    id: 'natTitles', group: 'nation',
+    title: T('Хто виграв більше турнірів зі збірною?', 'Who won more tournaments with their country?'), unit: T('турнірів зі збірною', 'international titles'),
+    note: T('Чемпіонат світу, Євро, Кубок Америки — кожен рахується раз.', 'World Cup, Euro, Copa América — each counts once.'),
+    value: (p) => (careerOf(p)?.nation ? ['WC', 'EURO', 'COPA'].filter((t) => p.tags.has(t)).length : null),
+    show(v, p) {
+      const list = TROPHIES.filter(([id]) => ['WC', 'EURO', 'COPA'].includes(id) && p.tags.has(id));
+      return { num: v, dec: 0, detail: list.length ? T(list.map((t) => t[1]).join(', '), list.map((t) => t[2]).join(', ')) : T('жодного', 'none') };
+    },
+    gap: { kind: 'abs', easy: 2, hard: 1 },
+  },
 
   // ── гроші (Transfermarkt)
   {

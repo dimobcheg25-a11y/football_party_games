@@ -201,3 +201,14 @@ input::placeholder { color: var(--muted); }
   .after .btn-lg { padding: 12px 22px; }
 }
 @media (prefers-reduced-motion: reduce) { .corner { transition: none !important; } }
+
+/* ── смуга часу над рингом: видно, що час спливає; останні 3 с — червона, пульсує, кути тремтять */
+.time-bar { height: 10px; border-radius: 99px; background: rgba(255,255,255,.1); overflow: hidden; margin: 0 0 10px; }
+.time-bar i { display: block; height: 100%; background: var(--accent); transform-origin: left; transition: transform .1s linear, background .2s; }
+.time-bar.low i { background: #ff3b3b; animation: bar-pulse .5s ease-in-out infinite alternate; }
+.timer.low { color: #ff3b3b; animation: bar-pulse .5s ease-in-out infinite alternate; }
+.ring.hurry .vs span { color: #ff3b3b; }
+.ring.hurry .vs { animation: vs-shake .25s linear infinite; }
+@keyframes bar-pulse { from { opacity: 1; } to { opacity: .45; } }
+@keyframes vs-shake { 0%, 100% { rotate: 0deg; } 25% { rotate: -5deg; } 75% { rotate: 5deg; } } /* .vs центрується через translate — тут лише поворот */
+@media (prefers-reduced-motion: reduce) { .time-bar.low i, .timer.low, .ring.hurry .vs { animation: none; } }

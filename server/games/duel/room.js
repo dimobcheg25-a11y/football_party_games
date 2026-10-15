@@ -10,7 +10,7 @@ const { nationName, profileOf, placeT } = require('../guess/compare');
 
 const MAX_PLAYERS = 10;
 const ALLOWED_ROUNDS = [10, 20];
-const ALLOWED_SECONDS = [5, 10, 15];
+const ALLOWED_SECONDS = [0, 5, 10, 15]; // 0 — без таймера
 const ALLOWED_LIVES = [1, 3];
 const LEVELS = ['easy', 'hard', 'mix'];
 const REVEAL_MS = Number(process.env.DUEL_REVEAL_MS) || 7000; // кімната: скільки показуємо відповідь, якщо не всі натиснули «далі»
@@ -165,7 +165,7 @@ class DuelRoom extends BaseRoom {
     this.winner = this.pair[0].v > this.pair[1].v ? 0 : 1;
     this.phase = 'guess';
     this.startedAt = Date.now();
-    if (!this.solo) {
+    if (this.options.seconds) { // таймер — і в соло, і в кімнаті; без відповіді вчасно — помилка
       const ms = this.options.seconds * 1000;
       this.deadline = Date.now() + ms;
       this.timer = setTimeout(() => this.reveal(), ms);
