@@ -152,3 +152,8 @@
 @media (prefers-reduced-motion: reduce) {
   .slot.fresh, .logo.show span { animation: none; }
 }
+
+/* підтвердження — неонова плашка телешоу */
+.ask-sheet { border: 2px solid var(--neon-cyan); transform: skewX(-4deg); box-shadow: 0 0 0 1px rgba(34, 211, 255, .3), 0 0 36px rgba(34, 211, 255, .35), 0 30px 80px rgba(0,0,0,.6); }
+.ask-sheet > * { transform: skewX(4deg); }
+.ask-sheet .ask-text { text-shadow: 0 0 14px rgba(255, 58, 160, .55); }

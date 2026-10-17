@@ -109,6 +109,17 @@ async function main() {
   st = await nextState(easyBot, (x) => x.phase === 'guess');
   assert.strictEqual(topicById.get(st.topic.id).level, 'easy', 'легка тема');
   console.log(`✓ рівні тем: випадкова легка — «${st.topic.title}»`);
+  // інша тема: поки нічого не назвав — можна, номер раунду той самий, тема й категорія інші; після відповіді — ні
+  assert.ok(st.canSkip, 'тему можна пропустити');
+  const skipped = st.topic;
+  assert.ok((await emit(easyBot, 'skipTopic')).ok, 'пропуск теми');
+  st = await nextState(easyBot, (x) => x.phase === 'guess' && x.topic.id !== skipped.id);
+  assert.strictEqual(st.round, 1, 'той самий раунд');
+  assert.notStrictEqual(st.topic.category, skipped.category, 'інша категорія');
+  await emit(easyBot, 'guess', { playerId: st.testAnswer.find(Boolean) });
+  st = await nextState(easyBot, (x) => x.mine?.found.length > 0);
+  assert.ok(!st.canSkip && (await emit(easyBot, 'skipTopic')).error, 'після відповіді тему не пропустиш');
+  console.log(`✓ інша тема: «${skipped.title}» → «${st.topic.title}»`);
   easyBot.close();
   picker.close();
 

@@ -57,7 +57,7 @@
     renderGame,
     renderFinal,
   });
-  const { $, emit, store, toast, escapeHtml, initials, seatName, seatStyle } = g;
+  const { $, emit, store, toast, ask, escapeHtml, initials, seatName, seatStyle } = g;
   const hearts = (n) => (n == null ? '' : n ? '♥'.repeat(n) : '💔'); // серця телешоу — колір з CSS
 
   function optionList(o, solo) {
@@ -229,6 +229,8 @@
     $('#pass-btn').disabled = !can;
     $('#giveup-btn').classList.toggle('hidden', turns);
     $('#giveup-btn').disabled = !can;
+    // інша тема — господар (у соло — сам), поки в раунді ще ніхто нічого не назвав
+    $('#skip-topic-btn').classList.toggle('hidden', !(s.canSkip && s.host === mySeat));
     const lives = turns ? (s.order.includes(mySeat) ? s.lives[mySeat] : null) : s.mine?.livesLeft ?? (s.options.lives || null);
     $('#lives').textContent = s.options.lives ? hearts(lives) : '';
     if (turns) {
@@ -381,11 +383,12 @@
     if (!input.disabled) input.focus();
   }
 
-  $('#pass-btn').addEventListener('click', () => {
-    if (confirm(L('Пас? Це забере одне життя.', 'Pass? It costs one life.'))) emit('pass');
+  $('#skip-topic-btn').addEventListener('click', () => g.act('skipTopic'));
+  $('#pass-btn').addEventListener('click', async () => {
+    if (await ask(L('Пас?', 'Pass?'), { note: L('Це забере одне життя.', 'It costs one life.'), ok: L('Пас', 'Pass') })) emit('pass');
   });
-  $('#giveup-btn').addEventListener('click', () => {
-    if (confirm(L('Здатися в цьому раунді? Знайдені очки залишаться.', 'Give up this round? You keep the points you found.'))) emit('giveUp');
+  $('#giveup-btn').addEventListener('click', async () => {
+    if (await ask(L('Здатися в цьому раунді?', 'Give up this round?'), { note: L('Знайдені очки залишаться.', 'You keep the points you found.'), ok: L('🏳️ Здатися', '🏳️ Give up'), danger: true })) emit('giveUp');
   });
 
   // ── підсумок

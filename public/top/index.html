@@ -176,7 +176,7 @@
       <ul class="lobby-players" id="lobby-players"></ul>
       <button id="start-btn" class="btn btn-primary btn-lg hidden" data-en="Start game">Почати гру</button>
       <p id="lobby-wait" class="hint"></p>
-      <button class="btn btn-ghost btn-sm" data-action="leave" data-en="Leave room">Вийти з кімнати</button>
+      <button class="btn btn-secondary btn-sm btn-leave" data-action="leave" data-en="🚪 Leave room">🚪 Вийти з кімнати</button>
     </section>
   </main>
 
@@ -185,6 +185,7 @@
     <div class="game-top">
       <div class="round-info" id="round-info"></div>
       <div class="timer" id="timer"></div>
+      <button class="btn btn-secondary btn-sm btn-leave" data-action="leave" data-en="🚪 Leave game">🚪 Вийти з гри</button>
     </div>
 
     <div class="game-layout">
@@ -207,8 +208,9 @@
             </div>
             <div class="answer-actions">
               <span class="lives" id="lives"></span>
-              <button id="pass-btn" class="btn btn-ghost btn-sm hidden" data-en="Pass">Пас</button>
-              <button id="giveup-btn" class="btn btn-ghost btn-sm" data-en="Give up">Здатися</button>
+              <button id="skip-topic-btn" class="btn btn-secondary btn-sm hidden" data-en="⏭ Skip topic">⏭ Інша тема</button>
+              <button id="pass-btn" class="btn btn-secondary btn-sm hidden" data-en="Pass">Пас</button>
+              <button id="giveup-btn" class="btn btn-secondary btn-sm btn-giveup" data-en="🏳️ Give up">🏳️ Здатися</button>
             </div>
             <p class="hint" id="answer-hint"></p>
           </div>
@@ -227,9 +229,6 @@
       </aside>
     </div>
 
-    <div class="game-footer">
-      <button class="btn btn-ghost btn-sm" data-action="leave" data-en="Leave">Вийти</button>
-    </div>
   </main>
 
   <!-- ── Підсумок серії -->

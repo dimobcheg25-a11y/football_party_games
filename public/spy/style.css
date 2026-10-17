@@ -175,3 +175,13 @@ input::placeholder { color: var(--muted); }
 
 /* бали в таблиці й підсумку — кольором теки, не червоним (червоне тут — печатка й шпигун) */
 .scoreboard .gain, .scoreboard b.bump, .history .val { color: var(--folder); }
+
+/* підтвердження — аркуш із теки з печаткою */
+.ask-sheet {
+  --text: var(--ink); --muted: var(--ink-muted); --line-strong: rgba(60, 40, 10, 0.34);
+  color: var(--ink); background-color: var(--folder); border: 0; border-radius: 4px 14px 6px 6px;
+  background-image: repeating-linear-gradient(0deg, rgba(0,0,0,0.025) 0 1px, transparent 1px 4px);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6), inset 0 -3px 0 var(--folder-2);
+}
+.ask-sheet .btn-secondary { background: rgba(255, 250, 235, 0.35); }
+.ask-sheet .ask-text { font-family: var(--stamp-font); font-weight: 400; font-size: 18px; }

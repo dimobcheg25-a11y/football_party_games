@@ -35,7 +35,7 @@
     renderGame,
     renderFinal,
   });
-  const { $, emit, store, toast, escapeHtml, initials, plural, seatName, seatStyle } = g;
+  const { $, emit, store, toast, ask, escapeHtml, initials, plural, seatName, seatStyle } = g;
 
   function playSounds(p, s) {
     if (!p) return;
@@ -215,8 +215,8 @@
     input.focus();
   }
 
-  $('#giveup-btn').addEventListener('click', () => {
-    if (confirm(L('Здатися в цьому раунді? Очок за нього не буде.', 'Give up this round? You will get no points for it.'))) emit('giveUp');
+  $('#giveup-btn').addEventListener('click', async () => {
+    if (await ask(L('Здатися в цьому раунді?', 'Give up this round?'), { note: L('Очок за нього не буде.', 'You will get no points for it.'), ok: L('🏳️ Здатися', '🏳️ Give up'), danger: true })) emit('giveUp');
   });
 
   // ── підсумок

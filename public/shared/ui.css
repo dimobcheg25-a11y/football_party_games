@@ -112,6 +112,18 @@ input::placeholder { color: #6b8577; }
 .confirm-sheet { max-width: 400px; text-align: center; }
 .confirm-sheet p { margin: 4px 0 16px; font-weight: 700; font-size: 17px; }
 .confirm-actions { display: flex; gap: 10px; justify-content: center; }
+/* вікно підтвердження (RoomClient: g.ask) — шрифт заголовків і кольори гри; свої штрихи світу — у <гра>/style.css */
+.ask-sheet { border-color: color-mix(in srgb, var(--accent) 45%, var(--line-strong)); }
+.ask-sheet .ask-text { font-family: var(--display); font-size: 22px; line-height: 1.25; margin: 6px 0 16px; }
+.ask-sheet .ask-text:has(+ .ask-note) { margin-bottom: 6px; }
+.ask-note { display: block; color: var(--muted); font-size: 15px; margin-bottom: 18px; }
+.ask-sheet .btn { min-width: 120px; }
+
+/* «Здатися» й «Вийти» — помітні (рамка), але не головна дія */
+.btn-giveup { border-color: color-mix(in srgb, var(--danger) 60%, transparent); }
+.btn-giveup:hover:not(:disabled) { background: color-mix(in srgb, var(--danger) 16%, transparent); }
+.btn-leave:hover:not(:disabled) { border-color: color-mix(in srgb, var(--danger) 60%, transparent); }
+.game-top .btn-leave { flex: none; }
 
 .picker-title { font-weight: 800; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .picker-title .tag { background: rgba(255,255,255,0.08); border: 1px solid var(--line-strong); border-radius: 8px; padding: 3px 9px; font-size: 14px; }

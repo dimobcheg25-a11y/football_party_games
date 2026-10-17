@@ -29,7 +29,7 @@
     renderGame,
     renderFinal,
   });
-  const { $, act, toast, escapeHtml, initials, plural, seatName, seatStyle } = g;
+  const { $, act, toast, ask, escapeHtml, initials, plural, seatName, seatStyle } = g;
   const points = (n) => `${n} ${window.I18n.plural(n, ['бал', 'бали', 'балів'], ['point', 'points'])}`;
   const photoHtml = (p, cls) => `<span class="${cls}">${p.photo ? `<img src="${p.photo}" alt="" />` : `<span>${escapeHtml(initials(p.name))}</span>`}</span>`;
 
@@ -145,8 +145,8 @@
       $('#voice-btn').addEventListener('click', () => act('clue', {}));
       if (!('ontouchstart' in window)) input.focus();
     }
-    $('#reroll-btn').addEventListener('click', () => {
-      if (confirm(L('Запропонувати замінити футболіста? Усі проголосують.', 'Propose replacing the footballer? Everyone will vote.'))) act('requestReroll');
+    $('#reroll-btn').addEventListener('click', async () => {
+      if (await ask(L('Запропонувати замінити футболіста?', 'Propose replacing the footballer?'), { note: L('Усі проголосують.', 'Everyone will vote.'), ok: L('Запропонувати', 'Propose') })) act('requestReroll');
     });
   }
 
@@ -160,8 +160,9 @@
       <div class="vote-grid">${candidates.map((i) => `<button class="vote-btn" style="${seatStyle(i)}" data-target="${i}" ${voted ? 'disabled' : ''}><span class="dot-p"></span>${escapeHtml(seatName(i))}</button>`).join('')}</div>
       <p class="hint">${waiting.length ? `${L('Чекаємо', 'Waiting for')}: ${waiting.map((i) => escapeHtml(seatName(i))).join(', ')}` : ''}</p>
     </div>`;
-    stage.querySelectorAll('[data-target]').forEach((b) => b.addEventListener('click', () => {
-      if (confirm(L(`Голосуєш за: ${seatName(Number(b.dataset.target))}?`, `Vote for ${seatName(Number(b.dataset.target))}?`))) act('vote', { target: Number(b.dataset.target) });
+    stage.querySelectorAll('[data-target]').forEach((b) => b.addEventListener('click', async () => {
+      const target = Number(b.dataset.target);
+      if (await ask(L(`Голосуєш за: ${seatName(target)}?`, `Vote for ${seatName(target)}?`), { note: L('Голос не можна змінити.', 'You can’t change your vote.'), ok: L('Голосую', 'Vote') })) act('vote', { target });
     }));
   }
 
@@ -261,11 +262,11 @@
     shownScores = Object.fromEntries(seats.map((i) => [i, s.scores[i]]));
   }
 
-  $('#skip-btn').addEventListener('click', () => {
-    if (confirm(L(`Пропустити хід гравця ${seatName(state.active)}?`, `Skip ${seatName(state.active)}’s turn?`))) act('skipTurn');
+  $('#skip-btn').addEventListener('click', async () => {
+    if (await ask(L(`Пропустити хід гравця ${seatName(state.active)}?`, `Skip ${seatName(state.active)}’s turn?`), { ok: L('Пропустити', 'Skip') })) act('skipTurn');
   });
-  $('#force-vote-btn').addEventListener('click', () => {
-    if (confirm(L('Перейти до голосування, не чекаючи всіх підказок?', 'Go to the vote without waiting for all clues?'))) act('forceVote');
+  $('#force-vote-btn').addEventListener('click', async () => {
+    if (await ask(L('Перейти до голосування?', 'Go to the vote?'), { note: L('Не чекаючи всіх підказок.', 'Without waiting for all clues.'), ok: L('До голосування', 'To the vote') })) act('forceVote');
   });
 
   // ── шпигун вгадує: автодоповнення
@@ -283,8 +284,8 @@
             <span class="s-text"><span class="s-main">${escapeHtml(pname(p))}</span><span class="s-sub">${escapeHtml(L(`${p.name}${p.born ? ` · ${p.born}` : ''}`, `${p.born || ''}`))}</span></span></li>`).join('')
         : `<li class="empty">${L('Нікого не знайдено', 'No one found')}</li>`;
     };
-    const choose = (p) => {
-      if (!p || !confirm(L(`Твоя відповідь: ${pname(p)}? Спроба лише одна.`, `Your answer: ${pname(p)}? One try only.`))) return;
+    const choose = async (p) => {
+      if (!p || !(await ask(L(`Твоя відповідь: ${pname(p)}?`, `Your answer: ${pname(p)}?`), { note: L('Спроба лише одна.', 'One try only.'), ok: L('Відповісти', 'Answer') }))) return;
       act('spyGuess', { playerId: p.id });
     };
     input.addEventListener('input', () => { active = 0; draw(); });

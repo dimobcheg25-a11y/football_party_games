@@ -145,11 +145,37 @@ class TopRoom extends BaseRoom {
     const level = this.options.topicLevel;
     const leveled = level === 'mix' ? fit : fit.filter((t) => t.level === level);
     const all = leveled.length ? leveled : fit; // для цих категорій такого рівня немає — беремо будь-які
-    // спершу обираємо категорію (щоб трансферних тем-клубів не було в рази більше), потім тему
-    const cats = [...new Set(all.map((t) => t.category))];
+    // спершу обираємо категорію (щоб трансферних тем-клубів не було в рази більше), потім тему.
+    // Лише з тем, яких ще не було (у категорії може бути одна тема — вона не має випадати знову),
+    // і не з тієї ж категорії, що минулого раунду, якщо є інші.
+    let fresh = all.filter((t) => !this.usedTopics.has(t.id));
+    if (!fresh.length) fresh = fit.filter((t) => !this.usedTopics.has(t.id)); // теми цього рівня скінчились — беремо інші
+    if (!fresh.length) fresh = all; // усе вже було — повторюємо
+    let cats = [...new Set(fresh.map((t) => t.category))];
+    if (cats.length > 1) cats = cats.filter((c) => c !== this.lastCategory);
     const cat = pick(cats);
-    const fresh = all.filter((t) => t.category === cat && !this.usedTopics.has(t.id));
-    return pick(fresh.length ? fresh : all.filter((t) => t.category === cat));
+    return pick(fresh.filter((t) => t.category === cat));
+  }
+
+  canSkip() {
+    if (this.status !== 'playing' || this.phase !== 'guess') return false;
+    return !this.wrong.length && ![...this.boards.values()].some((b) => b.found.size || b.wrong.length || b.done);
+  }
+
+  // Пропустити тему (не хочеться її грати): замість неї — інша, номер раунду той самий.
+  // Лише господар (у соло — сам гравець) і лише поки в раунді ще ніхто нічого не знайшов і не помилився.
+  skipTopic(seat) {
+    if (this.status !== 'playing' || this.phase !== 'guess') return { error: T('Зараз не можна', 'Not right now') };
+    if (seat !== this.host()) return { error: T('Пропустити тему може господар кімнати', 'Only the host can skip the topic') };
+    if (!this.canSkip()) return { error: T('Тему вже почали — пропустити не можна', 'The topic is already in play — it can’t be skipped') };
+    this.resetRound();
+    if (this.options.pick === 'host') {
+      this.phase = 'pick';
+      this.changed();
+    } else {
+      this.beginRound(this.randomTopic());
+    }
+    return { ok: true };
   }
 
   // Господар обирає тему (або випадкову — topicId не вказано).
@@ -168,6 +194,7 @@ class TopRoom extends BaseRoom {
 
   beginRound(topic) {
     this.topic = topic;
+    this.lastCategory = topic.category; // наступна випадкова тема — з іншої категорії
     this.usedTopics.add(topic.id);
     this.slots = topic.entries.slice(0, this.options.size);
     this.missing = new Set(this.slots.map((e, i) => (e.p ? -1 : i)).filter((i) => i >= 0));
@@ -379,6 +406,7 @@ class TopRoom extends BaseRoom {
       lives: Object.fromEntries(this.lives),
       wrong: turns ? this.wrong.map((w) => ({ seat: w.seat, player: w.playerId ? publicPlayer(playerById.get(w.playerId)) : null })) : [],
       roundPoints: this.roundPoints,
+      canSkip: this.canSkip(), // тему ще можна пропустити (ніхто нічого не назвав)
       nextVotes: [...this.nextVotes],
       scores: this.scores,
       deadline: this.deadline,

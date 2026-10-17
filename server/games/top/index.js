@@ -34,6 +34,7 @@ function register({ app, io }) {
       guess: (room, seat, { playerId } = {}) => room.guess(seat, playerId),
       pass: (room, seat) => room.pass(seat),
       giveUp: (room, seat) => room.giveUp(seat),
+      skipTopic: (room, seat) => room.skipTopic(seat),
       next: (room, seat) => room.next(seat),
     },
     roomInfo: (room) => ({ solo: room.solo, options: room.options }),

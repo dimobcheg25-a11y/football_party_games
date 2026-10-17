@@ -161,7 +161,7 @@ function rank(entries) {
 }
 
 const NOTES = {
-  transfers: T('За Transfermarkt; переходи до ~2012 року — не всі.', 'Per Transfermarkt; transfers before ~2012 are incomplete.'),
+  transfers: T('Сума, яку клуб заплатив за перехід (не ринкова вартість). За Transfermarkt; переходи до ~2012 року — не всі.', 'The fee a club paid for the transfer (not market value). Per Transfermarkt; transfers before ~2012 are incomplete.'),
   goals: T('Голи в чемпіонатах (без кубків і єврокубків) — за таблицями кар’єри у Вікіпедії.', 'League goals (no cups or European competitions) — from Wikipedia career tables.'),
   apps: T('Матчі в чемпіонатах — за таблицями кар’єри у Вікіпедії.', 'League appearances — from Wikipedia career tables.'),
   nation: T('Офіційні матчі за збірну — за Вікіпедією.', 'Official international matches — per Wikipedia.'),
@@ -187,12 +187,13 @@ function addTopic(id, category, title, entries, note = NOTES[category]) {
 }
 
 // ── трансфери
+const PEAK_NOTE = T('Найвища оцінка Transfermarkt за всю кар’єру — не поточна вартість і не сума трансферу.', 'The highest Transfermarkt valuation over the whole career — not the current value and not a transfer fee.');
 addTopic('fees', 'transfers', T('Найдорожчі трансфери в історії', 'Most expensive transfers ever'), fees.map(feeEntry));
 addTopic('fees-ua', 'transfers', T('Найдорожчі трансфери українців', 'Most expensive Ukrainian transfers'), fees.filter((f) => ukr(f.p)).map(feeEntry));
 addTopic('total-fees', 'transfers', T('Найбільша сума трансферів за кар’єру', 'Highest total transfer fees in a career'), players.filter((p) => transfers[p.id]?.totalFees)
   .map((p) => ({ p, value: transfers[p.id].totalFees, text: money(transfers[p.id].totalFees), detail: T(`${transfers[p.id].paid} ${transfers[p.id].paid === 1 ? 'трансфер' : transfers[p.id].paid < 5 ? 'трансфери' : 'трансферів'}`, en1(transfers[p.id].paid, 'transfer', 'transfers')) })));
-addTopic('max-value', 'transfers', T('Найвища ринкова вартість за кар’єру', 'Highest market value in a career'), players.filter((p) => transfers[p.id]?.maxValue)
-  .map((p) => ({ p, value: transfers[p.id].maxValue, text: money(transfers[p.id].maxValue), detail: null })));
+addTopic('max-value', 'transfers', T('Пік ринкової вартості за кар’єру', 'Peak market value in a career'), players.filter((p) => transfers[p.id]?.maxValue)
+  .map((p) => ({ p, value: transfers[p.id].maxValue, text: money(transfers[p.id].maxValue), detail: null })), PEAK_NOTE);
 // покупки й продажі клубів — лише клуби, які ми знаємо (зіставлені з нашою базою)
 const clubIds = Object.keys(tmClubs).filter((id) => tmClubs[id].team && tmClubs[id].league && !BANNED.has(leagueOf(tmClubs[id].team)));
 for (const id of clubIds) {
@@ -215,12 +216,13 @@ const POS_GROUPS = {
   MID: ['півзахисників', ['Defensive Midfield', 'Central Midfield', 'Attacking Midfield', 'Left Midfield', 'Right Midfield'], 'midfielders'],
   FWD: ['нападників і вінгерів', ['Left Winger', 'Right Winger', 'Second Striker', 'Centre-Forward'], 'forwards and wingers'],
 };
-const POS_NOTE = T('За Transfermarkt; позиція — основна на Transfermarkt.', 'Per Transfermarkt; main position on Transfermarkt.');
+const POS_NOTE = T('Сума, яку клуб заплатив за перехід. За Transfermarkt; позиція — основна, якою гравця знають.', 'The fee a club paid for the transfer. Per Transfermarkt; position — the main one the player is known for.');
+const POS_PEAK_NOTE = T('Найвища оцінка Transfermarkt за всю кар’єру — не поточна вартість і не сума трансферу; позиція — основна, якою гравця знають.', 'The highest Transfermarkt valuation over the whole career — not the current value and not a transfer fee; position — the main one the player is known for.');
 for (const [key, [word, list, wordEn]] of Object.entries(POS_GROUPS)) {
   const has = (p) => list.includes(transfers[p.id]?.pos);
   addTopic(`fees-pos:${key}`, 'transfers', T(`Найдорожчі трансфери ${word}`, `Most expensive transfers: ${wordEn}`), fees.filter((f) => has(f.p)).map(feeEntry), POS_NOTE);
-  addTopic(`value-pos:${key}`, 'transfers', T(`Найвища ринкова вартість ${word}`, `Highest market value: ${wordEn}`), players.filter((p) => has(p) && transfers[p.id].maxValue)
-    .map((p) => ({ p, value: transfers[p.id].maxValue, text: money(transfers[p.id].maxValue), detail: null })), POS_NOTE);
+  addTopic(`value-pos:${key}`, 'transfers', T(`Пік ринкової вартості ${word}`, `Peak market value: ${wordEn}`), players.filter((p) => has(p) && transfers[p.id].maxValue)
+    .map((p) => ({ p, value: transfers[p.id].maxValue, text: money(transfers[p.id].maxValue), detail: null })), POS_PEAK_NOTE);
 }
 const feesByNation = new Map();
 for (const f of fees) {

@@ -212,3 +212,7 @@ input::placeholder { color: var(--muted); }
 @keyframes bar-pulse { from { opacity: 1; } to { opacity: .45; } }
 @keyframes vs-shake { 0%, 100% { rotate: 0deg; } 25% { rotate: -5deg; } 75% { rotate: 5deg; } } /* .vs центрується через translate — тут лише поворот */
 @media (prefers-reduced-motion: reduce) { .time-bar.low i, .timer.low, .ring.hurry .vs { animation: none; } }
+
+/* підтвердження — табличка рефері: золото на темному */
+.ask-sheet { border: 2px solid var(--gold); box-shadow: 0 0 30px rgba(242, 194, 48, .25), 0 30px 80px rgba(0,0,0,.6); }
+.ask-sheet .ask-text { text-transform: uppercase; letter-spacing: .02em; font-size: 28px; }

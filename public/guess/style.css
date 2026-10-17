@@ -154,3 +154,7 @@
 @media (prefers-reduced-motion: reduce) {
   .logo.flaps i, .g-row.fresh .cell { animation: none; }
 }
+
+/* підтвердження — рядок табло: бурштин на чорному */
+.ask-sheet { border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent); border-radius: 6px; background: #111113; }
+.ask-sheet .ask-text { color: var(--accent); text-transform: uppercase; font-size: 19px; letter-spacing: .03em; }

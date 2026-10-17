@@ -116,6 +116,9 @@ const scenarios = {
     await p.waitForSelector('#round-box:not(.hidden) #board li');
     await shot(p, 'top-round');
     await p.click('#giveup-btn');
+    await p.waitForSelector('.ask-sheet');
+    await shot(p, 'top-ask'); // підтвердження — у вікні в стилі гри
+    await p.click('.ask-sheet [data-ask="1"]');
     await p.waitForSelector('#reveal-bar:not(.hidden)');
     await shot(p, 'top-reveal', { full: true });
     // наступна тема: рекорди сезону у фільтрах і топ із гравцем, якого немає в базі (відкритий одразу)
@@ -151,7 +154,12 @@ const scenarios = {
       await active.waitForTimeout(150);
     }
     for (const x of all) if (await x.$('.vote-btn:not([disabled])')) voters.push(x);
-    for (const x of voters) await x.click('.vote-btn');
+    for (const [k, x] of voters.entries()) {
+      await x.click('.vote-btn');
+      await x.waitForSelector('.ask-sheet');
+      if (!k) await shot(x, 'spy-ask');
+      await x.click('.ask-sheet [data-ask="1"]');
+    }
     await host.waitForSelector('#stage .verdict');
     await shot(host, 'spy-verdict', { full: true });
     for (const x of all) await x.context().close();

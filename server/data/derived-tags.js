@@ -25,12 +25,20 @@ function cleanCareers(careers) {
   for (const c of Object.values(careers.careers || {})) {
     const kept = c.clubs.filter((x, i) => x.a !== 0 || (i === c.clubs.length - 1 && x.e == null));
     if (kept.length) c.clubs = kept;
+    // Поточний клуб, з якого гравець їздив в оренди (Симеоне: Атлетіко 2022–, оренди в Сарагосу й Алавес), у таблиці стоїть
+    // перед орендами — переносимо його в кінець, щоб «останній клуб» був справжній. Якщо гравець і зараз в оренді — лишаємо як є.
+    const cur = c.clubs.findIndex((x) => x.e == null && !x.loan);
+    if (cur >= 0 && cur < c.clubs.length - 1 && !c.clubs.slice(cur + 1).some((x) => x.e == null)) {
+      c.clubs.push(c.clubs.splice(cur, 1)[0]);
+    }
   }
   careers.cleaned = true;
 }
 
 function addDerivedTags(players) {
   const transfers = load('./transfers.json') || {};
+  // позиція, за якою гравця знають (той самий об'єкт transfers.json бачать усі ігри)
+  for (const [id, pos] of Object.entries(require('./manual-positions'))) if (transfers[id]) transfers[id].pos = pos;
   const stats = load('./stats.json');
   const tournaments = load('./tournaments.json');
   const careers = load('./careers.json');

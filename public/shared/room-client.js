@@ -15,7 +15,8 @@
 //     lobbyExtra(seat) → html,                 // необов'язково: дописати до гравця в лобі
 //   });
 //   g.$, g.emit, g.act (emit + тост помилки), g.toast, g.escapeHtml, g.initials, g.plural, g.seatName, g.seatStyle, g.SEAT_COLORS,
-//   g.state, g.mySeat, g.serverNow(), g.showScreen, g.store, g.socket, g.setup, g.renderSetup().
+//   g.state, g.mySeat, g.serverNow(), g.showScreen, g.store, g.socket, g.setup, g.renderSetup(),
+//   g.ask(питання, { note, ok, cancel, danger }) → Promise<true|false> — підтвердження у вікні в стилі гри (замість confirm()).
 // Розмітка сторінки — як у public/top/index.html (id елементів ті самі).
 window.RoomClient = (() => {
   const { L } = window.I18n; // мова сторінки — /shared/i18n.js (підключати раніше за цей файл)
@@ -52,6 +53,37 @@ window.RoomClient = (() => {
   };
   const $ = (sel) => document.querySelector(sel);
 
+  // Підтвердження у вікні сторінки (системний confirm() виглядає чужим): кольори й шрифт — токени гри (--surface-solid, --display…).
+  // Esc або клік повз вікно — «ні».
+  function ask(text, { note = '', ok = L('Так', 'Yes'), cancel = L('Скасувати', 'Cancel'), danger = false } = {}) {
+    return new Promise((resolve) => {
+      const box = document.createElement('div');
+      box.className = 'overlay ask-overlay';
+      box.innerHTML = `<div class="overlay-backdrop"></div>
+        <div class="sheet confirm-sheet ask-sheet" role="alertdialog" aria-modal="true">
+          <p class="ask-text">${escapeHtml(text)}</p>${note ? `<small class="ask-note">${escapeHtml(note)}</small>` : ''}
+          <div class="confirm-actions">
+            <button class="btn btn-secondary" data-ask="0">${escapeHtml(cancel)}</button>
+            <button class="btn ${danger ? 'btn-danger' : 'btn-primary'}" data-ask="1">${escapeHtml(ok)}</button>
+          </div>
+        </div>`;
+      const done = (yes) => {
+        document.removeEventListener('keydown', onKey);
+        box.remove();
+        resolve(yes);
+      };
+      const onKey = (e) => { if (e.key === 'Escape') done(false); };
+      box.addEventListener('click', (e) => {
+        if (e.target.classList.contains('overlay-backdrop')) return done(false);
+        const b = e.target.closest('[data-ask]');
+        if (b) done(b.dataset.ask === '1');
+      });
+      document.addEventListener('keydown', onKey);
+      document.body.appendChild(box);
+      box.querySelector('[data-ask="1"]').focus();
+    });
+  }
+
   function create(cfg) {
     const { id } = cfg;
     const socket = io(`/${id}`, { auth: { lang: window.I18n.lang } });
@@ -79,6 +111,7 @@ window.RoomClient = (() => {
         return res;
       },
       toast,
+      ask,
       showScreen,
       render,
       renderSetup, // перемалювати чипи налаштувань (напр., коли гра довантажила, які варіанти доступні)
@@ -310,7 +343,8 @@ window.RoomClient = (() => {
     // ── вихід
     document.querySelectorAll('[data-action="leave"]').forEach((b) => b.addEventListener('click', leave));
     async function leave() {
-      if (g.state?.status === 'playing' && !g.state.solo && !confirm(L('Вийти з гри? Твої очки пропадуть.', 'Leave the game? Your points will be lost.'))) return;
+      if (g.state?.status === 'playing' && !g.state.solo
+        && !(await ask(L('Вийти з гри?', 'Leave the game?'), { note: L('Твої очки пропадуть.', 'Your points will be lost.'), ok: L('Вийти', 'Leave'), danger: true }))) return;
       await emit('leave');
       g.state = null;
       forgetSession();
@@ -399,5 +433,5 @@ window.RoomClient = (() => {
     return g;
   }
 
-  return { create, LABELS, escapeHtml, initials, plural };
+  return { create, ask, LABELS, escapeHtml, initials, plural };
 })();
