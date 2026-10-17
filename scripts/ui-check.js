@@ -99,6 +99,14 @@ const scenarios = {
     await p.waitForSelector('#solo-games .game-card');
     await shot(p, 'hub', { full: true });
     await phoneShot(browser, 'hub', '/', (x) => x.waitForSelector('#solo-games .game-card'));
+    // «Що нового»: закладка з крапкою → сторінка версій; після неї крапка гасне
+    await p.click('#changes-tab');
+    await p.waitForSelector('.change-sheet');
+    await shot(p, 'changes', { full: true });
+    await phoneShot(browser, 'changes', '/changes/', (x) => x.waitForSelector('.change-sheet'));
+    await p.goto(URL);
+    await p.waitForSelector('#changes-tab .tab-dot.hidden', { state: 'attached' });
+    await p.context().close();
   },
 
   async top(browser) {

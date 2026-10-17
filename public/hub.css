@@ -36,6 +36,52 @@ body {
 .hub-lang .lang-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) { .hub-lang .lang-btn { transition: none; transform: none; } }
 
+/* закладка «Що нового» (і «‹ Ігри» на її сторінці) — така сама вкладка-закладка, у лівому верхньому куті */
+.hub-tab {
+  position: absolute; top: 12px; left: max(16px, env(safe-area-inset-left)); z-index: 2;
+  display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px;
+  font: 800 13px/1 'Manrope', system-ui, sans-serif; color: var(--text); text-decoration: none;
+  background: #fff; border: 2px solid var(--text); border-radius: 6px;
+  box-shadow: 0 3px 0 var(--text); transform: rotate(-3deg); transition: transform .15s, background .15s, color .15s;
+}
+.hub-tab:hover { transform: rotate(0) translateY(-1px); background: var(--accent); color: #fff; }
+.hub-tab:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--text); }
+.hub-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.tab-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px #fff; }
+.tab-dot.hidden { display: none; }
+@media (prefers-reduced-motion: reduce) { .hub-tab { transition: none; transform: none; } }
+
+/* ── сторінка «Що нового»: версії — аркуші-вкладиші, пункти з позначкою гри */
+.changes { display: grid; gap: 26px; max-width: 760px; margin: 0 auto; }
+.change-sheet {
+  background: #fbfaf6; border: 2px solid var(--text); border-radius: 10px; padding: 18px 20px 14px;
+  box-shadow: 0 4px 0 var(--text), 0 14px 30px rgba(0, 0, 0, 0.12);
+}
+.change-sheet:nth-child(even) { transform: rotate(0.4deg); }
+.change-sheet:nth-child(odd) { transform: rotate(-0.3deg); }
+.change-date { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 0 0 12px; font: 800 20px/1.2 var(--display); }
+.change-new { font: 800 11px/1 'Manrope', system-ui, sans-serif; text-transform: uppercase; letter-spacing: .12em; color: #fff; background: var(--accent); padding: 5px 8px; border-radius: 4px; transform: rotate(-3deg); }
+.change-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.change-list li { display: grid; grid-template-columns: 128px 1fr; gap: 12px; align-items: baseline; padding: 9px 0; border-top: 1px dashed var(--line-strong); font-weight: 600; line-height: 1.45; }
+.change-list li:first-child { border-top: 0; }
+.change-game {
+  justify-self: start; display: inline-flex; align-items: center; gap: 5px; padding: 4px 8px; border-radius: 99px;
+  font: 800 12px/1 'Manrope', system-ui, sans-serif; white-space: nowrap; background: var(--text); color: #fff;
+}
+.change-game i { font-style: normal; }
+.change-game.g-site { background: transparent; color: var(--muted); border: 1.5px solid var(--line-strong); }
+.g-crossroads { background: #1f3b2c; color: #f6e27a; }
+.g-path { background: #d32f2f; }
+.g-guess { background: #16161a; color: #ffb000; }
+.g-spy { background: #d9b979; color: #1f1a14; }
+.g-top { background: #1e1454; color: #ffd23f; }
+.g-duel { background: #b3121d; }
+@media (max-width: 560px) {
+  .change-list li { grid-template-columns: 1fr; gap: 6px; }
+  .change-sheet { padding: 16px 14px 10px; }
+}
+@media (prefers-reduced-motion: reduce) { .change-sheet:nth-child(n) { transform: none; } }
+
 /* ── шапка: смуга альбому, назва-наліпка */
 .hub-hero { text-align: center; margin-bottom: 40px; display: grid; justify-items: center; gap: 14px; }
 .album-band {
@@ -218,7 +264,7 @@ body {
   .sticker, .sticker::after { transition: none; }
 }
 @media (max-width: 520px) {
-  .hub { padding-top: 28px; }
+  .hub { padding-top: 60px; /* закладки «Що нового» і мови — над смугою альбому */ }
   .group-list { gap: 34px; }
   .sticker { grid-template-rows: auto 106px auto 1fr; }
 }

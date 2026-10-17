@@ -59,3 +59,9 @@ function soonSlot() {
     el('span', 'soon-desc', L('Місце в альбомі вже чекає на наліпку', 'This spot in the album is waiting for its sticker')));
   return s;
 }
+
+// Закладка «Що нового»: червона крапка, якщо є версія, новіша за ту, що вже бачили (changes.js запам'ятовує).
+try {
+  const latest = window.CHANGELOG?.[0]?.date;
+  if (latest && localStorage.getItem('changes-seen') !== latest) document.querySelector('#changes-tab .tab-dot').classList.remove('hidden');
+} catch { /* без сховища — без крапки */ }
