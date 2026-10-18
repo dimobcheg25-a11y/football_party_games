@@ -5,6 +5,8 @@ window.CHANGELOG = [
   {
     date: '2026-10-18',
     items: [
+      { game: 'lineup', uk: 'На комп’ютері обидві команди видно одразу, поруч; більші фото гравців; зрозуміліші підказки (💡 на футболках і пояснення під пошуком).', en: 'On desktop both teams are visible side by side; bigger player photos; clearer hints (💡 on shirts and an explanation under the search).' },
+      { game: 'path', uk: 'Англійські, шотландські й валлійські клуби підписані своєю країною, а не «Сполучене Королівство».', en: 'English, Scottish and Welsh clubs are labelled with their own country, not “United Kingdom”.' },
       { game: 'lineup', uk: 'Нова гра «Склад матчу»: схема легендарного матчу без прізвищ — номери, прапори, клуби, голи й заміни. Назви, хто грав за обидві команди, і обох тренерів.', en: 'New game “Match Lineup”: the team sheet of a legendary match without names — numbers, flags, clubs, goals and substitutions. Name who played for both teams and both coaches.' },
       { game: 'lineup', uk: '100 матчів: фінали ЧС, Євро, Копа, Ліги чемпіонів і Ліги Європи, знамениті камбеки, українські матчі — і 13 єврокубкових вечорів Металіста Маркевича.', en: '100 matches: World Cup, Euro, Copa, Champions League and Europa League finals, famous comebacks, Ukrainian matches — and 13 European nights of Markevych’s Metalist.' },
       { game: 'lineup', uk: 'Підказки — на футболку, яку обереш сам; «🏁 Досить» закінчує матч, коли більше нікого не згадати, і знайдене лишається.', en: 'Hints go on the shirt you pick; “🏁 That’s it” ends the match when no one else comes to mind, and the points you found stay.' },

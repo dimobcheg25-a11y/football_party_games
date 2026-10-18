@@ -203,7 +203,7 @@
     const style = inline ? '' : `style="left:${(sl.x / 10).toFixed(1)}%;bottom:${(sl.y / 10 * 0.92 + 3).toFixed(1)}%"`;
     const cls = ['shirt', inline ? 'inline' : '', ans ? 'open' : '', fresh ? 'flip' : '', sl.missing ? 'missing' : '', selected === sl.key ? 'sel' : '', sl.coach ? 'coach' : ''].join(' ');
     return `<button type="button" class="${cls}" data-key="${sl.key}" ${style} ${ans ? 'tabindex="-1"' : ''}>
-      <span class="s-shirt">${face}</span>
+      <span class="s-shirt">${face}</span>${!ans && state.phase === 'guess' ? '<span class="s-tip" aria-hidden="true">💡</span>' : ''}
       <span class="s-name">${ans ? escapeHtml(ans.name) : `${sl.pos && !sl.coach ? `<em>${escapeHtml(POS[sl.pos] || sl.pos)}</em>` : ''}${id}`}</span>
       ${hintChips ? `<span class="s-hints">${hintChips}</span>` : ''}
       ${badges ? `<span class="s-badges">${badges}</span>` : ''}${by ? `<span class="s-by">${by}</span>` : ''}
@@ -222,8 +222,15 @@
     const bar = $('#hint-bar');
     const s = state;
     const sl = selected && s.phase === 'guess' ? allSlots().find((x) => x.key === selected) : null;
-    if (!sl || answerOf(sl)) { bar.innerHTML = ''; bar.classList.add('hidden'); return; }
+    if (s.phase !== 'guess') { bar.innerHTML = ''; bar.classList.add('hidden'); return; }
     bar.classList.remove('hidden');
+    if (!sl || answerOf(sl)) {
+      bar.classList.add('idle');
+      bar.innerHTML = `<span class="hb-title">💡 ${L('<b>Підказки:</b> натисни на футболку гравця (або тренера) — і візьми підказку саме для нього: вік, кількість літер, перша літера. Кожна — мінус 1 очко за цього гравця.',
+        '<b>Hints:</b> tap a player’s (or the coach’s) shirt to get a hint for exactly him: age, number of letters, first letter. Each costs 1 point for that player.')}</span>`;
+      return;
+    }
+    bar.classList.remove('idle');
     const team = s.match.teams.find((t) => [...t.xi, ...t.bench, t.coach].includes(sl));
     const hints = hintsOf(sl);
     const value = Math.max(1, s.points - Object.keys(hints).length);

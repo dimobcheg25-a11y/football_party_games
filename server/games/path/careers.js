@@ -116,6 +116,14 @@ function assistsFor(p, x) {
   return a ?? undefined;
 }
 
+// Країна клубу словами: британські — Англія / Шотландія / Уельс (а не «Сполучене Королівство»), як у «Вгадай гравця».
+// compare підключаємо тут, а не вгорі: він сам бере careers (взаємне підключення).
+function placeOf(qid, country) {
+  if (!country) return null;
+  const place = country === 'Сполучене Королівство' ? String(require('../guess/compare').leagueOf(qid)) : country;
+  return T(place, countryEn(place));
+}
+
 function stagesFor(p, { start = 'first', showYears = true, showStats = true } = {}) {
   const c = careerOf(p);
   const clubs = start === 'last' ? [...c.clubs].reverse() : c.clubs;
@@ -126,7 +134,7 @@ function stagesFor(p, { start = 'first', showYears = true, showStats = true } = 
       kind: 'club',
       ...t,
       name: T(t.name, nameEn),
-      country: t.country ? T(t.country, countryEn(t.country)) : null,
+      country: placeOf(x.t, t.country),
       years: showYears ? years(x.s, x.e) : null,
       loan: !!x.loan,
       fee: fee ? money(fee) : null,

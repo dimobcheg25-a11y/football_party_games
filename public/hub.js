@@ -19,7 +19,7 @@ const ART = {
   guess: L(`<span class="a-flaps"><i>Х</i><i>Т</i><i>О</i><i class="hot">?</i></span>`, `<span class="a-flaps"><i>W</i><i>H</i><i>O</i><i class="hot">?</i></span>`) + `<span class="a-dots"><i class="g"></i><i class="y"></i><i></i><i class="g"></i><i class="y"></i><i class="g"></i></span>`,
   spy: `<span class="a-file"><span class="a-bar"></span><span class="a-bar short"></span><span class="a-bar"></span><span class="a-stamp">${L('Таємно', 'Secret')}</span></span>`,
   top: `<span class="a-plates"><i><b>1</b><s></s></i><i><b>2</b><s></s></i><i><b>3</b><s></s></i></span>`,
-  lineup: `<span class="a-sheet">${[[8, 50, '1'], [22, 22, '2'], [22, 78, '5'], [36, 35, '8'], [36, 65, '10'], [46, 50, '9']].map(([x, y, n]) => `<i style="left:${x}%;top:${y}%">${n}</i>`).join('')}${[[92, 50, '1'], [78, 25, '4'], [78, 75, '3'], [64, 50, '?'], [54, 30, '7'], [54, 70, '11']].map(([x, y, n]) => `<i class="${n === '?' ? 'q' : 'b'}" style="left:${x}%;top:${y}%">${n}</i>`).join('')}</span>`,
+  lineup: `<span class="a-sheet"><span class="as-band"><em>${L('Склад', 'Lineup')}</em><b>3 : 3</b></span><span class="as-col"><i><b>1</b><s style="width:78%"></s></i><i><b>5</b><s style="width:58%"></s></i><i><b>8</b><em>?</em></i><i><b>10</b><s style="width:66%"></s></i></span><span class="as-col b"><i class="b"><b>1</b><s style="width:70%"></s></i><i class="b"><b>4</b><em>?</em></i><i class="b"><b>7</b><s style="width:52%"></s></i><i class="b"><b>9</b><s style="width:76%"></s></i></span></span>`,
   duel: `<span class="a-bout"><i class="r">${L('Червоний', 'Red')}</i><b>VS</b><i class="b">${L('Синій', 'Blue')}</i></span>`,
 };
 

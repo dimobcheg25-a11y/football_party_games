@@ -67,12 +67,12 @@ input::placeholder { color: #a39a87; }
 .mh-score { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; }
 .mh-team { display: flex; align-items: center; gap: 8px; min-width: 0; justify-content: flex-end; }
 .mh-team.away { justify-content: flex-start; }
-.mh-team b { font-family: var(--display); font-size: clamp(15px, 2.6vw, 22px); overflow-wrap: normal; hyphens: auto; text-align: right; line-height: 1.1; }
+.mh-team b { font-family: var(--display); font-weight: 900; font-size: clamp(17px, 2.3vw, 26px); overflow-wrap: normal; hyphens: auto; text-align: right; line-height: 1.1; }
 .mh-team.away b { text-align: left; }
-.crest { width: 40px; height: 40px; object-fit: contain; flex: none; }
+.crest { width: 46px; height: 46px; object-fit: contain; flex: none; }
 .crest-empty { display: grid; place-items: center; border-radius: 50%; background: var(--surface-2); font: 800 13px 'Manrope', sans-serif; color: var(--muted); }
-.mh-result { font-family: var(--display); font-weight: 900; font-size: clamp(34px, 6vw, 48px); color: var(--accent); white-space: nowrap; }
-.mh-result i { font-style: normal; margin: 0 4px; color: var(--ink); }
+.mh-result { font-family: var(--display); font-weight: 900; font-size: clamp(26px, 3.4vw, 36px); line-height: 1; color: #fff; background: var(--accent); padding: 4px 12px 6px; border-radius: 4px; white-space: nowrap; }
+.mh-result i { font-style: normal; margin: 0 4px; opacity: .8; }
 .mh-meta { margin: 6px 0 0; color: var(--muted); font-size: 13px; font-weight: 600; }
 .mh-meta small { font-weight: 700; color: var(--ink); }
 
@@ -82,6 +82,8 @@ input::placeholder { color: #a39a87; }
   border: 1.5px dashed var(--ink); border-radius: 6px; background: #fffdf3;
 }
 .hint-bar.hidden { display: none; }
+.hint-bar.idle { border-style: dashed; background: #fff6d6; }
+.hint-bar.idle .hb-title { font-size: 13.5px; line-height: 1.45; }
 .hb-title { font-size: 14px; }
 .hb-btns { display: flex; flex-wrap: wrap; gap: 6px; }
 .hb-got { font-size: 13px; padding: 6px 10px; border-radius: 99px; background: #ffe9a6; }
@@ -120,7 +122,7 @@ input::placeholder { color: #a39a87; }
   position: absolute; transform: translate(-50%, 50%); width: 78px; display: grid; justify-items: center; gap: 2px;
   background: none; border: 0; padding: 0; cursor: pointer; font: inherit; color: var(--text); z-index: 1;
 }
-.shirt.inline { position: static; transform: none; }
+.shirt.inline { position: relative; transform: none; }
 .s-shirt {
   position: relative; display: grid; place-items: center; width: 46px; height: 42px; background: var(--kit);
   clip-path: polygon(28% 0, 40% 6%, 60% 6%, 72% 0, 100% 16%, 90% 40%, 80% 34%, 80% 100%, 20% 100%, 20% 34%, 10% 40%, 0 16%);
@@ -202,3 +204,42 @@ input::placeholder { color: #a39a87; }
   .s-club.has-img > span { display: none; } /* на телефоні — лише герб клубу (назва — у підказці) */
   .s-club img { width: 16px; height: 16px; }
 }
+
+/* ── розкладка ПК: ширший екран, дві половини поля поруч — обидві команди видно без прокрутки */
+.gt-main { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; } /* таймер — по центру поля гри, а не всього екрана */
+@media (min-width: 761px) {
+  .screen-game { max-width: 1260px; }
+  .game-layout { grid-template-columns: minmax(0, 1fr) 230px; }
+  .game-top { display: grid; grid-template-columns: minmax(0, 1fr) 230px; gap: 16px; padding-right: 0; align-items: center; }
+  .game-top > .btn-leave { justify-self: start; }
+  .sheet-teams { grid-template-columns: 1fr 1fr; }
+  .pitch { aspect-ratio: 1 / 1.08; }
+  /* 7. більші футболки й фото на ПК */
+  .shirt { width: 88px; }
+  .s-name { max-width: 88px; font-size: 11px; }
+  .s-shirt { width: 52px; height: 48px; }
+  .s-num { font-size: 21px; margin-top: 7px; }
+  .shirt.open .s-shirt { width: 64px; height: 64px; }
+  .bench .shirt.open .s-shirt, .coach-row .shirt.open .s-shirt { width: 56px; height: 56px; }
+}
+@media (max-width: 760px) {
+  .gt-main { flex: 1; display: flex; align-items: center; gap: 14px; }
+  .round-info b { white-space: nowrap; }
+}
+
+/* значок підказки на закритих футболках */
+.s-tip {
+  position: absolute; top: -6px; right: 8px; width: 18px; height: 18px; display: grid; place-items: center; border-radius: 50%;
+  font-size: 10px; background: #fff6d6; box-shadow: 0 0 0 1px rgba(60, 40, 10, 0.25); opacity: .85; pointer-events: none;
+}
+.shirt:hover .s-tip, .shirt.sel .s-tip { opacity: 1; transform: scale(1.15); }
+
+/* 6. «Мимо» — з відступами між назвою й гравцями */
+.misses { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.misses:empty { display: none; }
+.misses .field-label { margin: 0 4px 0 0; }
+.miss {
+  display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 700; padding: 3px 9px; border-radius: 99px;
+  background: rgba(179, 18, 29, 0.07); border: 1px solid rgba(179, 18, 29, 0.3); text-decoration: line-through; text-decoration-color: rgba(179, 18, 29, 0.6);
+}
+.miss .dot-p { width: 8px; height: 8px; border-radius: 50%; background: var(--pc); }
