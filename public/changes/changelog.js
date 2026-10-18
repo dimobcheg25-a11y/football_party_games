@@ -5,6 +5,8 @@ window.CHANGELOG = [
   {
     date: '2026-10-18',
     items: [
+      { game: 'archive', uk: 'Нова гра «Фотоархів» (бета): справжнє матчеве фото закрите сіткою 5×5 — відкривай квадратики й назви всіх загаданих гравців. Що менше відкрив, то більше очок. Соло, кімната «кожен свою сітку» або спільна сітка по черзі.', en: 'New game “Photo Archive” (beta): a real match photo hidden under a 5×5 grid — open tiles and name every player we ask for. The fewer you open, the more you score. Solo, a room with everyone on their own grid, or one shared grid taking turns.' },
+      { game: 'archive', uk: 'Фото ще перевіряються: після кожного кадру можна позначити погане фото 🚩 або підказати гравця, якого ми не підписали ➕ — ми перевіримо й виправимо.', en: 'The photos are still being checked: after each shot you can flag a bad photo 🚩 or point out a player we didn’t tag ➕ — we’ll check and fix it.' },
       { game: null, uk: 'Таймер у «Шляху», «Вгадай гравця», «Топ-10» і «Один на один» — рівно по центру поля гри, а не всього екрана з таблицею.', en: 'The timer in Career Path, Guess the Player, Top 10 and One on One is centred over the game area, not the whole screen including the table.' },
       { game: 'crossroads', uk: 'Помітні кнопки «🏳️ Здатися» і «🚪 Вийти з кімнати» (раніше — ледь помітний текст і посилання внизу).', en: 'Easy-to-spot “🏳️ Resign” and “🚪 Leave room” buttons (they used to be faint text and a link at the bottom).' },
       { game: 'spy', uk: 'Помітні кнопки «⏭ Пропустити хід», «🗳 Одразу до голосування» і «🔄 Замінити футболіста».', en: 'Easy-to-spot “⏭ Skip turn”, “🗳 Straight to the vote” and “🔄 Replace footballer” buttons.' },

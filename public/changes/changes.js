@@ -8,6 +8,8 @@ const GAMES = {
   spy: ['🕵️', L('Шпигун', 'Spy')],
   top: ['10', L('Топ-10', 'Top 10')],
   duel: ['🥊', L('Один на один', 'One on One')],
+  lineup: ['📋', L('Склад матчу', 'Match Lineup')],
+  archive: ['📷', L('Фотоархів', 'Photo Archive')],
 };
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

@@ -297,6 +297,32 @@ const scenarios = {
     await p.context().close();
   },
 
+  async archive(browser) {
+    const p = await person(browser, 'archive');
+    await p.goto(`${URL}/archive/`);
+    await shot(p, 'archive-home', { full: true });
+    await p.fill('#name-input', 'Тест');
+    await p.click('#solo-btn');
+    await p.waitForSelector('#tiles .tile');
+    await p.waitForFunction(() => document.querySelector('#shot-img').complete);
+    for (const t of [6, 7, 12, 17]) await p.click(`#tiles [data-tile="${t}"]`);
+    await choosePlayer(p, '#guess-input', 'Блохін');
+    await p.waitForSelector('#misses .miss');
+    await shot(p, 'archive-round', { full: true });
+    await p.click('#finish-btn');
+    await p.click('.ask-sheet [data-ask="1"]');
+    await p.waitForSelector('#reveal-bar:not(.hidden)');
+    await p.click('#rp-missing');
+    await shot(p, 'archive-reveal', { full: true });
+    await phoneShot(browser, 'archive', '/archive/', async (x) => {
+      await x.fill('#name-input', 'Тест');
+      await x.click('#solo-btn');
+      await x.waitForSelector('#tiles .tile');
+      await x.click('#tiles [data-tile="12"]');
+    });
+    await p.context().close();
+  },
+
   async path(browser) {
     const p = await person(browser, 'path');
     await p.goto(`${URL}/path/`);

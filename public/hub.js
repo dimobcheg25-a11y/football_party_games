@@ -21,6 +21,8 @@ const ART = {
   spy: `<span class="a-file"><span class="a-bar"></span><span class="a-bar short"></span><span class="a-bar"></span><span class="a-stamp">${L('Таємно', 'Secret')}</span></span>`,
   top: `<span class="a-plates"><i><b>1</b><s></s></i><i><b>2</b><s></s></i><i><b>3</b><s></s></i></span>`,
   lineup: `<span class="a-pitch"><i class="ap-half"></i><i class="ap-circle"></i><i class="ap-box"></i><b class="" style="left:9%;top:50%">1</b><b class="" style="left:28%;top:13%">2</b><b class="" style="left:28%;top:38%">4</b><b class="" style="left:28%;top:62%">5</b><b class="" style="left:28%;top:87%">3</b><b class="" style="left:52%;top:26%">8</b><b class="" style="left:52%;top:50%">6</b><b class="" style="left:52%;top:74%">10</b><b class="" style="left:75%;top:18%">7</b><b class="q" style="left:79%;top:50%">?</b><b class="" style="left:75%;top:82%">11</b></span>`,
+  // фото на білому папері, половина квадратиків сітки 5×5 ще закрита
+  archive: `<span class="a-print"><span class="a-shot">${[1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1].map((c) => `<i class="${c ? '' : 'o'}"></i>`).join('')}</span></span>`,
   duel: `<span class="a-bout"><i class="r">${L('Червоний', 'Red')}</i><b>VS</b><i class="b">${L('Синій', 'Blue')}</i></span>`,
 };
 
@@ -34,6 +36,7 @@ function el(tag, cls, text) {
 // Значки режимів — одразу видно, чи можна грати самому і скільки людей потрібно.
 function badges(g) {
   const row = el('span', 'game-modes');
+  if (g.beta) row.append(el('span', 'mode beta', L('β Бета', 'β Beta')));
   if (g.solo) row.append(el('span', 'mode solo', L('🎮 Соло', '🎮 Solo')));
   row.append(el('span', 'mode friends', `👥 ${L('З друзями', 'With friends')} · ${g.friends}`));
   return row;

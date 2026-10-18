@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title data-en="Photo Archive — Football party games">Фотоархів</title>
+  <meta name="description" content="Фотоархів — матчеве фото закрите сіткою 5×5: відкривай квадратики й назви всіх загаданих гравців. Соло або з друзями." data-en-content="Photo Archive — a match photo hidden under a 5×5 grid: open tiles and name every player we ask for. Solo or with friends." />
+  <meta property="og:site_name" content="Football party games" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://football-party-games.onrender.com/archive/" />
+  <meta property="og:title" content="Фотоархів — Football party games" data-en-content="Photo Archive — Football party games" />
+  <meta property="og:description" content="Матчеве фото під сіткою 5×5: відкривай квадратики й назви, хто на фото." data-en-content="A match photo under a 5×5 grid: open tiles and name who’s in it." />
+  <meta property="og:locale" content="uk_UA" />
+  <meta property="og:locale:alternate" content="en_US" />
+  <meta name="application-name" content="Football party games" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="theme-color" content="#140c0a" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📷</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@500;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/shared/theme.css" />
+  <link rel="stylesheet" href="/shared/ui.css" />
+  <link rel="stylesheet" href="/path/style.css" />
+  <link rel="stylesheet" href="/archive/style.css" />
+</head>
+<body>
+  <div class="pitch-bg" aria-hidden="true"></div>
+
+  <div class="sound-ctl">
+    <button id="mute-btn" class="round-btn" aria-label="Звук" data-en-aria-label="Sound">🔊</button>
+  </div>
+
+  <a class="home-link" href="/" aria-label="Усі ігри — на головну" data-en-aria-label="All games — home"><span class="home-arrow" aria-hidden="true">‹</span><span class="home-text"><span data-en="Football">Футбольні</span> <b data-en="games">ігри</b></span></a>
+
+  <!-- ── Головний екран: налаштування -->
+  <main id="screen-home" class="screen">
+    <header class="hero">
+      <div class="logo darkroom-logo"><i class="safelight" aria-hidden="true"></i><span data-en="Photo archive">Фотоархів</span><sup class="beta-tag">β</sup></div>
+      <p class="tagline" data-en="A match photo under a 5×5 grid. Open as few tiles as you can — who’s in the shot?">Матчеве фото під сіткою 5×5. Відкрий якомога менше — хто на кадрі?</p>
+    </header>
+
+    <p class="beta-note" data-en-html="&lt;b&gt;Beta:&lt;/b&gt; the photos are still being checked. After each photo you can flag a bad one 🚩 or add a player we missed ➕ — that helps a lot."><b>Бета:</b> фото ще перевіряються. Після кожного кадру можна позначити погане фото 🚩 або додати гравця, якого ми не підписали ➕ — це дуже допомагає.</p>
+
+    <section class="card setup">
+      <p id="invite-note" class="invite-note hidden"></p>
+      <button id="resume-btn" class="btn btn-secondary resume hidden"></button>
+
+      <label class="field" for="name-input">
+        <span class="field-label" data-en="Your name">Твоє ім'я</span>
+        <input id="name-input" maxlength="20" placeholder="Наприклад, Пеле" autocomplete="nickname" />
+      </label>
+
+      <div id="setup-options">
+        <div class="field">
+          <span class="field-label" data-en="Photos">Фото</span>
+          <div class="chips" data-opt="category" role="radiogroup" aria-label="Фото" data-en-aria-label="Photos">
+            <button type="button" class="chip" data-val="all" data-en="🎞 All">🎞 Усі</button>
+            <button type="button" class="chip" data-val="modern" data-en="📸 Modern">📸 Сучасні</button>
+            <button type="button" class="chip" data-val="legends" data-en="🕰 Legends (before 2000)">🕰 Легенди (до 2000)</button>
+          </div>
+          <p class="hint" id="category-hint"></p>
+        </div>
+
+        <div class="field">
+          <span class="field-label" data-en="Who we ask for">Кого загадуємо</span>
+          <div class="chips" data-opt="difficulty" role="radiogroup" aria-label="Складність" data-en-aria-label="Difficulty">
+            <button type="button" class="chip" data-val="easy" data-en="🟢 Easy">🟢 Легкий</button>
+            <button type="button" class="chip" data-val="normal" data-en="🟡 Normal">🟡 Звичайний</button>
+            <button type="button" class="chip" data-val="fan" data-en="🟣 Fan">🟣 Фанат</button>
+          </div>
+          <p class="hint" id="difficulty-hint"></p>
+        </div>
+
+        <div class="field">
+          <span class="field-label" data-en="In a room with friends">У кімнаті з друзями</span>
+          <div class="chips" data-opt="mode" role="radiogroup" aria-label="Режим кімнати" data-en-aria-label="Room mode">
+            <button type="button" class="chip" data-val="own" data-en="Everyone their own grid">Кожен свою сітку</button>
+            <button type="button" class="chip" data-val="turns" data-en="One shared grid, taking turns">Спільна сітка по черзі</button>
+          </div>
+          <p class="hint" id="mode-hint"></p>
+        </div>
+
+        <div class="field" id="round-time-field">
+          <span class="field-label" data-en="Time per photo">Час на фото</span>
+          <div class="chips" data-opt="roundSeconds" role="radiogroup" aria-label="Час на фото" data-en-aria-label="Time per photo">
+            <button type="button" class="chip" data-val="60" data-en="1 min">1 хв</button>
+            <button type="button" class="chip" data-val="120" data-en="2 min">2 хв</button>
+            <button type="button" class="chip" data-val="180" data-en="3 min">3 хв</button>
+            <button type="button" class="chip" data-val="0">∞</button>
+          </div>
+        </div>
+
+        <div class="field" id="turn-time-field">
+          <span class="field-label" data-en="Time per turn">Час на хід</span>
+          <div class="chips" data-opt="turnSeconds" role="radiogroup" aria-label="Час на хід" data-en-aria-label="Time per turn">
+            <button type="button" class="chip" data-val="20" data-en="20 s">20 с</button>
+            <button type="button" class="chip" data-val="30" data-en="30 s">30 с</button>
+            <button type="button" class="chip" data-val="60" data-en="1 min">1 хв</button>
+            <button type="button" class="chip" data-val="0">∞</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="field-label" data-en="Photos per game">Фото за гру</span>
+          <div class="chips" data-opt="rounds" role="radiogroup" aria-label="Фото за гру" data-en-aria-label="Photos per game">
+            <button type="button" class="chip" data-val="5">5</button>
+            <button type="button" class="chip" data-val="10">10</button>
+            <button type="button" class="chip" data-val="15">15</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="start-buttons" id="start-buttons">
+        <button id="solo-btn" class="btn btn-secondary btn-lg" data-en="Play solo">Грати соло</button>
+        <button id="create-btn" class="btn btn-primary btn-lg" data-en="Room with friends">Кімната з друзями</button>
+      </div>
+      <button id="join-btn" class="btn btn-primary btn-lg hidden" data-en="Join the game">Приєднатися до гри</button>
+      <p id="home-error" class="error"></p>
+    </section>
+
+    <section class="card rules-card">
+      <h3 data-en="How to play">Як грати</h3>
+      <ul class="rules-list">
+        <li data-en="A real match photo is hidden under a 5×5 grid. Tap a tile and it opens.">Справжнє матчеве фото закрите сіткою 5×5. Натиснув на квадратик — він відкрився.</li>
+        <li data-en-html="Above the photo — how many players we ask for: &lt;b&gt;“3 players in this shot”&lt;/b&gt;. Name them in any order.">Над фото видно, скільки гравців загадано: <b>«На фото 3 гравці»</b>. Називай їх у будь-якому порядку.</li>
+        <li data-en-html="Each player is worth &lt;b&gt;100 − 4 × opened tiles&lt;/b&gt; (at least 10). Open less — score more.">За кожного — <b>100 − 4 × відкритих квадратиків</b> (не менше 10). Що менше відкрив, то більше очок.</li>
+        <li data-en-html="There may be other people in the shot. If you name someone who played for one of these teams that year — &lt;b&gt;no points and no penalty&lt;/b&gt; (3 such answers per photo are free).">На кадрі можуть бути й інші. Назвав того, хто тоді грав за одну з цих команд, — <b>ні очок, ні штрафу</b> (3 такі відповіді на фото — безкоштовно).</li>
+        <li data-en="A wrong name opens one more tile for you. Stuck — press “Give up”: the photo opens with the caption.">Хибне ім’я відкриває тобі ще один квадратик. Не впізнаєш — «Здаюсь»: фото відкриється з підписом.</li>
+        <li data-en="Shared grid mode: on your turn open one tile and name a player — or pass. Whoever names him gets the points.">Спільна сітка: у свій хід відкрий один квадратик і назви гравця — або пас. Хто назвав, той і отримав очки.</li>
+        <li data-en="Photos — Wikimedia Commons (free licences), who’s in them — from the Commons tags. Author and licence are under every photo.">Фото — з Wikimedia Commons (вільні ліцензії), хто на них — з позначок Commons. Автор і ліцензія — під кожним фото.</li>
+      </ul>
+    </section>
+  </main>
+
+  <!-- ── Лобі кімнати -->
+  <main id="screen-lobby" class="screen hidden">
+    <section class="card lobby">
+      <p class="field-label" data-en="Room">Кімната</p>
+      <div class="room-code" id="lobby-code"></div>
+      <div class="share-row">
+        <button id="copy-link" class="btn btn-primary" data-en="Copy invite link">Скопіювати запрошення</button>
+      </div>
+      <div class="opt-chips" id="lobby-options"></div>
+      <ul class="lobby-players" id="lobby-players"></ul>
+      <button id="start-btn" class="btn btn-primary btn-lg hidden" data-en="Start game">Почати гру</button>
+      <p id="lobby-wait" class="hint"></p>
+      <button class="btn btn-secondary btn-sm btn-leave" data-action="leave" data-en="🚪 Leave room">🚪 Вийти з кімнати</button>
+    </section>
+  </main>
+
+  <!-- ── Гра -->
+  <main id="screen-game" class="screen screen-game hidden">
+    <div class="game-top">
+      <div class="gt-main">
+        <div class="round-info" id="round-info"></div>
+        <div class="timer" id="timer"></div>
+      </div>
+      <button class="btn btn-secondary btn-sm btn-leave" data-action="leave" data-en="🚪 Leave game">🚪 Вийти з гри</button>
+    </div>
+
+    <div class="game-layout">
+      <section class="top-col">
+        <div class="darkroom">
+          <div class="print-col">
+            <div class="edge-print" aria-hidden="true"><span id="edge-left">KODAK 400TX</span><span id="edge-open"></span><span id="edge-right"></span></div>
+            <figure class="print">
+              <div class="frame" id="frame">
+                <img id="shot-img" alt="" />
+                <div class="tiles" id="tiles"></div>
+              </div>
+              <figcaption class="credit" id="credit"></figcaption>
+            </figure>
+          </div>
+
+          <div class="desk">
+            <div class="ask-head" id="ask-head"></div>
+            <div class="slots" id="slots"></div>
+            <div class="worth" id="worth"></div>
+
+            <div class="answer-box" id="answer-box">
+              <div class="turn-line" id="turn-line"></div>
+              <div class="search">
+                <input id="guess-input" placeholder="Хто на фото?" data-en-placeholder="Who’s in the photo?" autocomplete="off" />
+                <ul class="suggestions" id="suggestions"></ul>
+              </div>
+              <div class="answer-actions">
+                <span class="free-left" id="free-left"></span>
+                <button id="skip-btn" class="btn btn-secondary btn-sm hidden" data-en="🔄 Another photo">🔄 Інше фото</button>
+                <button id="pass-btn" class="btn btn-secondary btn-sm hidden" data-en="Pass">Пас</button>
+                <button id="finish-btn" class="btn btn-secondary btn-sm btn-giveup" data-en="Give up">Здаюсь</button>
+              </div>
+              <p class="hint" id="answer-hint"></p>
+            </div>
+
+            <div class="misses" id="misses"></div>
+            <div class="reveal-bar hidden" id="reveal-bar"></div>
+            <div class="report hidden" id="report"></div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="side-col">
+        <section class="table-card">
+          <h3 class="table-title" id="table-title" data-en="Standings">Таблиця</h3>
+          <ol class="scoreboard" id="scoreboard"></ol>
+        </section>
+        <div class="reactions" id="reactions"></div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- ── Підсумок серії -->
+  <main id="screen-final" class="screen hidden">
+    <section class="card final">
+      <h2 id="final-title"></h2>
+      <ol class="standings" id="final-standings"></ol>
+      <h3 class="field-label" data-en="Photos">Фото</h3>
+      <ol class="history" id="final-history"></ol>
+      <div class="result-actions">
+        <button id="again-btn" class="btn btn-primary btn-lg" data-en="Play again">Ще одна гра</button>
+        <p id="again-wait" class="hint"></p>
+        <button class="btn btn-ghost" data-action="leave" data-en="Home">На головну</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Чат (лише в кімнаті) -->
+  <button id="chat-fab" class="chat-fab hidden" aria-label="Чат" data-en-aria-label="Chat">💬<span id="chat-badge" class="chat-badge hidden"></span></button>
+  <section id="chat-panel" class="chat-panel hidden" aria-label="Чат кімнати" data-en-aria-label="Room chat">
+    <div class="chat-head"><b data-en="Chat">Чат</b><button class="icon-btn" id="chat-close" aria-label="Закрити" data-en-aria-label="Close">✕</button></div>
+    <ul class="chat-list" id="chat-list"></ul>
+    <form class="chat-form" id="chat-form">
+      <input id="chat-input" maxlength="200" placeholder="Повідомлення…" data-en-placeholder="Message…" autocomplete="off" />
+      <button class="btn btn-primary btn-sm">↑</button>
+    </form>
+  </section>
+
+  <div id="toast" class="toast" role="status"></div>
+
+  <script src="/shared/i18n.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/shared/presence.js"></script>
+  <script src="/shared/players.js"></script>
+  <script src="/shared/sounds.js"></script>
+  <script src="/shared/room-client.js"></script>
+  <script src="/archive/app.js"></script>
+</body>
+</html>

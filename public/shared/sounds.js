@@ -112,6 +112,12 @@ window.Sound = (() => {
     pop() {
       tone(600, { dur: 0.09, vol: 0.1, slideTo: 1100 });
     },
+    // затвор фотоапарата: різке клацання шторки й коротке «вжик» перемотки ('Фотоархів')
+    shutter() {
+      tone(2600, { dur: 0.025, type: 'square', vol: 0.06, slideTo: 900 });
+      tone(180, { start: 0.005, dur: 0.06, type: 'sine', vol: 0.12, slideTo: 90 });
+      tone(1800, { start: 0.07, dur: 0.03, type: 'square', vol: 0.04, slideTo: 700 });
+    },
     // трибуна: короткий гул натовпу — шум через смуговий фільтр, наростає й стихає ('Склад матчу')
     crowd() {
       const ac = audio();

@@ -295,6 +295,23 @@ body {
 }
 .a-pitch b.q { background: #fffaf0; color: #b3121d; }
 
+/* Фотоархів — фотолабораторія: темрява з червоним світлом, фото на білому папері під сіткою 5×5 */
+.s-archive {
+  --st-bg: #1a0f0c; --st-fg: #f3ece0; --st-muted: #b9a796; --st-name: 800 25px/1 'Unbounded', sans-serif;
+  background-image: radial-gradient(ellipse at 50% -15%, rgba(224, 83, 60, 0.45), transparent 65%);
+}
+.s-archive .st-name { text-transform: uppercase; letter-spacing: 0.03em; }
+.s-archive .mode.solo { background: #e0533c; color: #fff8f2; }
+.mode.beta { font-family: 'IBM Plex Mono', monospace; font-weight: 600; color: #f2a33a; border: 1.5px solid #f2a33a; }
+.a-print { display: grid; place-items: center; width: 100%; height: 100%; }
+.a-shot {
+  display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(5, 1fr); height: 84%; width: auto; aspect-ratio: 4 / 3; padding: 5px; background-color: #ece6d8;
+  background-image: linear-gradient(160deg, #6b9a4f 0 45%, #3f6b33 45% 100%); background-origin: content-box; background-clip: content-box;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5), 0 0 0 5px #ece6d8 inset; rotate: -3deg;
+}
+.a-shot i { background: #1c1210; box-shadow: inset 0 0 0 1px #3b2a22; }
+.a-shot i.o { background: transparent; box-shadow: none; }
+
 @media (prefers-reduced-motion: reduce) {
   .sticker, .sticker::after { transition: none; }
 }

@@ -7,7 +7,7 @@
     "start": "node server/index.js",
     "dev": "node --watch server/index.js",
     "ui-check": "node scripts/ui-check.js",
-    "test": "node scripts/smoke-test.js && node scripts/smoke-path.js && node scripts/smoke-guess.js && node scripts/smoke-spy.js && node scripts/smoke-top.js && node scripts/smoke-duel.js && node scripts/smoke-lineup.js",
+    "test": "node scripts/smoke-test.js && node scripts/smoke-path.js && node scripts/smoke-guess.js && node scripts/smoke-spy.js && node scripts/smoke-top.js && node scripts/smoke-duel.js && node scripts/smoke-lineup.js && node scripts/smoke-archive.js",
     "fetch-photos": "node scripts/fetch-photos.js",
     "build-players": "node scripts/build-players.js",
     "build-careers": "node scripts/build-careers.js",
@@ -19,7 +19,9 @@
     "build-facts": "node scripts/build-facts.js",
     "build-honours": "node scripts/build-honours.js",
     "fetch-category-images": "node scripts/fetch-category-images.js",
-    "build-lineups": "node scripts/build-lineups.js"
+    "build-lineups": "node scripts/build-lineups.js",
+    "build-shots": "node scripts/build-shots.js",
+    "apply-shot-reports": "node scripts/apply-shot-reports.js"
   },
   "engines": {
     "node": ">=18"
