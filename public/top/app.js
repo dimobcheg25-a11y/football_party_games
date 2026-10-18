@@ -232,7 +232,8 @@
     // інша тема — господар (у соло — сам), поки в раунді ще ніхто нічого не назвав
     $('#skip-topic-btn').classList.toggle('hidden', !(s.canSkip && s.host === mySeat));
     const lives = turns ? (s.order.includes(mySeat) ? s.lives[mySeat] : null) : s.mine?.livesLeft ?? (s.options.lives || null);
-    $('#lives').textContent = s.options.lives ? hearts(lives) : '';
+    $('#lives').innerHTML = s.options.lives && lives != null
+      ? `<span class="lives-label">${L('Помилок лишилось', 'Mistakes left')}:</span> <b>${hearts(lives)}</b>` : '';
     if (turns) {
       const playing = s.order.includes(mySeat);
       $('#turn-line').innerHTML = s.active === mySeat ? L('<b>Твій хід!</b> Назви когось із топу.', '<b>Your turn!</b> Name someone from the top.')

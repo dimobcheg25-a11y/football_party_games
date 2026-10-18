@@ -229,7 +229,7 @@ input::placeholder { color: #a39a87; }
   .screen-game { max-width: 1260px; }
   .game-layout { grid-template-columns: minmax(0, 1fr) 230px; }
   .game-top { display: grid; grid-template-columns: minmax(0, 1fr) 230px; gap: 16px; padding-right: 0; align-items: center; }
-  .game-top > .btn-leave { justify-self: start; }
+  .game-top > .btn-leave { grid-column: 2; justify-self: start; }
   .sheet-teams { grid-template-columns: 1fr 1fr; }
   .pitch { aspect-ratio: 1 / 1.08; }
   /* 7. більші футболки й фото на ПК */

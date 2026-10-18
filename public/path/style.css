@@ -37,6 +37,15 @@
 .timer.low { color: var(--danger); }
 
 .game-layout { display: grid; grid-template-columns: minmax(0, 1fr) 250px; gap: 16px; align-items: start; }
+/* шапка гри на ПК — та сама сітка, що й гра: [інфо | таймер | …] над полем гри, «Вийти» — над таблицею.
+   Ліва й права частини однакові (1fr), тож таймер рівно по центру поля гри. */
+@media (min-width: 761px) {
+  .game-top { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) 250px; column-gap: 16px; padding-right: 0; }
+  .game-top > .round-info { grid-column: 1; }
+  .game-top > .timer { grid-column: 2; }
+  .game-top > .career-bar { grid-column: 3; grid-row: 1; justify-self: end; width: 100%; }
+  .game-top > .btn-leave { grid-column: 4; grid-row: 1; justify-self: start; }
+}
 @media (max-width: 760px) {
   .game-layout { grid-template-columns: 1fr; }
   .side-col { order: -1; }

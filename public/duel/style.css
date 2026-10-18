@@ -52,6 +52,8 @@ input::placeholder { color: var(--muted); }
 .screen-game { max-width: 1040px; }
 .screen-game.solo .game-layout { grid-template-columns: minmax(0, 1fr); }
 .screen-game.solo .side-col { display: none; }
+/* соло — без таблиці збоку: шапка на всю ширину, таймер по центру рингу */
+@media (min-width: 761px) { .screen-game.solo .game-top { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); } .screen-game.solo .game-top > .btn-leave { grid-column: 3; justify-self: end; } }
 .duel-col { display: grid; gap: 12px; min-width: 0; }
 .question {
   margin: 0; text-align: center; font-family: var(--display); font-weight: 900; text-transform: uppercase;

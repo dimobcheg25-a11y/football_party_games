@@ -539,7 +539,7 @@
     document.querySelector('[data-action="skip"]').disabled = !isMyTurn();
     const surrender = $('#surrender-btn');
     surrender.disabled = !playing || !active;
-    surrender.textContent = state.capacity > 2 ? L('Вийти з партії', 'Leave the game') : L('Здатися', 'Resign');
+    surrender.textContent = state.capacity > 2 ? L('🏳️ Вийти з партії', '🏳️ Leave the game') : L('🏳️ Здатися', '🏳️ Resign');
     const drawBtn = $('#draw-btn');
     const iOffered = state.drawVotes.includes(mySeat);
     drawBtn.disabled = !playing || !active || iOffered;

@@ -5,6 +5,10 @@ window.CHANGELOG = [
   {
     date: '2026-10-18',
     items: [
+      { game: null, uk: 'Таймер у «Шляху», «Вгадай гравця», «Топ-10» і «Один на один» — рівно по центру поля гри, а не всього екрана з таблицею.', en: 'The timer in Career Path, Guess the Player, Top 10 and One on One is centred over the game area, not the whole screen including the table.' },
+      { game: 'crossroads', uk: 'Помітні кнопки «🏳️ Здатися» і «🚪 Вийти з кімнати» (раніше — ледь помітний текст і посилання внизу).', en: 'Easy-to-spot “🏳️ Resign” and “🚪 Leave room” buttons (they used to be faint text and a link at the bottom).' },
+      { game: 'spy', uk: 'Помітні кнопки «⏭ Пропустити хід», «🗳 Одразу до голосування» і «🔄 Замінити футболіста».', en: 'Easy-to-spot “⏭ Skip turn”, “🗳 Straight to the vote” and “🔄 Replace footballer” buttons.' },
+      { game: null, uk: 'Життя в «Топ-10» і «Один на один» підписані: «Помилок лишилось».', en: 'Lives in Top 10 and One on One are labelled “Mistakes left”.' },
       { game: null, uk: 'На головній — «🟢 Зараз на сайті»: скільки людей відкрили сайт просто зараз (кілька вкладок — одна людина).', en: 'The home page shows “🟢 Online now”: how many people have the site open right now (several tabs count as one).' },
       { game: 'lineup', uk: 'Лава запасних — зелена, як газон біля бровки: сині й білі футболки на ній видно; у всіх гравців на полі є позиція; відмітки гравців біля бровки не вилазять за поле; тренер ПСЖ у матчі 6:1 на місці.', en: 'The bench is green like the turf by the touchline, so blue and white shirts stand out; every player on the pitch has a position; badges of players by the touchline stay on the pitch; PSG’s coach in the 6–1 match is back.' },
       { game: null, uk: 'Наліпка «Складу матчу» на головній — знову поле зі схемою (одна команда, 4-3-3).', en: 'The “Match Lineup” sticker on the home page shows a pitch with a formation again (one team, 4-3-3).' },

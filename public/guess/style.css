@@ -44,6 +44,8 @@
 /* дошка широка (11 клітинок), тому таблиця рахунку — смужкою над нею, а не збоку */
 .guess-game { max-width: 1440px; }
 .guess-game .game-layout { grid-template-columns: 1fr; }
+/* таблиця тут зверху, гра — на всю ширину: шапка теж на всю ширину, таймер по центру; праворуч — місце під кнопки мови й звуку */
+@media (min-width: 761px) { .guess-game .game-top { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); padding-right: 100px; padding-left: 100px; } .guess-game .game-top > .btn-leave { grid-column: 3; justify-self: end; } }
 .guess-game .side-col { order: -1; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .guess-game .table-card { flex: 1; padding: 8px; }
 .guess-game .table-title { margin-bottom: 6px; }

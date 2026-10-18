@@ -137,7 +137,7 @@
     $('#screen-game').classList.toggle('solo', s.solo);
     // верхній рядок: серія / пара N з M
     const info = s.options.mode === 'streak' && s.solo
-      ? `<b>${L('Серія', 'Streak')}: <em class="run">${s.run}</em></b><span>${'🥊'.repeat(Math.max(0, s.lives))}${'<i class="lost">🥊</i>'.repeat(Math.max(0, s.options.lives - s.lives))} · ${L('рекорд', 'best')} ${Math.max(s.best, bestStored())}</span>`
+      ? `<b>${L('Серія', 'Streak')}: <em class="run">${s.run}</em></b><span>${L('Помилок лишилось', 'Mistakes left')}: ${'🥊'.repeat(Math.max(0, s.lives))}${'<i class="lost">🥊</i>'.repeat(Math.max(0, s.options.lives - s.lives))} · ${L('рекорд', 'best')} ${Math.max(s.best, bestStored())}</span>`
       : `<b>${L(`Пара ${s.round} з ${s.rounds}`, `Pair ${s.round} of ${s.rounds}`)}</b><span>${s.solo ? L(`Рахунок: ${s.scores[mySeat]}`, `Score: ${s.scores[mySeat]}`) : ''}</span>`;
     // складність — завжди видно, на якій граєш (гравці · пари)
     const level = `<span class="level">${DIFF_LABELS[s.options.difficulty]} · ${LEVEL_LABELS[s.options.level]}</span>`;

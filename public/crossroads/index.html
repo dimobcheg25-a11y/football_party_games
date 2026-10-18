@@ -142,7 +142,7 @@
       <ul class="slots" id="lobby-slots"></ul>
       <div class="lobby-actions">
         <button class="btn btn-ghost" data-action="rules" data-en="Rules of this mode">Правила цього режиму</button>
-        <button class="btn btn-ghost" data-action="leave" data-en="✕ Cancel room">✕ Скасувати кімнату</button>
+        <button class="btn btn-secondary btn-leave" data-action="leave" data-en="🚪 Cancel room">🚪 Скасувати кімнату</button>
       </div>
     </section>
   </main>
@@ -188,7 +188,8 @@
     <div class="actions">
       <button class="btn btn-secondary btn-sm" data-action="skip" data-en="Skip turn">Пропустити хід</button>
       <button class="btn btn-secondary btn-sm" data-action="draw" id="draw-btn" data-en="Offer a draw">Запропонувати нічию</button>
-      <button class="btn btn-ghost btn-sm" data-action="surrender" id="surrender-btn" data-en="Resign">Здатися</button>
+      <button class="btn btn-secondary btn-sm btn-giveup" data-action="surrender" id="surrender-btn" data-en="🏳️ Resign">🏳️ Здатися</button>
+      <button class="btn btn-secondary btn-sm btn-leave" data-action="leave-confirm" data-en="🚪 Leave room">🚪 Вийти з кімнати</button>
     </div>
     <p class="room-footer muted small">
       <span data-en="Room">Кімната</span> <b id="game-code"></b> · <a href="#" id="game-copy" data-en="copy link">скопіювати посилання</a> ·

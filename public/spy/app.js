@@ -130,7 +130,7 @@
            </form>
            <button class="btn btn-secondary" id="voice-btn">${L('🎙 Сказав голосом — далі', '🎙 Said it out loud — next')}</button>`
         : `<p>${L('Хід', 'Turn')}: <b style="${seatStyle(s.active)}" class="pc">${escapeHtml(seatName(s.active))}</b> — ${L('слухай або читай підказку.', 'listen to or read the clue.')}</p>`}
-      <button class="btn btn-ghost btn-sm" id="reroll-btn">${L('Не знаю цього футболіста — замінити', 'I don’t know this footballer — replace')}</button>
+      <button class="btn btn-secondary btn-sm" id="reroll-btn">${L('🔄 Не знаю цього футболіста — замінити', '🔄 I don’t know this footballer — replace')}</button>
     </div>`;
     if (mine) {
       const input = $('#clue-input');

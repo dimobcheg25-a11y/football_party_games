@@ -157,3 +157,7 @@
 .ask-sheet { border: 2px solid var(--neon-cyan); transform: skewX(-4deg); box-shadow: 0 0 0 1px rgba(34, 211, 255, .3), 0 0 36px rgba(34, 211, 255, .35), 0 30px 80px rgba(0,0,0,.6); }
 .ask-sheet > * { transform: skewX(4deg); }
 .ask-sheet .ask-text { text-shadow: 0 0 14px rgba(255, 58, 160, .55); }
+
+/* життя — з підписом, щоб було ясно, що це помилки */
+.lives { display: inline-flex; align-items: center; gap: 6px; }
+.lives-label { font: 700 12.5px/1 var(--font, "Manrope"), sans-serif; color: var(--muted); letter-spacing: 0; text-shadow: none; }
