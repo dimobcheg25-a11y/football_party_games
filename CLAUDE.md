@@ -52,6 +52,8 @@ Node 18+, Express + Socket.IO, клієнт — чистий HTML/CSS/JS без 
 - `public/index.html` + `hub.css` + `hub.js` — головна-альбом наліпок Panini: картки з `/api/games` у двох групах — «можна самому» (`meta.solo`) і «тільки з друзями»;
   на наліпці значки «🎮 Соло» і «👥 З друзями · `meta.friends`»; стиль наліпки — клас `s-<id>` у hub.css + малюнок `ART[id]` у hub.js (немає — біла наліпка з emoji).
   Закладка «📋 Що нового» → `public/changes/` (сторінка-вкладиш альбому; дані — `changes/changelog.js`, червона крапка на головній — поки нову версію не відкрили).
+- `server/core/presence.js` — «Зараз на сайті» на головній: унікальні відвідувачі (мітка `vid` з `public/shared/presence.js`, localStorage) з усіх просторів імен;
+  головна й «Що нового» — `Presence.show()` (сокет `/presence`, подія `online`), ігри передають `vid` в auth свого сокета. Нова сторінка — підключити `/shared/presence.js`.
 - `public/shared/` — спільне для сторінок ігор: `theme.css` (базові токени й фон, які гра перевизначає — див. «Оформлення гри»; `.home-link` — закріплена табличка «‹ Футбольні ігри» на головну, у кожній `index.html` перед екранами), `ui.css` (кнопки, поля, чипи, вікна,
   підказки пошуку, тост, звук, чат), `players.js` (`window.Players.search` — автодоповнення імен), `sounds.js` (`window.Sound`),
   `room-client.js` (`RoomClient.create` — уся спільна логіка клієнта кімнатних ігор).

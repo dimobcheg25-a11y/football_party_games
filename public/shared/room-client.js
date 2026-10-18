@@ -86,7 +86,7 @@ window.RoomClient = (() => {
 
   function create(cfg) {
     const { id } = cfg;
-    const socket = io(`/${id}`, { auth: { lang: window.I18n.lang } });
+    const socket = io(`/${id}`, { auth: { lang: window.I18n.lang, vid: window.Presence?.vid } }); // vid — «зараз на сайті» (/shared/presence.js)
     const emit = (event, data) => new Promise((res) => socket.emit(event, data, (r) => res(r || {})));
 
     let setup = { ...cfg.defaults };

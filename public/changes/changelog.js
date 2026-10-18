@@ -5,6 +5,7 @@ window.CHANGELOG = [
   {
     date: '2026-10-18',
     items: [
+      { game: null, uk: 'На головній — «🟢 Зараз на сайті»: скільки людей відкрили сайт просто зараз (кілька вкладок — одна людина).', en: 'The home page shows “🟢 Online now”: how many people have the site open right now (several tabs count as one).' },
       { game: 'lineup', uk: 'Лава запасних — зелена, як газон біля бровки: сині й білі футболки на ній видно; у всіх гравців на полі є позиція; відмітки гравців біля бровки не вилазять за поле; тренер ПСЖ у матчі 6:1 на місці.', en: 'The bench is green like the turf by the touchline, so blue and white shirts stand out; every player on the pitch has a position; badges of players by the touchline stay on the pitch; PSG’s coach in the 6–1 match is back.' },
       { game: null, uk: 'Наліпка «Складу матчу» на головній — знову поле зі схемою (одна команда, 4-3-3).', en: 'The “Match Lineup” sticker on the home page shows a pitch with a formation again (one team, 4-3-3).' },
       { game: 'lineup', uk: 'Голи й заміни на полі — збоку від футболки, а не на сусідах; біла обводка футболок (синя на синьому не зливається); підписане «Помилок лишилось»; кнопка «🔄 Замінити матч».', en: 'Goals and subs on the pitch sit beside the shirt, not on neighbours; white outline on shirts (blue on blue no longer blends); “Mistakes left” is labelled; “🔄 Swap match” button.' },

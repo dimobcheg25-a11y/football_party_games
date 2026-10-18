@@ -30,6 +30,7 @@
     <header class="hub-hero">
       <p class="album-band">Football party games</p>
       <h1 class="hub-title"><span data-en="Football">Футбольні</span> <b data-en="games">ігри</b></h1>
+      <p class="hub-online" data-online hidden><i class="online-dot" aria-hidden="true"></i><span data-en="Online now:">Зараз на сайті:</span><b></b></p>
       <p class="hub-tagline" data-en="Play solo or with friends: to play together, create a room and send the link.">Грай сам або з друзями: для гри разом створи кімнату й надішли посилання.</p>
     </header>
     <div id="games" class="hub-games">
@@ -51,6 +52,8 @@
     </div>
   </main>
   <script src="/shared/i18n.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/shared/presence.js"></script>
   <script src="/changes/changelog.js"></script>
   <script src="/hub.js"></script>
 </body>

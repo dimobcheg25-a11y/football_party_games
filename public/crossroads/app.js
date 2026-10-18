@@ -4,7 +4,7 @@
   const pname = (p) => window.I18n.name(p);
   const pl = (n, uk, en) => window.I18n.plural(n, uk, en);
   const TITLE = L('Футбольне перехрестя', 'Football Crossroads');
-  const socket = io('/crossroads', { auth: { lang: window.I18n.lang } });
+  const socket = io('/crossroads', { auth: { lang: window.I18n.lang, vid: window.Presence?.vid } });
   const { SYMBOLS, BOARDS, MODES } = window.Rules;
 
   // ── локальне сховище (може бути недоступне в приватному режимі)

@@ -42,6 +42,21 @@ async function main() {
   assert.ok(meta && meta.solo && meta.friends, 'гра є в каталозі, соло і з друзями');
   assert.strictEqual((await fetch(`${URL}/lineup/`)).status, 200);
 
+  // ── «Зараз на сайті»: унікальні відвідувачі з усіх сторінок (дві вкладки однієї людини — одна)
+  const hub = io(`${URL}/presence`, { auth: { vid: 'smoke-A' } });
+  let online = 0;
+  hub.on('online', (n) => { online = n; });
+  const tab2 = io(`${URL}/top`, { auth: { vid: 'smoke-A' } });
+  const other = io(GAME, { auth: { vid: 'smoke-B' } });
+  await new Promise((r) => setTimeout(r, 2500));
+  assert.strictEqual(online, 2, 'дві вкладки + інший відвідувач — 2');
+  other.close();
+  await new Promise((r) => setTimeout(r, 2500));
+  assert.strictEqual(online, 1, 'інший пішов — 1');
+  hub.close();
+  tab2.close();
+  console.log('✓ «зараз на сайті»: вкладки однієї людини — одна, хто пішов — зникає');
+
   // ── матчі з бази
   const { matches, matchById } = require('../server/games/lineup/matches');
   const final = matchById.get('ucl-final-2005-05-25');

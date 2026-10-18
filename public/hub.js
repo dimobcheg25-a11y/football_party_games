@@ -3,6 +3,7 @@
 // Наприкінці — порожнє місце «скоро нова гра». У HTML — запасна наліпка, якщо запит не вдасться.
 // Мова — /shared/i18n.js: назви й описи ігор сервер віддає мовою з ?lang=, решта — I18n.L.
 const { L } = window.I18n;
+window.Presence.show(); // «Зараз на сайті»
 fetch(`/api/games?lang=${window.I18n.lang}`)
   .then((r) => r.json())
   .then((games) => {
