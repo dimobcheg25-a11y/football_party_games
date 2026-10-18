@@ -3,8 +3,9 @@
    з номером; відгадав — футболка перевертається й показує фото та прізвище (фірмова анімація) + гул трибуни (звук crowd).
    Світла гра: перевизначено те, що в ui.css зроблено під темний фон (як у path/skin.css). */
 :root {
-  --bg: #e9dfc8; --bg-2: #f4ecda;
-  --surface: rgba(255, 251, 241, 0.96); --surface-solid: #fffaf0; --surface-2: #eadfc6;
+  --bg: #0e1a30; --bg-2: #1a2d4f; /* нічний стадіон довкола; аркуші програмки — --surface */
+  --paper: #f3ead6; --paper-2: #e9dcbf;
+  --surface: rgba(243, 234, 214, 0.97); --surface-solid: #f3ead6; --surface-2: #e2d4b4;
   --line: rgba(40, 30, 15, 0.14); --line-strong: rgba(40, 30, 15, 0.28);
   --text: #1d1a14; --muted: #6a5f4c;
   --accent: #b3121d; --accent-ink: #fff;
@@ -14,16 +15,31 @@
   --display: 'Playfair Display', Georgia, 'Times New Roman', serif;
   --wash: rgba(40, 30, 15, 0.05);
   --grass: #5f8a4e; --grass-2: #557d45;
-  color-scheme: light;
+  color-scheme: dark;
 }
 
-/* папір програмки: зерно й ледь помітні горизонтальні лінії друку */
+/* довкола — нічний стадіон: темно-синє небо, промені прожекторів, унизу — смуги газону; програмка лежить на цьому тлі */
 .pitch-bg {
   background:
-    repeating-linear-gradient(0deg, rgba(60, 40, 10, 0.025) 0 1px, transparent 1px 5px),
-    radial-gradient(ellipse at 20% 0%, rgba(255, 255, 255, 0.5), transparent 60%),
-    linear-gradient(180deg, var(--bg-2), var(--bg));
+    radial-gradient(ellipse 38% 60% at 12% -8%, rgba(255, 244, 214, 0.22), transparent 70%),
+    radial-gradient(ellipse 38% 60% at 88% -8%, rgba(255, 244, 214, 0.22), transparent 70%),
+    linear-gradient(180deg, transparent 72%, rgba(70, 120, 60, 0.28) 72% 100%),
+    repeating-linear-gradient(90deg, transparent 0 80px, rgba(255, 255, 255, 0.025) 80px 160px),
+    linear-gradient(180deg, var(--bg-2), var(--bg) 70%);
 }
+body { color: #f1e8d3; }
+/* аркуші програмки — папір із темним текстом */
+.card, .match-head, .answer-box, .team-sheet, .table-card, .reveal-bar, .sheet, .chat-panel, .suggestions, .home-link, .lobby, .final {
+  color: var(--text);
+  background-image: repeating-linear-gradient(0deg, rgba(60, 40, 10, 0.025) 0 1px, transparent 1px 5px);
+}
+.card, .table-card, .reveal-bar { background-color: var(--surface-solid); }
+.hero .tagline { color: #e8dcc0; }
+.game-top .round-info b, .game-top .timer { color: #fff3d6; }
+.game-top .round-info span { color: #c9bb9c; }
+.misses .field-label { color: #e8dcc0; }
+.reveal-bar { border: 2px solid var(--ink); border-radius: 4px; padding: 12px 14px; box-shadow: 4px 4px 0 rgba(0, 0, 0, .35); }
+.reveal-bar .verdict { margin: 0 0 8px; }
 
 /* ── спільні компоненти на світлому */
 .card { box-shadow: 0 10px 30px rgba(60, 40, 10, 0.1); backdrop-filter: none; border-color: var(--line-strong); }
@@ -45,19 +61,19 @@ input::placeholder { color: #a39a87; }
 /* ── логотип: обкладинка програмки — дрібний надпис, «Склад» великим, «матчу» курсивом на червоній смузі */
 .programme-logo { display: inline-grid; justify-items: center; gap: 2px; line-height: 1; }
 .programme-logo small {
-  font-family: 'Manrope', sans-serif; font-weight: 800; font-size: 11px; letter-spacing: 0.32em; text-transform: uppercase; color: var(--ink);
-  border-top: 2px solid var(--ink); border-bottom: 2px solid var(--ink); padding: 4px 8px;
+  font-family: 'Manrope', sans-serif; font-weight: 800; font-size: 11px; letter-spacing: 0.32em; text-transform: uppercase; color: #f1e8d3;
+  border-top: 2px solid #f1e8d3; border-bottom: 2px solid #f1e8d3; padding: 4px 8px;
 }
-.programme-logo span { font-family: var(--display); font-weight: 900; font-size: clamp(46px, 10vw, 76px); color: var(--ink); letter-spacing: -0.01em; }
+.programme-logo span { font-family: var(--display); font-weight: 900; font-size: clamp(46px, 10vw, 76px); color: #fff3d6; letter-spacing: -0.01em; text-shadow: 0 3px 0 rgba(0, 0, 0, .35); }
 .programme-logo em {
   font-family: var(--display); font-style: italic; font-weight: 700; font-size: clamp(22px, 5vw, 32px); color: #fff;
-  background: var(--accent); padding: 2px 18px 5px; transform: rotate(-2deg); box-shadow: 0 3px 0 var(--ink);
+  background: var(--accent); padding: 2px 18px 5px; transform: rotate(-2deg); box-shadow: 0 3px 0 rgba(0, 0, 0, .45);
 }
 
 /* ── шапка матчу: як розворот програмки — турнір на смузі, герби, великий рахунок */
 .match-head {
   background: var(--surface-solid); border: 2px solid var(--ink); border-radius: 4px; padding: 0 14px 12px; margin-bottom: 12px;
-  box-shadow: 4px 4px 0 var(--ink); text-align: center;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, .35); text-align: center;
 }
 .mh-comp {
   margin: 0 -14px 10px; padding: 7px 10px; background: var(--ink); color: #fff;
@@ -97,7 +113,7 @@ input::placeholder { color: #a39a87; }
 
 /* ── дві команди */
 .sheet-teams { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr)); gap: 14px; margin-top: 14px; }
-.team-sheet { background: var(--surface-solid); border: 2px solid var(--ink); border-radius: 4px; overflow: hidden; }
+.team-sheet { background-color: var(--surface-solid); border: 2px solid var(--ink); border-radius: 4px; overflow: hidden; box-shadow: 4px 4px 0 rgba(0, 0, 0, .35); }
 .ts-head {
   display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 2px solid var(--ink);
   background: linear-gradient(90deg, var(--kit) 0 8px, transparent 8px);
@@ -126,7 +142,7 @@ input::placeholder { color: #a39a87; }
 .s-shirt {
   position: relative; display: grid; place-items: center; width: 46px; height: 42px; background: var(--kit);
   clip-path: polygon(28% 0, 40% 6%, 60% 6%, 72% 0, 100% 16%, 90% 40%, 80% 34%, 80% 100%, 20% 100%, 20% 34%, 10% 40%, 0 16%);
-  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.5));
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.75)) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45));
 }
 .s-num {
   font-family: var(--display); font-weight: 900; font-size: 19px; color: var(--kit-ink, #fff); line-height: 1; margin-top: 6px;
@@ -150,6 +166,7 @@ input::placeholder { color: #a39a87; }
 .b-capt { background: #ffd54a !important; color: #3a2a00 !important; }
 .b-off { color: var(--accent) !important; }
 .b-on { color: #1a7a3a !important; }
+.bench .s-badges .b-on { background: #d9f2df; }
 .s-by { display: flex; gap: 2px; }
 .s-by .dot-p { width: 8px; height: 8px; border-radius: 50%; background: var(--pc); box-shadow: 0 0 0 1px #fff; }
 .shirt.sel .s-shirt { filter: drop-shadow(0 0 0 #ffd54a) drop-shadow(0 0 3px #ffd54a) drop-shadow(0 0 6px #ffd54a); }
@@ -176,10 +193,11 @@ input::placeholder { color: #a39a87; }
 @media (prefers-reduced-motion: reduce) { .shirt.flip .s-shirt { animation: none; } .shirt:not(.open):hover .s-shirt { transform: none; } }
 
 /* заміни й тренер під полем */
-.bench, .coach-row { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px 4px; padding: 6px 10px 12px; border-top: 1px dashed var(--line-strong); }
-.bench-title { flex-basis: 100%; font: 800 11px/1 'Manrope', sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
-.bench .s-name, .coach-row .s-name { background: var(--wash); box-shadow: none; }
-.bench .shirt.open .s-name, .coach-row .shirt.open .s-name { background: var(--ink); color: #fff; }
+.bench, .coach-row { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px 4px; padding: 8px 10px 12px; background: #24375a; border-top: 2px solid var(--ink); }
+.coach-row { background: #1c2c49; }
+.bench-title { flex-basis: 100%; font: 800 11px/1 'Manrope', sans-serif; letter-spacing: .12em; text-transform: uppercase; color: #c9d4ea; }
+.bench .s-name, .coach-row .s-name { background: rgba(255, 252, 242, 0.95); }
+.bench .shirt.open .s-name, .coach-row .shirt.open .s-name { background: var(--accent); color: #fff; }
 .coach-row .s-shirt { background: #fffdf7; border: 2px solid var(--kit); clip-path: none; border-radius: 6px; width: 50px; height: 34px; }
 .coach-row .s-coach { color: var(--ink); text-shadow: none; margin-top: 0; }
 .coach-row .shirt { width: 120px; }
@@ -219,7 +237,7 @@ input::placeholder { color: #a39a87; }
   .s-name { max-width: 88px; font-size: 11px; }
   .s-shirt { width: 52px; height: 48px; }
   .s-num { font-size: 21px; margin-top: 7px; }
-  .shirt.open .s-shirt { width: 64px; height: 64px; }
+  .shirt.open .s-shirt { width: 58px; height: 58px; }
   .bench .shirt.open .s-shirt, .coach-row .shirt.open .s-shirt { width: 56px; height: 56px; }
 }
 @media (max-width: 760px) {
@@ -243,3 +261,9 @@ input::placeholder { color: #a39a87; }
   background: rgba(179, 18, 29, 0.07); border: 1px solid rgba(179, 18, 29, 0.3); text-decoration: line-through; text-decoration-color: rgba(179, 18, 29, 0.6);
 }
 .miss .dot-p { width: 8px; height: 8px; border-radius: 50%; background: var(--pc); }
+
+/* на полі під футболкою — лише герб клубу (назва — при наведенні й у панелі підказки), щоб підписи не налазили на сусідів */
+.pitch .s-club.has-img > span { display: none; }
+.pitch .s-club img { width: 16px; height: 16px; }
+.pitch .s-club:not(.has-img) > span { max-width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; }
+.pitch .shirt.open .s-name { display: block; white-space: nowrap; max-width: 92px; overflow: hidden; text-overflow: ellipsis; }

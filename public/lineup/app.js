@@ -166,6 +166,13 @@
   // світла футболка (біла, жовта) — номер темний
   const light = (hex) => { const m = /^#?([0-9a-f]{6})$/i.exec(hex || ''); if (!m) return false; const n = parseInt(m[1], 16);
     return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) > 170; };
+  // на полі — лише прізвище (з часткою: «Ді Марія», «ван Дейк»), щоб підписи не налазили на сусідів; повне ім'я — у підказці
+  const PARTICLES = /^(ді|де|да|ду|дель|ван|фон|ле|ла|ель|аль|di|de|da|do|del|van|von|le|la|el|al|dos|das)$/i;
+  function shortName(name) {
+    const w = String(name || '').trim().split(/\s+/);
+    if (w.length < 2) return w[0] || '';
+    return PARTICLES.test(w[w.length - 2]) ? w.slice(-2).join(' ') : w[w.length - 1];
+  }
   let shown = new Set(); // кого вже показали відкритим — анімацію перевороту лише для нових
   function renderTeams() {
     const s = state;
@@ -204,7 +211,7 @@
     const cls = ['shirt', inline ? 'inline' : '', ans ? 'open' : '', fresh ? 'flip' : '', sl.missing ? 'missing' : '', selected === sl.key ? 'sel' : '', sl.coach ? 'coach' : ''].join(' ');
     return `<button type="button" class="${cls}" data-key="${sl.key}" ${style} ${ans ? 'tabindex="-1"' : ''}>
       <span class="s-shirt">${face}</span>${!ans && state.phase === 'guess' ? '<span class="s-tip" aria-hidden="true">💡</span>' : ''}
-      <span class="s-name">${ans ? escapeHtml(ans.name) : `${sl.pos && !sl.coach ? `<em>${escapeHtml(POS[sl.pos] || sl.pos)}</em>` : ''}${id}`}</span>
+      <span class="s-name" ${ans ? `title="${escapeHtml(ans.name)}"` : ''}>${ans ? escapeHtml(inline ? ans.name : shortName(ans.name)) : `${sl.pos && !sl.coach ? `<em>${escapeHtml(POS[sl.pos] || sl.pos)}</em>` : ''}${id}`}</span>
       ${hintChips ? `<span class="s-hints">${hintChips}</span>` : ''}
       ${badges ? `<span class="s-badges">${badges}</span>` : ''}${by ? `<span class="s-by">${by}</span>` : ''}
     </button>`;
@@ -235,7 +242,8 @@
     const hints = hintsOf(sl);
     const value = Math.max(1, s.points - Object.keys(hints).length);
     const can = s.options.mode === 'turns' ? s.active === mySeat : canAnswer();
-    const who = sl.coach ? L(`тренера (${team.name})`, `the coach (${team.name})`) : L(`№${sl.num} (${team.name})`, `#${sl.num} (${team.name})`);
+    const where = sl.club ? ` · ${sl.club.name}` : '';
+    const who = sl.coach ? L(`тренера (${team.name})`, `the coach (${team.name})`) : L(`№${sl.num} (${team.name}${where})`, `#${sl.num} (${team.name}${where})`);
     bar.innerHTML = `<span class="hb-title">${L('Підказка для', 'Hint for')} <b>${escapeHtml(who)}</b> · ${L('зараз', 'now')} <b>+${value}</b></span>
       <span class="hb-btns">${['age', 'letters', 'first'].filter((k) => k !== 'age' || sl.canAge).map((k) => hints[k] != null
         ? `<span class="hb-got">${HINT_LABELS[k]}: <b>${escapeHtml(String(hints[k]))}</b></span>`

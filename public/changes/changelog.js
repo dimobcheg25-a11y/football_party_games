@@ -5,6 +5,8 @@ window.CHANGELOG = [
   {
     date: '2026-10-18',
     items: [
+      { game: 'lineup', uk: 'Гравець коштує 4 очки — тепер кожна з трьох підказок справді знімає 1 очко.', en: 'A player is worth 4 points — now each of the three hints really takes off 1 point.' },
+      { game: 'lineup', uk: 'Нове тло — нічний стадіон із прожекторами, програмка лежить поверх; лава запасних темна, тож білі футболки на ній видно; на полі — короткі прізвища й герби клубів, підписи не налазять один на одного.', en: 'New backdrop — a floodlit stadium at night with the programme on top; the bench is dark so white shirts stand out; short surnames and club crests on the pitch, labels no longer overlap.' },
       { game: 'lineup', uk: 'На комп’ютері обидві команди видно одразу, поруч; більші фото гравців; зрозуміліші підказки (💡 на футболках і пояснення під пошуком).', en: 'On desktop both teams are visible side by side; bigger player photos; clearer hints (💡 on shirts and an explanation under the search).' },
       { game: 'path', uk: 'Англійські, шотландські й валлійські клуби підписані своєю країною, а не «Сполучене Королівство».', en: 'English, Scottish and Welsh clubs are labelled with their own country, not “United Kingdom”.' },
       { game: 'lineup', uk: 'Нова гра «Склад матчу»: схема легендарного матчу без прізвищ — номери, прапори, клуби, голи й заміни. Назви, хто грав за обидві команди, і обох тренерів.', en: 'New game “Match Lineup”: the team sheet of a legendary match without names — numbers, flags, clubs, goals and substitutions. Name who played for both teams and both coaches.' },

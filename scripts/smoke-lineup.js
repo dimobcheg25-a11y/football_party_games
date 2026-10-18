@@ -75,7 +75,7 @@ async function main() {
   assert.ok(hidden.every((s) => !s.answer), 'прізвища приховані');
   const [p1, p2] = st.testAnswer.filter((a) => a.playerId);
   res = await emit(solo, 'guess', { playerId: p1.playerId });
-  assert.ok(res.correct && res.points === 3, 'гравець — 3 очки');
+  assert.ok(res.correct && res.points === 4, 'гравець — 4 очки');
   // підказка на обрану футболку
   res = await emit(solo, 'hint', { key: p2.key, kind: 'first' });
   assert.ok(res.ok);
@@ -83,7 +83,7 @@ async function main() {
   assert.ok(!JSON.stringify(st.match).includes('"first"'), 'свої підказки — лише в приватному стані');
   await emit(solo, 'hint', { key: p2.key, kind: 'letters' });
   res = await emit(solo, 'guess', { playerId: p2.playerId });
-  assert.strictEqual(res.points, 1, '2 підказки — 3 − 2 = 1');
+  assert.strictEqual(res.points, 2, '2 підказки — 4 − 2 = 2');
   const coach = st.testAnswer.find((a) => a.coachKey && a.coachKey.includes('markevych'));
   res = await emit(solo, 'guess', { coachKey: coach.coachKey });
   assert.ok(res.correct, 'тренера теж називаємо');
@@ -92,9 +92,9 @@ async function main() {
   assert.ok((await emit(solo, 'guess', { playerId: p1.playerId })).error, 'повтор не рахується');
   await emit(solo, 'finishRound');
   st = await nextState(solo, (x) => x.phase === 'reveal');
-  assert.strictEqual(st.scores[0], 3 + 1 + 3, 'знайдене лишається');
+  assert.strictEqual(st.scores[0], 4 + 2 + 4, 'знайдене лишається');
   assert.ok(slotsOf(st).every((s) => s.answer), 'після «Досить» — увесь склад');
-  console.log(`✓ соло: +3 за гравця, 2 підказки → +1, тренер, «Досить» — ${st.scores[0]} очок лишилось`);
+  console.log(`✓ соло: +4 за гравця, 2 підказки → +2, тренер, «Досить» — ${st.scores[0]} очок лишилось`);
   solo.close();
 
   // ── кімната «кожен свій склад»: раунд закінчується, коли «Досить» натиснули обидва
@@ -112,7 +112,7 @@ async function main() {
   assert.strictEqual(st.phase, 'guess', 'один натиснув «Досить» — раунд іде');
   await emit(b, 'finishRound');
   st = await nextState(a, (x) => x.phase === 'reveal');
-  assert.ok(st.roundPoints[0] === 3 && !st.roundPoints[1]);
+  assert.ok(st.roundPoints[0] === 4 && !st.roundPoints[1]);
   console.log('✓ кімната «кожен свій склад»: відповіді приховані, раунд — коли «Досить» натиснули всі');
   a.close();
   b.close();
@@ -130,7 +130,7 @@ async function main() {
   assert.ok((await emit(socks[second], 'hint', { key: t0[0].key, kind: 'first' })).error, 'підказку бере той, чий хід');
   assert.ok((await emit(socks[first], 'hint', { key: t0[0].key, kind: 'first' })).ok);
   res = await emit(socks[first], 'guess', { playerId: t0[0].playerId });
-  assert.strictEqual(res.points, 2);
+  assert.strictEqual(res.points, 3);
   st = await nextState(c, (x) => x.active === second);
   assert.ok(slotsOf(st).find((s) => s.key === t0[0].key).answer, 'на спільному полі видно відгаданого');
   await emit(socks[second], 'pass');
