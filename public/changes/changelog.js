@@ -5,6 +5,8 @@ window.CHANGELOG = [
   {
     date: '2026-10-18',
     items: [
+      { game: 'lineup', uk: 'Лава запасних — зелена, як газон біля бровки: сині й білі футболки на ній видно; у всіх гравців на полі є позиція; відмітки гравців біля бровки не вилазять за поле; тренер ПСЖ у матчі 6:1 на місці.', en: 'The bench is green like the turf by the touchline, so blue and white shirts stand out; every player on the pitch has a position; badges of players by the touchline stay on the pitch; PSG’s coach in the 6–1 match is back.' },
+      { game: null, uk: 'Наліпка «Складу матчу» на головній — знову поле зі схемою (одна команда, 4-3-3).', en: 'The “Match Lineup” sticker on the home page shows a pitch with a formation again (one team, 4-3-3).' },
       { game: 'lineup', uk: 'Голи й заміни на полі — збоку від футболки, а не на сусідах; біла обводка футболок (синя на синьому не зливається); підписане «Помилок лишилось»; кнопка «🔄 Замінити матч».', en: 'Goals and subs on the pitch sit beside the shirt, not on neighbours; white outline on shirts (blue on blue no longer blends); “Mistakes left” is labelled; “🔄 Swap match” button.' },
       { game: 'lineup', uk: 'Гравець коштує 4 очки — тепер кожна з трьох підказок справді знімає 1 очко.', en: 'A player is worth 4 points — now each of the three hints really takes off 1 point.' },
       { game: 'lineup', uk: 'Нове тло — нічний стадіон із прожекторами, програмка лежить поверх; лава запасних темна, тож білі футболки на ній видно; на полі — короткі прізвища й герби клубів, підписи не налазять один на одного.', en: 'New backdrop — a floodlit stadium at night with the programme on top; the bench is dark so white shirts stand out; short surnames and club crests on the pitch, labels no longer overlap.' },

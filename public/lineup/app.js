@@ -209,7 +209,7 @@
       ? `<span class="s-face">${ans.photo ? `<img src="${escapeHtml(ans.photo)}" alt="" loading="lazy" />` : `<b>${escapeHtml(initials(ans.name || '?'))}</b>`}</span>`
       : sl.coach ? `<span class="s-coach">${L('ТРЕНЕР', 'COACH')}</span>` : `<span class="s-num">${sl.num ?? ''}</span>`;
     const style = inline ? '' : `style="left:${(sl.x / 10).toFixed(1)}%;bottom:${(sl.y / 10 * 0.92 + 3).toFixed(1)}%"`;
-    const cls = ['shirt', inline ? 'inline' : '', ans ? 'open' : '', fresh ? 'flip' : '', sl.missing ? 'missing' : '', selected === sl.key ? 'sel' : '', sl.coach ? 'coach' : ''].join(' ');
+    const cls = ['shirt', inline ? 'inline' : '', !inline && sl.x != null && sl.x < 260 ? 'edge-l' : '', ans ? 'open' : '', fresh ? 'flip' : '', sl.missing ? 'missing' : '', selected === sl.key ? 'sel' : '', sl.coach ? 'coach' : ''].join(' ');
     return `<button type="button" class="${cls}" data-key="${sl.key}" ${style} ${ans ? 'tabindex="-1"' : ''}>
       <span class="s-shirt">${face}</span>${!ans && state.phase === 'guess' ? '<span class="s-tip" aria-hidden="true">💡</span>' : ''}
       <span class="s-name" ${ans ? `title="${escapeHtml(ans.name)}"` : ''}>${ans ? escapeHtml(inline ? ans.name : shortName(ans.name)) : `${sl.pos && !sl.coach ? `<em>${escapeHtml(POS[sl.pos] || sl.pos)}</em>` : ''}${id}`}</span>

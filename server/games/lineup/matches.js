@@ -55,6 +55,11 @@ const KITS = {
   Q170403: '#ffd500', Q160826: '#fecc00', Q174512: '#ffffff', Q47762: '#ffffff', Q189198: '#02529c', Q47774: '#002654', Q165141: '#d52b1e',
 };
 
+// тренери, яких бракує в даних джерела: id матчу → { індекс команди: { name, uk } }
+const COACH_FIX = {
+  'uefa-2019621': { 1: { name: 'Unai Emery', uk: 'Унаї Емері', flag: 'ESP', born: 1971 } }, // ПСЖ у Барселоні, 6:1
+};
+
 // ── назви турнірів і стадій
 const year = (m) => Number((m.date || '').slice(0, 4)) || null;
 function compName(m) {
@@ -124,13 +129,15 @@ function clubAt(p, date) {
 const surname = (nm) => String(nm || '').trim().split(/\s+/).pop();
 const letters = (nm) => surname(nm).replace(/[^\p{L}]/gu, '').length;
 
+const posFromY = (y) => (y == null ? null : y < 150 ? 'GK' : y < 400 ? 'DF' : y < 700 ? 'MF' : 'FW');
+
 function slotOf(p, m, national, key, extra = {}) {
   const pl = p.pid ? playerById.get(p.pid) : null;
   const born = pl?.born || p.born || null;
   const nameUk = pl ? pl.uk || pl.name : p.name;
   const nameEn = pl ? pl.name : p.name;
   return {
-    key, num: p.num ?? null, pos: p.pos || null, x: p.x ?? null, y: p.y ?? null,
+    key, num: p.num ?? null, pos: p.pos || posFromY(p.y), x: p.x ?? null, y: p.y ?? null,
     flag: !national && p.flag ? flagImg(p.flag) : null, flagCode: p.flag || null,
     club: national && pl ? clubAt(pl, m.date) : null,
     capt: !!p.capt, goals: p.goals || [], off: p.off || null, on: p.on || null, for: p.for ?? null,
@@ -149,7 +156,9 @@ function teamOf(t, m, k) {
   const xi = layout(t.xi).map((p, i) => slotOf(p, m, national, `${k}-${i}`));
   const bench = (t.bench || []).map((p, i) => slotOf(p, m, national, `${k}-s${i}`, { sub: true }));
   let coach = null;
-  if (t.coach) {
+  const rawCoach = t.coach || COACH_FIX[m.id]?.[k] || null;
+  if (rawCoach) {
+    t = { ...t, coach: rawCoach };
     const pl = t.coach.pid ? playerById.get(t.coach.pid) : null;
     const born = pl?.born || t.coach.born || null;
     // uk — з Вікідати (build-lineups); «Маркевич Мирон Богданович» → «Мирон Маркевич»

@@ -267,29 +267,22 @@ body {
 }
 .s-lineup .st-name { color: #1b2a4a; }
 .s-lineup .mode.solo { background: #b3121d; color: #fff; }
-.a-sheet {
-  display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto 1fr; gap: 7px 12px; align-content: center; width: 100%; height: 100%; padding: 0 2px;
+.a-pitch {
+  position: relative; width: 100%; height: 100%; border-radius: 4px; overflow: hidden;
+  background: repeating-linear-gradient(90deg, #5f8a4e 0 12.5%, #557d45 12.5% 25%); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.75);
 }
-.as-band {
-  grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; padding: 3px 10px;
-  background: #1b2a4a; color: #fff; border-bottom: 3px solid #b3121d;
+.a-pitch i { position: absolute; border: 2px solid rgba(255, 255, 255, 0.6); }
+.ap-half { left: 50%; top: 0; bottom: 0; border-width: 0 0 0 2px !important; }
+.ap-circle { left: 50%; top: 50%; width: 34px; height: 34px; translate: -50% -50%; border-radius: 50%; border-left-color: transparent !important; }
+.ap-box { left: -2px; top: 26%; bottom: 26%; width: 12%; }
+/* футболка з номером: цифри рівні (Manrope) і по центру тулуба */
+.a-pitch b {
+  position: absolute; translate: -50% -50%; width: 22px; height: 20px; display: flex; align-items: center; justify-content: center; padding-top: 3px;
+  box-sizing: border-box; font: 800 9.5px/1 'Manrope', system-ui, sans-serif; font-variant-numeric: lining-nums tabular-nums; color: #fff; background: #b3121d;
+  clip-path: polygon(28% 0, 40% 6%, 60% 6%, 72% 0, 100% 16%, 90% 40%, 80% 34%, 80% 100%, 20% 100%, 20% 34%, 10% 40%, 0 16%);
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .4));
 }
-.as-band em { font: italic 700 15px/1 'Playfair Display', Georgia, serif; }
-.as-band b { font: 900 17px/1 'Playfair Display', Georgia, serif; letter-spacing: .04em; }
-.as-col { display: grid; align-content: start; gap: 6px; }
-.as-col i:nth-child(n+4) { display: none; } /* три рядки складу — вміщаються на будь-якій ширині */
-.as-col i { display: flex; align-items: center; gap: 6px; font-style: normal; }
-.as-col b {
-  flex: none; width: 17px; height: 17px; display: grid; place-items: center; border-radius: 50%;
-  font: 800 10.5px/1 'Manrope', system-ui, sans-serif; font-variant-numeric: lining-nums tabular-nums; color: #fff; background: #b3121d;
-  padding-top: 1px; box-sizing: border-box;
-}
-.as-col i.b b { background: #f2c300; color: #1b2a4a; }
-.as-col s { height: 7px; border-radius: 2px; background: #1b2a4a; opacity: .82; } /* «заклеєне» прізвище */
-.as-col em {
-  font: italic 900 12px/1 'Playfair Display', Georgia, serif; color: #b3121d; padding: 1px 8px;
-  border: 1.5px dashed #b3121d; border-radius: 3px; background: #fff;
-}
+.a-pitch b.q { background: #fffaf0; color: #b3121d; }
 
 @media (prefers-reduced-motion: reduce) {
   .sticker, .sticker::after { transition: none; }

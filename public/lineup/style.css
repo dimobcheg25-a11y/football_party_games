@@ -293,3 +293,15 @@ input::placeholder { color: #a39a87; }
     drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5));
 }
 .shirt.open .s-shirt { box-shadow: 0 0 0 2px #fff, 0 3px 6px rgba(0, 0, 0, 0.45); }
+
+/* лава запасних і тренер — газон біля бровки (зелений): футболки будь-якого кольору видно, як на полі */
+.bench, .coach-row { background: repeating-linear-gradient(90deg, #4f7a43 0 40px, #48713d 40px 80px); border-top: 2px solid var(--ink); }
+.coach-row { background: repeating-linear-gradient(90deg, #446a3a 0 40px, #3e6235 40px 80px); }
+.bench-title { color: #f3ead6; text-shadow: 0 1px 1px rgba(0, 0, 0, .35); }
+/* блоки команд — за висотою свого вмісту (без порожнього паперу внизу) */
+.sheet-teams { align-items: start; }
+/* гравці біля лівої бровки — відмітки голів і замін праворуч від футболки, щоб не вилазили за поле */
+.pitch .shirt.edge-l .s-badges { right: auto; left: calc(50% + 28px); top: 20px; align-items: flex-start; }
+@media (min-width: 761px) { .pitch .shirt.edge-l .s-badges { left: calc(50% + 31px); } }
+.pitch .shirt.edge-l.open .s-badges { left: calc(50% + 33px); }
+.bench { min-height: 118px; align-content: flex-start; } /* лави обох команд однакової висоти — блоки тренерів на одному рівні */
