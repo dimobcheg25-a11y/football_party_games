@@ -5,6 +5,9 @@ window.CHANGELOG = [
   {
     date: '2026-10-18',
     items: [
+      { game: 'lineup', uk: 'Нова гра «Склад матчу»: схема легендарного матчу без прізвищ — номери, прапори, клуби, голи й заміни. Назви, хто грав за обидві команди, і обох тренерів.', en: 'New game “Match Lineup”: the team sheet of a legendary match without names — numbers, flags, clubs, goals and substitutions. Name who played for both teams and both coaches.' },
+      { game: 'lineup', uk: '100 матчів: фінали ЧС, Євро, Копа, Ліги чемпіонів і Ліги Європи, знамениті камбеки, українські матчі — і 13 єврокубкових вечорів Металіста Маркевича.', en: '100 matches: World Cup, Euro, Copa, Champions League and Europa League finals, famous comebacks, Ukrainian matches — and 13 European nights of Markevych’s Metalist.' },
+      { game: 'lineup', uk: 'Підказки — на футболку, яку обереш сам; «🏁 Досить» закінчує матч, коли більше нікого не згадати, і знайдене лишається.', en: 'Hints go on the shirt you pick; “🏁 That’s it” ends the match when no one else comes to mind, and the points you found stay.' },
       { game: 'top', uk: 'Зрозуміліше вікно «Здатися»: видно, що раунд закінчиться, ти побачиш увесь топ і скільки вже вгаданих очок залишиться.', en: 'Clearer “Give up” window: it says the round ends, you’ll see the whole top, and how many points you keep.' },
       { game: 'path', uk: 'Підказки показують справжню ціну: на останніх клубах вона менша (або безкоштовно), бо очок за відповідь не може стати менше 5.', en: 'Hints show their real cost: at the last clubs it’s lower (or free), since an answer can’t be worth less than 5 points.' },
       { game: 'path', uk: 'Порядок клубів у кар’єрі — як було насправді: оренди стоять перед клубом, який віддав гравця, і без «оренди з клубу в нього ж» (Саліба, Кʼєлліні).', en: 'Career clubs in the real order: loans come before the parent club, and no more “loan from a club to itself” (Saliba, Chiellini).' },

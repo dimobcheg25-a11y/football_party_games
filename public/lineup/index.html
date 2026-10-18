@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title data-en="Match Lineup — Football party games">Склад матчу</title>
+  <meta name="description" content="Склад матчу — схема легендарного матчу без прізвищ: номери, прапори, клуби. Назви, хто грав, і тренерів. Соло або з друзями." data-en-content="Match Lineup — the team sheet of a legendary match without names: numbers, flags, clubs. Name who played and the coaches. Solo or with friends." />
+  <meta property="og:site_name" content="Football party games" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://football-party-games.onrender.com/lineup/" />
+  <meta property="og:title" content="Склад матчу — Football party games" data-en-content="Match Lineup — Football party games" />
+  <meta property="og:description" content="Склад матчу — схема легендарного матчу без прізвищ: номери, прапори, клуби. Назви, хто грав, і тренерів." data-en-content="Match Lineup — the team sheet of a legendary match without names: numbers, flags, clubs. Name who played and the coaches." />
+  <meta property="og:locale" content="uk_UA" />
+  <meta property="og:locale:alternate" content="en_US" />
+  <meta name="application-name" content="Football party games" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="theme-color" content="#efe6d2" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;0,900;1,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/shared/theme.css" />
+  <link rel="stylesheet" href="/shared/ui.css" />
+  <link rel="stylesheet" href="/path/style.css" />
+  <link rel="stylesheet" href="/lineup/style.css" />
+</head>
+<body>
+  <div class="pitch-bg" aria-hidden="true"></div>
+
+  <div class="sound-ctl">
+    <button id="mute-btn" class="round-btn" aria-label="Звук" data-en-aria-label="Sound">🔊</button>
+  </div>
+
+  <a class="home-link" href="/" aria-label="Усі ігри — на головну" data-en-aria-label="All games — home"><span class="home-arrow" aria-hidden="true">‹</span><span class="home-text"><span data-en="Football">Футбольні</span> <b data-en="games">ігри</b></span></a>
+
+  <!-- ── Головний екран: налаштування -->
+  <main id="screen-home" class="screen">
+    <header class="hero">
+      <div class="logo programme-logo"><small data-en="Official matchday programme">Офіційна програмка матчу</small><span data-en="Lineup">Склад</span><em data-en="match">матчу</em></div>
+      <p class="tagline" data-en="The team sheet of a legendary match — without names. Who was on the pitch?">Склад легендарного матчу — без прізвищ. Хто був на полі?</p>
+    </header>
+
+    <section class="card setup">
+      <p id="invite-note" class="invite-note hidden"></p>
+      <button id="resume-btn" class="btn btn-secondary resume hidden"></button>
+
+      <label class="field" for="name-input">
+        <span class="field-label" data-en="Your name">Твоє ім'я</span>
+        <input id="name-input" maxlength="20" placeholder="Наприклад, Пеле" autocomplete="nickname" />
+      </label>
+
+      <div id="setup-options">
+        <div class="field">
+          <span class="field-label" data-en="Matches">Матчі</span>
+          <div class="chips" data-multi="categories" aria-label="Матчі" data-en-aria-label="Matches">
+            <button type="button" class="chip" data-val="wc" data-en="🌍 World Cups">🌍 Чемпіонати світу</button>
+            <button type="button" class="chip" data-val="euro" data-en="🇪🇺 Euros">🇪🇺 Євро</button>
+            <button type="button" class="chip" data-val="copa" data-en="🌎 Copa América">🌎 Копа Америка</button>
+            <button type="button" class="chip" data-val="ucl" data-en="⭐ Champions League">⭐ Ліга чемпіонів</button>
+            <button type="button" class="chip" data-val="uel" data-en="🟠 UEFA Cup / Europa League">🟠 Кубок УЄФА / Ліга Європи</button>
+            <button type="button" class="chip" data-val="legend" data-en="🔥 Legendary matches">🔥 Легендарні матчі</button>
+            <button type="button" class="chip" data-val="ua" data-en="🇺🇦 Ukrainian">🇺🇦 Українські</button>
+            <button type="button" class="chip" data-val="metalist" data-en="💛💙 Markevych’s Metalist">💛💙 Металіст Маркевича</button>
+          </div>
+          <p class="hint" id="categories-hint"></p>
+        </div>
+
+        <div class="field">
+          <span class="field-label" data-en="Difficulty">Складність</span>
+          <div class="chips" data-opt="level" role="radiogroup" aria-label="Складність" data-en-aria-label="Difficulty">
+            <button type="button" class="chip" data-val="easy" data-en="🟢 Easy">🟢 Легкі</button>
+            <button type="button" class="chip" data-val="normal" data-en="🟡 Medium">🟡 Середні</button>
+            <button type="button" class="chip" data-val="hard" data-en="🔴 Hard">🔴 Складні</button>
+            <button type="button" class="chip" data-val="mix" data-en="🎲 Mix">🎲 Мікс</button>
+          </div>
+          <p class="hint" id="level-hint"></p>
+        </div>
+
+        <div class="field">
+          <span class="field-label" data-en="Substitutes">Заміни</span>
+          <div class="chips">
+            <button type="button" class="chip toggle" data-toggle="subs" data-en="🔁 Also guess substitutes">🔁 Вгадувати й тих, хто вийшов на заміну</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="field-label" data-en="In a room with friends">У кімнаті з друзями</span>
+          <div class="chips" data-opt="mode" role="radiogroup" aria-label="Режим кімнати" data-en-aria-label="Room mode">
+            <button type="button" class="chip" data-val="own" data-en="Everyone their own sheet">Кожен свій склад</button>
+            <button type="button" class="chip" data-val="turns" data-en="One shared sheet, taking turns">Спільний склад по черзі</button>
+          </div>
+          <p class="hint" id="mode-hint"></p>
+        </div>
+
+        <div class="field">
+          <span class="field-label" data-en="Mistakes allowed">Помилок можна</span>
+          <div class="chips" data-opt="lives" role="radiogroup" aria-label="Помилок можна" data-en-aria-label="Mistakes allowed">
+            <button type="button" class="chip" data-val="3">3</button>
+            <button type="button" class="chip" data-val="5">5</button>
+            <button type="button" class="chip" data-val="10">10</button>
+            <button type="button" class="chip" data-val="0" id="lives-inf">∞</button>
+          </div>
+        </div>
+
+        <div class="field" id="round-time-field">
+          <span class="field-label" data-en="Time per match">Час на матч</span>
+          <div class="chips" data-opt="roundSeconds" role="radiogroup" aria-label="Час на матч" data-en-aria-label="Time per match">
+            <button type="button" class="chip" data-val="180" data-en="3 min">3 хв</button>
+            <button type="button" class="chip" data-val="300" data-en="5 min">5 хв</button>
+            <button type="button" class="chip" data-val="600" data-en="10 min">10 хв</button>
+            <button type="button" class="chip" data-val="0">∞</button>
+          </div>
+        </div>
+
+        <div class="field" id="turn-time-field">
+          <span class="field-label" data-en="Time per turn">Час на хід</span>
+          <div class="chips" data-opt="turnSeconds" role="radiogroup" aria-label="Час на хід" data-en-aria-label="Time per turn">
+            <button type="button" class="chip" data-val="20" data-en="20 s">20 с</button>
+            <button type="button" class="chip" data-val="30" data-en="30 s">30 с</button>
+            <button type="button" class="chip" data-val="60" data-en="1 min">1 хв</button>
+            <button type="button" class="chip" data-val="0">∞</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="field-label" data-en="Matches per game">Матчів за гру</span>
+          <div class="chips" data-opt="rounds" role="radiogroup" aria-label="Матчів за гру" data-en-aria-label="Matches per game">
+            <button type="button" class="chip" data-val="3">3</button>
+            <button type="button" class="chip" data-val="5">5</button>
+            <button type="button" class="chip" data-val="10">10</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="start-buttons" id="start-buttons">
+        <button id="solo-btn" class="btn btn-secondary btn-lg" data-en="Play solo">Грати соло</button>
+        <button id="create-btn" class="btn btn-primary btn-lg" data-en="Room with friends">Кімната з друзями</button>
+      </div>
+      <button id="join-btn" class="btn btn-primary btn-lg hidden" data-en="Join the game">Приєднатися до гри</button>
+      <p id="home-error" class="error"></p>
+    </section>
+
+    <section class="card rules-card">
+      <h3 data-en="How to play">Як грати</h3>
+      <ul class="rules-list">
+        <li data-en="A legendary match — a final, a famous comeback, a Metalist night in Europe: the score, the stadium and both teams on the pitch, but no names.">Легендарний матч — фінал, знаменитий камбек, вечір Металіста в єврокубках: рахунок, стадіон і обидві команди на полі, але без прізвищ.</li>
+        <li data-en="Each shirt shows the number and the position; in club matches — the player’s flag, in national-team matches — the club he played for then. Goals, captain’s armband and substitutions are marked.">На кожній футболці — номер і позиція; у матчах клубів — прапор гравця, у матчах збірних — клуб, за який він тоді грав. Позначено голи, капітанську пов’язку й заміни.</li>
+        <li data-en-html="Name footballers and &lt;b&gt;both coaches&lt;/b&gt;: whoever played takes his place. &lt;b&gt;3 points&lt;/b&gt; for each one.">Називай футболістів і <b>обох тренерів</b>: хто грав — стає на своє місце. <b>3 очки</b> за кожного.</li>
+        <li data-en-html="&lt;b&gt;Hints on the shirt you choose:&lt;/b&gt; age at the match, letters in the surname, first letter. Each costs 1 point of that player (but he’s still worth at least 1)."><b>Підказки — на футболку, яку обереш сам:</b> вік на момент матчу, кількість літер у прізвищі, перша літера. Кожна — мінус 1 очко за цього гравця (але не менше 1).</li>
+        <li data-en-html="Can’t remember anyone else? Press &lt;b&gt;“🏁 That’s it”&lt;/b&gt; — when everyone does, the match is revealed and the points you found stay.">Більше нікого не згадаєш — тисни <b>«🏁 Досить»</b>: коли так зроблять усі, матч відкривається, а знайдені очки лишаються.</li>
+        <li data-en="Lineups — from Wikipedia articles on finals and from UEFA match data. Players missing from our database are revealed right away (no points).">Склади — зі статей Вікіпедії про фінали й даних матчів УЄФА. Кого немає в нашій базі, той відкритий одразу (без очок).</li>
+      </ul>
+    </section>
+  </main>
+
+  <!-- ── Лобі кімнати -->
+  <main id="screen-lobby" class="screen hidden">
+    <section class="card lobby">
+      <p class="field-label" data-en="Room">Кімната</p>
+      <div class="room-code" id="lobby-code"></div>
+      <div class="share-row">
+        <button id="copy-link" class="btn btn-primary" data-en="Copy invite link">Скопіювати запрошення</button>
+      </div>
+      <div class="opt-chips" id="lobby-options"></div>
+      <ul class="lobby-players" id="lobby-players"></ul>
+      <button id="start-btn" class="btn btn-primary btn-lg hidden" data-en="Start game">Почати гру</button>
+      <p id="lobby-wait" class="hint"></p>
+      <button class="btn btn-secondary btn-sm btn-leave" data-action="leave" data-en="🚪 Leave room">🚪 Вийти з кімнати</button>
+    </section>
+  </main>
+
+  <!-- ── Гра -->
+  <main id="screen-game" class="screen screen-game hidden">
+    <div class="game-top">
+      <div class="round-info" id="round-info"></div>
+      <div class="timer" id="timer"></div>
+      <button class="btn btn-secondary btn-sm btn-leave" data-action="leave" data-en="🚪 Leave game">🚪 Вийти з гри</button>
+    </div>
+
+    <div class="game-layout">
+      <section class="top-col">
+        <header class="match-head" id="match-head"></header>
+        <div class="reveal-bar hidden" id="reveal-bar"></div>
+
+        <div class="answer-box" id="answer-box">
+          <div class="turn-line" id="turn-line"></div>
+          <div class="search">
+            <input id="guess-input" placeholder="Назви футболіста або тренера…" data-en-placeholder="Name a footballer or a coach…" autocomplete="off" />
+            <ul class="suggestions" id="suggestions"></ul>
+          </div>
+          <div class="answer-actions">
+            <span class="lives" id="lives"></span>
+            <button id="skip-btn" class="btn btn-secondary btn-sm hidden" data-en="⏭ Another match">⏭ Інший матч</button>
+            <button id="pass-btn" class="btn btn-secondary btn-sm hidden" data-en="Pass">Пас</button>
+            <button id="finish-btn" class="btn btn-secondary btn-sm btn-giveup" data-en="🏁 That’s it">🏁 Досить</button>
+          </div>
+          <div class="hint-bar" id="hint-bar"></div>
+          <p class="hint" id="answer-hint"></p>
+        </div>
+
+        <div class="sheet-teams" id="teams"></div>
+        <div class="misses" id="misses"></div>
+      </section>
+
+      <aside class="side-col">
+        <section class="table-card">
+          <h3 class="table-title" id="table-title" data-en="Standings">Таблиця</h3>
+          <ol class="scoreboard" id="scoreboard"></ol>
+        </section>
+        <div class="reactions" id="reactions"></div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- ── Підсумок серії -->
+  <main id="screen-final" class="screen hidden">
+    <section class="card final">
+      <h2 id="final-title"></h2>
+      <ol class="standings" id="final-standings"></ol>
+      <h3 class="field-label" data-en="Matches">Матчі</h3>
+      <ol class="history" id="final-history"></ol>
+      <div class="result-actions">
+        <button id="again-btn" class="btn btn-primary btn-lg" data-en="Play again">Ще одна гра</button>
+        <p id="again-wait" class="hint"></p>
+        <button class="btn btn-ghost" data-action="leave" data-en="Home">На головну</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Чат (лише в кімнаті) -->
+  <button id="chat-fab" class="chat-fab hidden" aria-label="Чат" data-en-aria-label="Chat">💬<span id="chat-badge" class="chat-badge hidden"></span></button>
+  <section id="chat-panel" class="chat-panel hidden" aria-label="Чат кімнати" data-en-aria-label="Room chat">
+    <div class="chat-head"><b data-en="Chat">Чат</b><button class="icon-btn" id="chat-close" aria-label="Закрити" data-en-aria-label="Close">✕</button></div>
+    <ul class="chat-list" id="chat-list"></ul>
+    <form class="chat-form" id="chat-form">
+      <input id="chat-input" maxlength="200" placeholder="Повідомлення…" data-en-placeholder="Message…" autocomplete="off" />
+      <button class="btn btn-primary btn-sm">↑</button>
+    </form>
+  </section>
+
+  <div id="toast" class="toast" role="status"></div>
+
+  <script src="/shared/i18n.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/shared/players.js"></script>
+  <script src="/shared/sounds.js"></script>
+  <script src="/shared/room-client.js"></script>
+  <script src="/lineup/app.js"></script>
+</body>
+</html>

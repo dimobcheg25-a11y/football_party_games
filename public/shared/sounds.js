@@ -112,6 +112,29 @@ window.Sound = (() => {
     pop() {
       tone(600, { dur: 0.09, vol: 0.1, slideTo: 1100 });
     },
+    // трибуна: короткий гул натовпу — шум через смуговий фільтр, наростає й стихає ('Склад матчу')
+    crowd() {
+      const ac = audio();
+      if (!ac || muted || volume === 0) return;
+      const len = Math.floor(ac.sampleRate * 1.1);
+      const buf = ac.createBuffer(1, len, ac.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+      const src = ac.createBufferSource();
+      src.buffer = buf;
+      const band = ac.createBiquadFilter();
+      band.type = 'bandpass';
+      band.frequency.value = 520;
+      band.Q.value = 0.8;
+      const gain = ac.createGain();
+      const t = ac.currentTime;
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.32, t + 0.25);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 1.05);
+      src.connect(band).connect(gain).connect(master);
+      src.start(t);
+      tone(392, { start: 0.05, dur: 0.5, type: 'sawtooth', vol: 0.015, slideTo: 440 }); // «у-у» в гулі
+    },
   };
 
   function play(name, ...args) {

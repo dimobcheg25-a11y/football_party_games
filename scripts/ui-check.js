@@ -270,6 +270,33 @@ const scenarios = {
     }
   },
 
+  // «Склад матчу»: соло, лише Металіст (тренер завжди Маркевич) — тренер, підказка на футболку, «Досить» і відкритий матч
+  async lineup(browser) {
+    const p = await person(browser, 'lineup');
+    await p.goto(`${URL}/lineup/`);
+    await shot(p, 'lineup-home', { full: true });
+    await p.fill('#name-input', 'Тест');
+    for (const c of ['wc', 'euro', 'copa', 'ucl', 'uel', 'legend', 'ua']) await p.click(`[data-multi="categories"] [data-val="${c}"]`);
+    await p.click('#solo-btn');
+    await p.waitForSelector('#teams .shirt');
+    await choosePlayer(p, '#guess-input', 'Маркевич');
+    await p.waitForSelector('.coach-row .shirt.open');
+    await p.click('#teams .pitch .shirt:not(.open):not(.missing)');
+    await p.click('#hint-bar [data-hint="first"]');
+    await p.waitForSelector('#hint-bar .hb-got');
+    await shot(p, 'lineup-round', { full: true });
+    await p.click('#finish-btn');
+    await p.click('.ask-sheet [data-ask="1"]');
+    await p.waitForSelector('#reveal-bar:not(.hidden)');
+    await shot(p, 'lineup-reveal', { full: true });
+    await phoneShot(browser, 'lineup', '/lineup/', async (x) => {
+      await x.fill('#name-input', 'Тест');
+      await x.click('#solo-btn');
+      await x.waitForSelector('#teams .shirt');
+    });
+    await p.context().close();
+  },
+
   async path(browser) {
     const p = await person(browser, 'path');
     await p.goto(`${URL}/path/`);
