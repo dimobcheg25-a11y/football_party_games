@@ -3,6 +3,17 @@
 // Після кожного помітного для гравців коміту — дописати сюди пункт (дата — день деплою).
 window.CHANGELOG = [
   {
+    date: '2026-10-18',
+    items: [
+      { game: 'top', uk: 'Зрозуміліше вікно «Здатися»: видно, що раунд закінчиться, ти побачиш увесь топ і скільки вже вгаданих очок залишиться.', en: 'Clearer “Give up” window: it says the round ends, you’ll see the whole top, and how many points you keep.' },
+      { game: 'path', uk: 'Підказки показують справжню ціну: на останніх клубах вона менша (або безкоштовно), бо очок за відповідь не може стати менше 5.', en: 'Hints show their real cost: at the last clubs it’s lower (or free), since an answer can’t be worth less than 5 points.' },
+      { game: 'path', uk: 'Порядок клубів у кар’єрі — як було насправді: оренди стоять перед клубом, який віддав гравця, і без «оренди з клубу в нього ж» (Саліба, Кʼєлліні).', en: 'Career clubs in the real order: loans come before the parent club, and no more “loan from a club to itself” (Saliba, Chiellini).' },
+      { game: 'guess', uk: 'Точні позиції для 250 легенд (Кафу — правий захисник, Зідан — атакувальний півзахисник…); Стерлінг і Неймар — ліві вінгери.', en: 'Exact positions for 250 legends (Cafu — right-back, Zidane — attacking midfielder…); Sterling and Neymar are left wingers.' },
+      { game: 'guess', uk: 'Якщо точна позиція гравця невідома, «Півзахисник» тепер збігається з будь-яким півзахисником як «та сама лінія», з поясненням.', en: 'When a player’s exact position is unknown, “Midfielder” now matches any midfielder as “same line”, with an explanation.' },
+      { game: null, uk: 'Трофеї: більше не рахуються півфінали й програні фінали (Стоїчков, Костадинов, Кель — не чемпіони світу).', en: 'Trophies: semi-finals and lost finals no longer count (Stoichkov, Kostadinov, Kehl are not world champions).' },
+    ],
+  },
+  {
     date: '2026-10-17',
     items: [
       { game: 'top', uk: 'Кнопка «⏭ Інша тема»: якщо тема не подобається, господар може її змінити, поки ніхто нічого не назвав.', en: '“⏭ Skip topic” button: the host can swap a topic they don’t like before anyone names a player.' },

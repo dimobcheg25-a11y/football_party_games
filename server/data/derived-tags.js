@@ -25,12 +25,29 @@ function cleanCareers(careers) {
   for (const c of Object.values(careers.careers || {})) {
     const kept = c.clubs.filter((x, i) => x.a !== 0 || (i === c.clubs.length - 1 && x.e == null));
     if (kept.length) c.clubs = kept;
-    // Поточний клуб, з якого гравець їздив в оренди (Симеоне: Атлетіко 2022–, оренди в Сарагосу й Алавес), у таблиці стоїть
-    // перед орендами — переносимо його в кінець, щоб «останній клуб» був справжній. Якщо гравець і зараз в оренді — лишаємо як є.
-    const cur = c.clubs.findIndex((x) => x.e == null && !x.loan);
-    if (cur >= 0 && cur < c.clubs.length - 1 && !c.clubs.slice(cur + 1).some((x) => x.e == null)) {
-      c.clubs.push(c.clubs.splice(cur, 1)[0]);
+    // Клуб, з якого гравець їздив в оренди, у таблиці Вікіпедії стоїть перед орендами (Сімеоне: Атлетіко 2022–, потім оренди
+    // в Сарагосу й Алавес; Кʼєлліні: Ювентус 2004–2022, потім Фіорентина 2004–05) — ставимо його після оренд у межах його років,
+    // щоб порядок етапів і «останній клуб» були справжні. Якщо гравець і зараз в оренді (оренда без року завершення) — лишаємо як є.
+    for (let i = 0; i < c.clubs.length; i++) {
+      const x = c.clubs[i];
+      if (x.loan) continue;
+      let j = i + 1;
+      while (j < c.clubs.length && c.clubs[j].loan && c.clubs[j].e != null && c.clubs[j].s >= x.s && (x.e == null || c.clubs[j].e <= x.e)) j++;
+      if (j > i + 1) {
+        c.clubs.splice(j - 1, 0, c.clubs.splice(i, 1)[0]);
+        i = j - 1;
+      }
     }
+    // Той самий клуб двічі поспіль (Саліба: «Сент-Етьєн», потім оренда з «Арсенала» назад у «Сент-Етьєн») — один етап.
+    c.clubs = c.clubs.reduce((out, x) => {
+      const prev = out[out.length - 1];
+      if (prev && prev.t === x.t) {
+        Object.assign(prev, { s: Math.min(prev.s ?? x.s, x.s ?? prev.s), e: prev.e == null || x.e == null ? null : Math.max(prev.e, x.e),
+          a: (prev.a || 0) + (x.a || 0), g: (prev.g || 0) + (x.g || 0) });
+        if (!x.loan) delete prev.loan;
+      } else out.push(x);
+      return out;
+    }, []);
   }
   careers.cleaned = true;
 }
@@ -38,7 +55,7 @@ function cleanCareers(careers) {
 function addDerivedTags(players) {
   const transfers = load('./transfers.json') || {};
   // позиція, за якою гравця знають (той самий об'єкт transfers.json бачать усі ігри)
-  for (const [id, pos] of Object.entries(require('./manual-positions'))) if (transfers[id]) transfers[id].pos = pos;
+  for (const [id, pos] of Object.entries(require('./manual-positions'))) (transfers[id] ||= {}).pos = pos;
   const stats = load('./stats.json');
   const tournaments = load('./tournaments.json');
   const careers = load('./careers.json');

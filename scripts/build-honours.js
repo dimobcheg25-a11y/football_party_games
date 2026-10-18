@@ -84,9 +84,22 @@ function kind(name) {
 }
 
 // Скільки сезонів у частині рядка (до «runner-up»): «2004–05», «1999–2000», «2010».
+// Сезон з позначкою поразки поруч не рахується: «1994 Semi-Finals (4th Place)» (Стоїчков на ЧС), «1992 (runner up)».
+const NOT_WON = /\brunners?[- ]?up\b|\bfinalist|\b(third|fourth|second|3rd|4th|2nd) place|\bsemi[- ]?final|\bquarter[- ]?final|\bbronze|\bsilver|\bgroup stage|\bround of/i;
 function countSeasons(s) {
-  const winners = s.split(/;|\brunners?[- ]up\b|\bfinalist|\bthird place|\bsecond place/i)[0];
-  return (winners.match(/\b(18|19|20)\d{2}(\s*[–\-\/]\s*\d{2,4})?\b/g) || []).length;
+  const winners = s.split(/;|\brunners?[- ]?up\s*:|\bfinalists?\s*:|\bthird place\s*:|\bsecond place\s*:/i)[0];
+  // позначка перед роком («runner-up 1974, 1978» — Хан) — далі в рядку лише поразки; після року («1992 (runner up)») — лише цей сезон
+  const YEAR = /\b(18|19|20)\d{2}(\s*[–\-\/]\s*\d{2,4})?\b/g;
+  let n = 0;
+  for (const piece of winners.split(',')) {
+    const m = piece.match(NOT_WON);
+    if (m) {
+      if (piece.slice(0, m.index).search(YEAR) === -1) break;
+      continue;
+    }
+    n += (piece.match(YEAR) || []).length;
+  }
+  return n;
 }
 
 function parseHonours(section) {

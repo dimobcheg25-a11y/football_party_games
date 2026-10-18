@@ -273,6 +273,7 @@ class PathRoom extends BaseRoom {
       stageDone: [...this.stageDone],
       solved: Object.fromEntries(this.solved),
       hintCosts: this.costs || hintCosts(1),
+      minPoints: MIN_POINTS, // нижче цього підказки вже не знімають — клієнт показує справжню ціну
       // скільки підказок узяв кожен (самі підказки й чужі відповіді не показуємо — щоб не підказати)
       hintsUsed: Object.fromEntries([...this.hints].map(([s, l]) => [s, l.length])),
       guesses: this.guesses.map((g) => ({ seat: g.seat, stage: g.stage, correct: g.correct })),

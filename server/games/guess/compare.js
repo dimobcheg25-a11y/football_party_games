@@ -99,7 +99,8 @@ const GROUPS = {
 };
 const POSITIONS_EN = { GK: 'Goalkeeper', DF: 'Defender', MF: 'Midfielder', FW: 'Forward' };
 // Запасний варіант (немає в Transfermarkt — зазвичай ветерани): позиції з Wikidata.
-const TAG_GROUPS = { GK: 'GK', DF: 'DEF', MF: 'MID', FW: 'FWD' };
+// Загальна позиція могла бути й на фланзі: «Півзахисник» — той самий ряд і для центральних, і для крайніх.
+const TAG_GROUPS = { GK: ['GK'], DF: ['DEF'], MF: ['MID', 'WING'], FW: ['FWD', 'WING'] };
 
 let transfers = {};
 try {
@@ -121,12 +122,13 @@ const profiles = new Map();
 
 function positionOf(p) {
   const tm = TM_POSITIONS[transfers[p.id]?.pos];
-  if (tm) return { label: tm[0], en: tm[2], groups: [tm[1]] };
+  if (tm) return { label: tm[0], en: tm[2], groups: [tm[1]], exact: true };
   const tags = ['GK', 'DF', 'MF', 'FW'].filter((t) => p.tags.has(t));
   return {
     label: tags.length ? tags.map((t) => POSITIONS[t]).join(' / ') : '?',
     en: tags.length ? tags.map((t) => POSITIONS_EN[t]).join(' / ') : '?',
-    groups: tags.map((t) => TAG_GROUPS[t]),
+    groups: [...new Set(tags.flatMap((t) => TAG_GROUPS[t]))],
+    exact: false, // лише загальна позиція з Вікідати (точної немає)
   };
 }
 
@@ -246,7 +248,10 @@ function compare(g, t) {
   const samePos = gp.label === tp.label;
   cells.position = {
     text: T(gp.label, gp.en), color: samePos ? 'green' : common ? 'yellow' : 'grey',
-    note: !samePos && common ? T(`теж ${GROUPS[common].uk}`, `also a ${GROUPS[common].en}`) : null,
+    note: !samePos && common
+      ? (gp.exact && tp.exact ? T(`теж ${GROUPS[common].uk}`, `also a ${GROUPS[common].en}`)
+        : T('та сама лінія; точна позиція одного з них невідома', 'same line; the exact position of one of them is unknown'))
+      : null,
   };
 
   if (g.born && t.born) {

@@ -137,8 +137,13 @@
     $('#earn').innerHTML = solved || s.potential == null ? '' : `${L('Вгадаєш зараз —', 'Guess now —')} <b>+${s.potential}</b> ${W.point(s.potential)}` +
       (s.potential < stagePts ? ` <small>(${L(`${stagePts} за клуб − підказки`, `${stagePts} for the club − hints`)})</small>` : '') +
       `<small class="next">${next != null ? L(`на наступному клубі — ${next}`, `at the next club — ${next}`) : L('це останній клуб', 'this is the last club')}</small>`;
-    $('#hints').innerHTML = solved ? '' : s.hintCosts.map((h) => `<button type="button" class="hint-btn" data-hint="${h.id}" ${taken.has(h.id) ? 'disabled' : ''}>
-        💡 ${escapeHtml(h.label)} <b>−${h.cost}</b></button>`).join('');
+    // справжня ціна: очок за відповідь не менше minPoints, тож на останніх клубах підказка знімає менше (або нічого)
+    const room = Math.max(0, (s.potential ?? stagePts) - (s.minPoints ?? 0));
+    $('#hints').innerHTML = solved ? '' : s.hintCosts.map((h) => {
+      const real = Math.min(h.cost, room);
+      const price = real === h.cost ? `<b>−${h.cost}</b>` : `<s>−${h.cost}</s> <b>${real ? `−${real}` : L('безкоштовно', 'free')}</b>`;
+      return `<button type="button" class="hint-btn" data-hint="${h.id}" ${taken.has(h.id) ? 'disabled' : ''}>💡 ${escapeHtml(h.label)} ${price}</button>`;
+    }).join('');
     $('#my-hints').innerHTML = s.myHints.map((h) => `<li>${h.img ? `<img src="${h.img}" alt="" />` : ''}<span>${escapeHtml(h.label)}:</span>
         <b>${escapeHtml(h.text)}</b>${h.apps != null ? ` <small>${h.apps} ${W.match(h.apps)} · ${h.goals ?? '—'} ${W.goal(h.goals ?? 0)}</small>` : ''}</li>`).join('');
   }

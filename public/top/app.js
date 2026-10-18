@@ -388,7 +388,12 @@
     if (await ask(L('Пас?', 'Pass?'), { note: L('Це забере одне життя.', 'It costs one life.'), ok: L('Пас', 'Pass') })) emit('pass');
   });
   $('#giveup-btn').addEventListener('click', async () => {
-    if (await ask(L('Здатися в цьому раунді?', 'Give up this round?'), { note: L('Знайдені очки залишаться.', 'You keep the points you found.'), ok: L('🏳️ Здатися', '🏳️ Give up'), danger: true })) emit('giveUp');
+    const found = state.mine?.found.length || 0;
+    const pts = state.roundPoints?.[mySeat] || 0;
+    const what = state.solo ? L('Раунд закінчиться, і ти побачиш увесь топ.', 'The round ends and you’ll see the whole top.')
+      : L('Більше відповідати в цьому раунді не зможеш; увесь топ побачиш, коли закінчать інші.', 'You can’t answer any more this round; you’ll see the whole top when the others finish.');
+    const kept = found ? ' ' + L(`Вгадано ${found} з ${state.slots.length} — ці +${pts} залишаться.`, `You found ${found} of ${state.slots.length} — you keep those +${pts}.`) : '';
+    if (await ask(L('Здатися й відкрити відповіді?', 'Give up and reveal the answers?'), { note: what + kept, ok: L('🏳️ Здатися', '🏳️ Give up'), danger: true })) emit('giveUp');
   });
 
   // ── підсумок
