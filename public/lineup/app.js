@@ -151,7 +151,8 @@
     fin.disabled = voted || (!turns && s.mine?.done);
     fin.textContent = voted || s.mine?.done ? L(`🏁 Чекаємо інших (${s.finishVotes.length}/${online.length})`, `🏁 Waiting for others (${s.finishVotes.length}/${online.length})`) : L('🏁 Досить', '🏁 That’s it');
     const lives = turns ? (s.order.includes(mySeat) ? s.lives[mySeat] : null) : s.mine?.livesLeft ?? (s.options.lives || null);
-    $('#lives').textContent = s.options.lives ? hearts(lives) : '';
+    $('#lives').innerHTML = s.options.lives && lives != null
+      ? `<span class="lives-label">${L('Помилок лишилось', 'Mistakes left')}:</span> <b>${lives ? '♥'.repeat(lives) : '💔'}</b>` : '';
     const found = turns ? s.found : s.mine?.found.length || 0;
     if (turns) {
       $('#turn-line').innerHTML = s.active === mySeat ? L('<b>Твій хід!</b> Назви когось зі складу.', '<b>Your turn!</b> Name someone from the lineups.')

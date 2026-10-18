@@ -5,6 +5,7 @@ window.CHANGELOG = [
   {
     date: '2026-10-18',
     items: [
+      { game: 'lineup', uk: 'Голи й заміни на полі — збоку від футболки, а не на сусідах; біла обводка футболок (синя на синьому не зливається); підписане «Помилок лишилось»; кнопка «🔄 Замінити матч».', en: 'Goals and subs on the pitch sit beside the shirt, not on neighbours; white outline on shirts (blue on blue no longer blends); “Mistakes left” is labelled; “🔄 Swap match” button.' },
       { game: 'lineup', uk: 'Гравець коштує 4 очки — тепер кожна з трьох підказок справді знімає 1 очко.', en: 'A player is worth 4 points — now each of the three hints really takes off 1 point.' },
       { game: 'lineup', uk: 'Нове тло — нічний стадіон із прожекторами, програмка лежить поверх; лава запасних темна, тож білі футболки на ній видно; на полі — короткі прізвища й герби клубів, підписи не налазять один на одного.', en: 'New backdrop — a floodlit stadium at night with the programme on top; the bench is dark so white shirts stand out; short surnames and club crests on the pitch, labels no longer overlap.' },
       { game: 'lineup', uk: 'На комп’ютері обидві команди видно одразу, поруч; більші фото гравців; зрозуміліші підказки (💡 на футболках і пояснення під пошуком).', en: 'On desktop both teams are visible side by side; bigger player photos; clearer hints (💡 on shirts and an explanation under the search).' },

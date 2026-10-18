@@ -276,11 +276,13 @@ body {
 }
 .as-band em { font: italic 700 15px/1 'Playfair Display', Georgia, serif; }
 .as-band b { font: 900 17px/1 'Playfair Display', Georgia, serif; letter-spacing: .04em; }
-.as-col { display: grid; align-content: start; gap: 4px; }
+.as-col { display: grid; align-content: start; gap: 6px; }
+.as-col i:nth-child(n+4) { display: none; } /* три рядки складу — вміщаються на будь-якій ширині */
 .as-col i { display: flex; align-items: center; gap: 6px; font-style: normal; }
 .as-col b {
   flex: none; width: 17px; height: 17px; display: grid; place-items: center; border-radius: 50%;
-  font: 900 11px/1 'Playfair Display', Georgia, serif; color: #fff; background: #b3121d;
+  font: 800 10.5px/1 'Manrope', system-ui, sans-serif; font-variant-numeric: lining-nums tabular-nums; color: #fff; background: #b3121d;
+  padding-top: 1px; box-sizing: border-box;
 }
 .as-col i.b b { background: #f2c300; color: #1b2a4a; }
 .as-col s { height: 7px; border-radius: 2px; background: #1b2a4a; opacity: .82; } /* «заклеєне» прізвище */
