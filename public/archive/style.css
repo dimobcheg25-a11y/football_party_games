@@ -42,6 +42,12 @@
 .frame { position: relative; width: 100%; aspect-ratio: 4 / 3; overflow: hidden; background: #000; }
 .frame img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .tiles { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-template-rows: repeat(5, minmax(0, 1fr)); }
+/* великий екран: фото — на всю ширину, що лишається, але щоб з написами вміщалось у висоту вікна */
+@media (min-width: 1200px) {
+  .screen-game { max-width: min(1720px, 100%); padding: 64px 24px 88px; } /* зверху — під табличкою «Футбольні ігри» */
+  .darkroom { grid-template-columns: minmax(0, 2.3fr) minmax(320px, 1fr); }
+  .print-col { width: 100%; max-width: calc((100vh - 280px) * 4 / 3 + 24px); justify-self: center; }
+}
 .tile {
   position: relative; border: 0; padding: 0; margin: 0; cursor: pointer; font: 500 11px var(--mono); color: #6d5446; letter-spacing: 0.1em;
   background: #1c1210; box-shadow: inset 0 0 0 1px #3b2a22; transition: opacity 0.45s ease, transform 0.45s ease;
