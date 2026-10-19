@@ -24,7 +24,7 @@
     radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.05) 1px, transparent 0) 0 0 / 7px 7px, /* друк афіші — растр */
     linear-gradient(180deg, var(--bg-2), var(--bg));
 }
-input::placeholder { color: var(--muted); }
+input::placeholder, textarea::placeholder { color: var(--muted); }
 
 /* постерний шрифт — великими літерами, вузький, тому крупніше */
 .round-info b, .room-code, .timer, .final h2, .rules-card h3, .scoreboard b, .table-title { font-family: var(--display); text-transform: uppercase; }

@@ -43,8 +43,8 @@ body { color: #f1e8d3; }
 
 /* ── спільні компоненти на світлому */
 .card { box-shadow: 0 10px 30px rgba(60, 40, 10, 0.1); backdrop-filter: none; border-color: var(--line-strong); }
-input { background: #fffdf7; }
-input::placeholder { color: #a39a87; }
+input, textarea { background: #fffdf7; }
+input::placeholder, textarea::placeholder { color: #a39a87; }
 .btn-primary { background: var(--accent); color: #fff; }
 .btn-secondary { background: #fffdf7; }
 .btn-secondary:hover:not(:disabled) { background: var(--wash); }

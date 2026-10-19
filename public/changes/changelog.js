@@ -3,6 +3,13 @@
 // Після кожного помітного для гравців коміту — дописати сюди пункт (дата — день деплою).
 window.CHANGELOG = [
   {
+    date: '2026-10-19',
+    items: [
+      { game: null, uk: 'У кожній грі — кнопка 💬 угорі: напиши, що подобається, чого бракує або що зламалось. Ми читаємо кожен відгук.', en: 'Every game has a 💬 button at the top: tell us what you like, what’s missing or what’s broken. We read every message.' },
+      { game: 'archive', uk: 'При першому вході у «Фотоархів» — коротке пояснення, що гра в беті й як допомогти: позначати погані фото 🚩 і додавати непідписаних гравців ➕.', en: 'The first time you open the Photo Archive, a short note explains it’s in beta and how to help: flag bad photos 🚩 and add untagged players ➕.' },
+    ],
+  },
+  {
     date: '2026-10-18',
     items: [
       { game: 'archive', uk: 'Нова гра «Фотоархів» (бета): справжнє матчеве фото закрите сіткою 5×5 — відкривай квадратики й назви всіх загаданих гравців. Що менше відкрив, то більше очок. Соло, кімната «кожен свою сітку» або спільна сітка по черзі.', en: 'New game “Photo Archive” (beta): a real match photo hidden under a 5×5 grid — open tiles and name every player we ask for. The fewer you open, the more you score. Solo, a room with everyone on their own grid, or one shared grid taking turns.' },

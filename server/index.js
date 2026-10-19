@@ -36,6 +36,7 @@ app.get('/api/games', (req, res) => {
 
 for (const game of games) game.register({ app, io });
 require('./core/presence').setupPresence(io); // «Зараз на сайті» на головній
+require('./core/feedback').setupFeedback(app, games); // відгуки гравців (кнопка 💬 у кожній грі) → GitHub Issues
 
 server.listen(PORT, () => {
   console.log(`Сайт футбольних ігор запущено: http://localhost:${PORT}`);

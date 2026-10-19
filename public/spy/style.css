@@ -20,7 +20,7 @@
     repeating-linear-gradient(93deg, transparent 0 22px, rgba(0, 0, 0, 0.06) 22px 24px, transparent 24px 61px), /* дерево */
     linear-gradient(180deg, var(--bg-2), var(--bg));
 }
-input::placeholder { color: var(--muted); }
+input::placeholder, textarea::placeholder { color: var(--muted); }
 
 /* логотип: «У» закреслено смугою цензури, «Н» — печатка */
 .dossier-logo { font-family: var(--stamp-font); font-weight: 400; }
@@ -184,4 +184,5 @@ input::placeholder { color: var(--muted); }
   box-shadow: 0 20px 60px rgba(0,0,0,0.6), inset 0 -3px 0 var(--folder-2);
 }
 .ask-sheet .btn-secondary { background: rgba(255, 250, 235, 0.35); }
+.ask-sheet input, .ask-sheet textarea { background: rgba(255, 250, 235, 0.55); color: var(--ink); }
 .ask-sheet .ask-text { font-family: var(--stamp-font); font-weight: 400; font-size: 18px; }

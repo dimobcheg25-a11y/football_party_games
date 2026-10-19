@@ -46,7 +46,7 @@ Node 18+, Express + Socket.IO, клієнт — чистий HTML/CSS/JS без 
 - `server/games/archive/` — «Фотоархів» (бета, `meta.beta` → значок на наліпці): `shots.js` (фото з `shots.json`; загадані — позначені на Commons з `poolFor` рівня easy/normal/fan,
   `maybeOnShot` — грав того року за клуб/збірну когось із позначених → нейтральна відповідь), `room.js` (сітка 5×5; за гравця 100 − 4 × відкритих (≥10);
   нейтральні — перші 3 на фото без штрафу; хибна — own: +1 квадратик, turns: кінець ходу; режими own / turns (у хід: 1 квадратик, потім відповідь або пас);
-  свої квадратики й відповіді — у `privateState`), `reports.js` (звіти 🚩/➕ з `/api/archive/report` → GitHub Issues з міткою `photo-report`, потрібен `GITHUB_TOKEN`
+  свої квадратики й відповіді — у `privateState`; при першому вході — вікно «бета» `betaIntro()` в app.js), `reports.js` (звіти 🚩/➕ з `/api/archive/report` → GitHub Issues з міткою `photo-report`, потрібен `GITHUB_TOKEN`
   на Render; без нього — лише консоль). Фото — через `/api/archive/img/:id` (у назві файлу Commons — імена).
 - `server/data/` — спільна база футболістів і категорій для всіх ігор (`index.js` — завантаження, `categories.js`, ручні правки в `manual-tags.js`;
   `derived-tags.js` — категорії з зібраних даних при завантаженні: A100 (+ асисти TM), UCL30, T80, JOURNEY (10+ різних клубів), і
@@ -59,6 +59,8 @@ Node 18+, Express + Socket.IO, клієнт — чистий HTML/CSS/JS без 
   Закладка «📋 Що нового» → `public/changes/` (сторінка-вкладиш альбому; дані — `changes/changelog.js`, червона крапка на головній — поки нову версію не відкрили).
 - `server/core/presence.js` — «Зараз на сайті» на головній: унікальні відвідувачі (мітка `vid` з `public/shared/presence.js`, localStorage) з усіх просторів імен;
   головна й «Що нового» — `Presence.show()` (сокет `/presence`, подія `online`), ігри передають `vid` в auth свого сокета. Нова сторінка — підключити `/shared/presence.js`.
+- `server/core/feedback.js` — відгуки гравців (`POST /api/feedback`) → GitHub Issues з міткою `feedback` + `feedback-like|idea|bug`; клієнт — `public/shared/feedback.js`
+  (кнопка 💬 у `.sound-ctl` кожної гри, підключати одразу після i18n.js). Запити до GitHub (і для звітів «Фотоархіву») — `server/core/github.js`.
 - `public/shared/` — спільне для сторінок ігор: `theme.css` (базові токени й фон, які гра перевизначає — див. «Оформлення гри»; `.home-link` — закріплена табличка «‹ Футбольні ігри» на головну, у кожній `index.html` перед екранами), `ui.css` (кнопки, поля, чипи, вікна,
   підказки пошуку, тост, звук, чат), `players.js` (`window.Players.search` — автодоповнення імен), `sounds.js` (`window.Sound`),
   `room-client.js` (`RoomClient.create` — уся спільна логіка клієнта кімнатних ігор).
@@ -145,7 +147,7 @@ easy/normal/hard = верхні 30% / наступні 40% / решта. Нов�
   штрихи світу — `.ask-sheet` у `<id>/style.css`). «Вийти з гри» — `.btn-leave` у `.game-top`, «Здатися» — `.btn-giveup`.
 Гра пише лише своє: `defaults`, `createOptions`, `optionList`, `onState` (свої змінні + звуки), `renderGame`, `renderFinal`.
 - `index.html` — скопіювати `public/top/index.html` (або `guess`) і замінити налаштування й `#screen-game`; скрипти: socket.io, `/shared/players.js`,
-  `/shared/sounds.js`, `/shared/room-client.js`, `/<id>/app.js`. Без `#solo-btn` — гра лише для кімнати (як `spy`).
+  `/shared/sounds.js`, `/shared/room-client.js`, `/<id>/app.js` (і `/shared/feedback.js` після i18n.js). Без `#solo-btn` — гра лише для кімнати (як `spy`).
 - `app.js` — за зразком `public/guess/app.js` (~240 рядків, найкоротший) або `public/spy/app.js` (кімната з ролями/чергою/голосуванням;
   `#stage` перемальовується лише коли змінився ключ етапу — щоб не збивати введення). Автодоповнення гравця — функції `renderSuggestions/choose` з guess/top.
 - Стилі: `/shared/theme.css`, `/shared/ui.css`, `/path/style.css` (лобі, таблиця, поле відповіді, `.answer-card`, підсумок) + свій `/<id>/style.css` (токени світу — «Оформлення гри»).

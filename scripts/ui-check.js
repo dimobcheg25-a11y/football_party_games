@@ -300,6 +300,16 @@ const scenarios = {
   async archive(browser) {
     const p = await person(browser, 'archive');
     await p.goto(`${URL}/archive/`);
+    await p.waitForSelector('.beta-sheet');
+    await shot(p, 'archive-beta');
+    await p.click('[data-beta-ok]');
+    await p.click('.fb-btn');
+    await p.click('.fb-sheet [data-kind="bug"]');
+    await p.fill('#fb-text', 'Тестовий відгук');
+    await shot(p, 'feedback');
+    await p.click('#fb-send');
+    await p.waitForSelector('.fb-thanks');
+    await p.click('.fb-sheet [data-fb-close]');
     await shot(p, 'archive-home', { full: true });
     await p.fill('#name-input', 'Тест');
     await p.click('#solo-btn');
@@ -315,6 +325,7 @@ const scenarios = {
     await p.click('#rp-missing');
     await shot(p, 'archive-reveal', { full: true });
     await phoneShot(browser, 'archive', '/archive/', async (x) => {
+      await x.click('[data-beta-ok]');
       await x.fill('#name-input', 'Тест');
       await x.click('#solo-btn');
       await x.waitForSelector('#tiles .tile');

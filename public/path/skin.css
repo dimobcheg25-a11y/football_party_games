@@ -28,8 +28,8 @@
 
 /* ── спільні компоненти на світлому (у ui.css вони під темний фон) */
 .card { box-shadow: 0 10px 30px rgba(20, 24, 31, 0.08); backdrop-filter: none; }
-input { background: #fff; }
-input::placeholder { color: #9aa1ab; }
+input, textarea { background: #fff; }
+input::placeholder, textarea::placeholder { color: #9aa1ab; }
 .btn-primary { background: var(--metro-ink); color: #fff; }
 .btn-secondary { background: #fff; }
 .btn-secondary:hover:not(:disabled) { background: var(--wash); }

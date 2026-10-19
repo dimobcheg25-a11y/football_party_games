@@ -107,6 +107,17 @@
 
 .ask-sheet { border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
 
+/* вікно «бета» при першому вході — відбиток на папері під червоною лампою */
+.beta-sheet { max-width: 480px; box-shadow: 0 0 60px rgba(224, 83, 60, 0.25), 0 30px 80px rgba(0, 0, 0, 0.6); }
+.beta-sheet h3 { margin: 4px 0 12px; font: 700 22px/1.25 var(--display); }
+.beta-sheet p { margin: 0 0 10px; line-height: 1.5; }
+.beta-kicker { font: 600 12px var(--mono); color: var(--edge); letter-spacing: 0.1em; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
+.beta-kicker .beta-tag { font-size: 12px; }
+.beta-list { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 8px; }
+.beta-list li { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; background: var(--surface-2); border-left: 3px solid var(--edge); border-radius: 6px; line-height: 1.4; }
+.beta-foot { color: var(--muted); font-size: 14px; }
+.beta-sheet .confirm-actions { margin-top: 6px; }
+
 @media (max-width: 900px) {
   .darkroom { grid-template-columns: 1fr; }
 }
