@@ -440,8 +440,8 @@
           <li><b>🚩</b><span>${L('позначайте неякісні кадри й ті, на яких неможливо вгадати;', 'flag poor-quality shots and ones that are impossible to guess;')}</span></li>
           <li><b>➕</b><span>${L('додавайте футболістів, яких видно на фото, але не підписано.', 'add footballers who are in the photo but not tagged.')}</span></li>
         </ul>
-        <p class="beta-foot">${L('Кожен звіт ми переглядаємо й оновлюємо архів. А ідеї та враження від гри — кнопка 💬 угорі.',
-          'We review every report and update the archive. Ideas and thoughts about the game — the 💬 button at the top.')}</p>
+        <p class="beta-foot">${L('Кожен звіт ми переглядаємо й оновлюємо архів. А ідеї та враження від гри — кнопка «💬 Відгук про гру» внизу.',
+          'We review every report and update the archive. Ideas and thoughts about the game — the “💬 Feedback” button at the bottom.')}</p>
         <div class="confirm-actions"><button type="button" class="btn btn-primary" data-beta-ok>${L('Зрозуміло, до гри!', 'Got it — let’s play!')}</button></div>
       </div>`;
     const close = () => {

@@ -60,7 +60,7 @@ Node 18+, Express + Socket.IO, клієнт — чистий HTML/CSS/JS без 
 - `server/core/presence.js` — «Зараз на сайті» на головній: унікальні відвідувачі (мітка `vid` з `public/shared/presence.js`, localStorage) з усіх просторів імен;
   головна й «Що нового» — `Presence.show()` (сокет `/presence`, подія `online`), ігри передають `vid` в auth свого сокета. Нова сторінка — підключити `/shared/presence.js`.
 - `server/core/feedback.js` — відгуки гравців (`POST /api/feedback`) → GitHub Issues з міткою `feedback` + `feedback-like|idea|bug`; клієнт — `public/shared/feedback.js`
-  (кнопка 💬 у `.sound-ctl` кожної гри, підключати одразу після i18n.js). Запити до GitHub (і для звітів «Фотоархіву») — `server/core/github.js`.
+  (підписана кнопка «💬 Відгук про гру» внизу ліворуч — `.fb-fab`, ставиться сама; підключати одразу після i18n.js). Запити до GitHub (і для звітів «Фотоархіву») — `server/core/github.js`.
 - `public/shared/` — спільне для сторінок ігор: `theme.css` (базові токени й фон, які гра перевизначає — див. «Оформлення гри»; `.home-link` — закріплена табличка «‹ Футбольні ігри» на головну, у кожній `index.html` перед екранами), `ui.css` (кнопки, поля, чипи, вікна,
   підказки пошуку, тост, звук, чат), `players.js` (`window.Players.search` — автодоповнення імен), `sounds.js` (`window.Sound`),
   `room-client.js` (`RoomClient.create` — уся спільна логіка клієнта кімнатних ігор).

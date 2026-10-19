@@ -1,4 +1,4 @@
-// Кнопка «💬 Відгук» на сторінці кожної гри: ставиться сама в .sound-ctl, відкриває вікно (вид відгуку, текст, контакт за бажанням)
+// Кнопка «💬 Відгук про гру» на сторінці кожної гри: підписана, закріплена внизу ліворуч (справа — чат), ставиться сама; відкриває вікно (вид відгуку, текст, контакт за бажанням)
 // і шле POST /api/feedback → GitHub Issues (server/core/feedback.js). Гра — з адреси сторінки (/top/ → top).
 // window.Feedback.open() — відкрити вікно з коду гри. Підключати після /shared/i18n.js.
 window.Feedback = (() => {
@@ -84,16 +84,14 @@ window.Feedback = (() => {
   }
 
   function mount() {
-    const host = document.querySelector('.sound-ctl');
-    if (!host || host.querySelector('.fb-btn')) return;
+    if (document.querySelector('.fb-fab')) return;
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'round-btn fb-btn';
-    btn.textContent = '💬';
-    btn.title = L('Відгук про гру', 'Feedback');
-    btn.setAttribute('aria-label', btn.title);
+    btn.className = 'fb-fab';
+    btn.innerHTML = `<span aria-hidden="true">💬</span> <span class="fb-long">${L('Відгук про гру', 'Feedback')}</span><span class="fb-short">${L('Відгук', 'Feedback')}</span>`;
+    btn.setAttribute('aria-label', L('Залишити відгук про гру', 'Leave feedback about the game'));
     btn.addEventListener('click', open);
-    host.append(btn);
+    document.body.append(btn);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
   else mount();

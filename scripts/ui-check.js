@@ -303,7 +303,7 @@ const scenarios = {
     await p.waitForSelector('.beta-sheet');
     await shot(p, 'archive-beta');
     await p.click('[data-beta-ok]');
-    await p.click('.fb-btn');
+    await p.click('.fb-fab');
     await p.click('.fb-sheet [data-kind="bug"]');
     await p.fill('#fb-text', 'Тестовий відгук');
     await shot(p, 'feedback');

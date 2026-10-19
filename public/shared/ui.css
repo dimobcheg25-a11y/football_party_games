@@ -1,7 +1,7 @@
 /* Спільні елементи інтерфейсу всіх ігор: екран, логотип, кнопки, поля, чипи, вікна, пошук гравця, тост, звук, чат.
    Підключається після theme.css; гра доповнює своїм style.css. */
 
-.screen { max-width: 760px; margin: 0 auto; padding: 28px 16px 48px; }
+.screen { max-width: 760px; margin: 0 auto; padding: 28px 16px 88px; } /* знизу — місце під кнопки відгуку й чату */
 
 /* ── логотип */
 /* «ФУТБОЛЬНЕ ПЕРЕХРЕСТЯ»: «Х» — у лаймовому квадратику, як хрестик у хрестиках-нуликах */
@@ -118,6 +118,22 @@ input::placeholder, textarea::placeholder { color: #6b8577; }
 .ask-sheet .ask-text:has(+ .ask-note) { margin-bottom: 6px; }
 .ask-note { display: block; color: var(--muted); font-size: 15px; margin-bottom: 18px; }
 .ask-sheet .btn { min-width: 120px; }
+/* кнопка «💬 Відгук про гру» (/shared/feedback.js) — внизу ліворуч, навпроти чату; кольори — акцент гри */
+.fb-fab {
+  position: fixed; left: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 44;
+  display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 16px; border-radius: 22px; cursor: pointer;
+  font: inherit; font-weight: 800; font-size: 14px; color: var(--text);
+  background: var(--surface-solid); border: 2px solid var(--accent); box-shadow: 0 10px 28px rgba(0,0,0,0.45);
+  transition: transform .1s, background .15s;
+}
+.fb-fab:hover { background: color-mix(in srgb, var(--accent) 18%, var(--surface-solid)); }
+.fb-fab:active { transform: scale(0.95); }
+.fb-short { display: none; }
+@media (max-width: 560px) {
+  .fb-fab { left: 12px; height: 40px; padding: 0 13px; font-size: 13px; }
+  .fb-long { display: none; }
+  .fb-short { display: inline; }
+}
 /* вікно відгуку (/shared/feedback.js) і вікно «бета» — поверх кнопок звуку й чату */
 .fb-overlay, .beta-overlay { z-index: 60; }
 .fb-sheet { display: grid; gap: 12px; max-width: 460px; }

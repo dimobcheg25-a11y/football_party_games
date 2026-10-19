@@ -5,7 +5,7 @@ window.CHANGELOG = [
   {
     date: '2026-10-19',
     items: [
-      { game: null, uk: 'У кожній грі — кнопка 💬 угорі: напиши, що подобається, чого бракує або що зламалось. Ми читаємо кожен відгук.', en: 'Every game has a 💬 button at the top: tell us what you like, what’s missing or what’s broken. We read every message.' },
+      { game: null, uk: 'У кожній грі — кнопка «💬 Відгук про гру» внизу ліворуч: напиши, що подобається, чого бракує або що зламалось. Ми читаємо кожен відгук.', en: 'Every game has a “💬 Feedback” button at the bottom left: tell us what you like, what’s missing or what’s broken. We read every message.' },
       { game: 'archive', uk: 'При першому вході у «Фотоархів» — коротке пояснення, що гра в беті й як допомогти: позначати погані фото 🚩 і додавати непідписаних гравців ➕.', en: 'The first time you open the Photo Archive, a short note explains it’s in beta and how to help: flag bad photos 🚩 and add untagged players ➕.' },
     ],
   },
