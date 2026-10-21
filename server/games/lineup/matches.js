@@ -4,6 +4,7 @@
 const { T } = require('../../core/i18n');
 const { playerById, normalize } = require('../../data');
 const { team, recognition, careerOf } = require('../path/careers');
+const { viaServer } = require('../../core/photos');
 const compare = require('../guess/compare');
 const { countryEn } = require('../../data/names-en');
 
@@ -33,7 +34,7 @@ const COUNTRY = {
 };
 const flagImg = (code) => {
   const file = FLAG_FILES[code] || (COUNTRY[code] ? `Flag of ${COUNTRY[code]}.svg` : null);
-  return file ? `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(file)}?width=40` : null;
+  return file ? viaServer(`https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(file)}?width=40`) : null;
 };
 
 // команди з API УЄФА → наші клуби/збірні (назва українською, герб/прапор)
@@ -171,7 +172,7 @@ function teamOf(t, m, k) {
       letters: T(String(letters(nameUk)), String(letters(nameEn))), first: T(surname(nameUk)[0] || '?', surname(nameEn)[0] || '?'), missing: false,
     };
   }
-  const img = national ? (qid ? team(qid).img : null) || null : (t.logo || our?.img || null);
+  const img = national ? (qid ? team(qid).img : null) || null : (viaServer(t.logo) || our?.img || null);
   return { name, img, kit: t.kit || KITS[qid] || null, national, xi, bench, coach, qid };
 }
 

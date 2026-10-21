@@ -3,6 +3,7 @@
 const { players, categories, categoryById } = require('../../data');
 const { T } = require('../../core/i18n');
 const { countryEn, teamEn } = require('../../data/names-en');
+const { viaServer } = require('../../core/photos');
 
 let data = { teams: {}, careers: {} };
 try {
@@ -92,7 +93,7 @@ function team(qid) {
   const name = t.name.replace(/\s*\((жіночий|женский)[^)]*\)$/i, ' (жін.)').replace(/\s*\([^)]*клуб\)$/i, '')
     .replace(/\s*\(футбольний клуб,\s*([^)]+)\)/, ' $1'); // «Ред Булл (футбольний клуб, Зальцбург)» → «Ред Булл Зальцбург»
   // nameEn — для англійської версії (інші ігри беруть name як рядок — його не чіпаємо)
-  return { name, nameEn: teamEn(qid, t) || name, country: t.country || null, img: cat?.img || t.img || null };
+  return { name, nameEn: teamEn(qid, t) || name, country: t.country || null, img: viaServer(cat?.img || t.img) || null };
 }
 
 // Етапи раунду — клуби кар'єри (з першого або з останнього).

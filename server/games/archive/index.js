@@ -19,7 +19,7 @@ const meta = {
   beta: true,
 };
 
-const UA = 'football-party-games/1.0 (https://github.com/dimobcheg25-a11y/football_party_games; hobby project)';
+const { UA } = require('../../core/photos');
 const IMG_CACHE = 80;
 
 function register({ app, io }) {

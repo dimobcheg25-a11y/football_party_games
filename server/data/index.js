@@ -14,7 +14,8 @@ try {
 } catch {
   // картинки категорій ще не скачані (npm run fetch-category-images) — будуть кольорові значки
 }
-for (const c of categories) c.img = categoryImages[c.id] || (c.imageOf && categoryImages[c.imageOf]) || null;
+const { viaServer } = require('../core/photos'); // картинки Wikimedia — через наш сервер
+for (const c of categories) c.img = viaServer(categoryImages[c.id] || (c.imageOf && categoryImages[c.imageOf]) || null);
 
 // Приводимо ім'я до вигляду для пошуку: нижній регістр, без діакритики, ё→е, ґ→г.
 function normalize(s) {
@@ -42,7 +43,8 @@ const COACH_FAME = 0.6;
 // fame — у скількох мовних розділах Вікіпедії є стаття (грубий показник світової відомості); rawFame — без знижки тренерам.
 const { EXCLUDED } = require('./derived-tags');
 const players = rawPlayers.filter((p) => !EXCLUDED.has(p.qid)).map((p) => ({
-  ...p, tags: new Set(p.tags), photo: photos[p.id] || null,
+  // photo — через наш сервер (server/core/photos.js), photoSrc — посилання на Wikimedia.
+  ...p, tags: new Set(p.tags), photoSrc: photos[p.id] || null, photo: photos[p.id] ? `/api/photo/${p.id}` : null,
   rawFame: p.fame, coach: coaches.has(p.qid), fame: coaches.has(p.qid) ? Math.round(p.fame * COACH_FAME) : p.fame,
 }));
 require('./derived-tags').addDerivedTags(players); // 100+ асистів, 30+ голів у ЛЧ, трансфер 80+ млн, мандрівник
@@ -50,12 +52,6 @@ const playerById = new Map(players.map((p) => [p.id, p]));
 
 function matches(player, categoryId) {
   return player.tags.has(categoryId);
-}
-
-// Маленька мініатюра для підказок: у посиланнях Wikimedia розмір задано як «/500px-», беремо 120px.
-function smallPhoto(url) {
-  if (!url) return null;
-  return url.split('?')[0].replace(/\/\d+px-([^/]+)$/, '/120px-$1');
 }
 
 // Публічний список для автодоповнення — імена, рік народження й мініатюра фото, без клубів/трофеїв
@@ -66,7 +62,7 @@ const publicPlayers = players.map((p) => ({
   ru: p.ru,
   uk: p.uk,
   born: p.born,
-  thumb: smallPhoto(p.photo),
+  thumb: p.photo ? `${p.photo}?s=120` : null, // мініатюра 120 px
   aliases: p.aliases,
 }));
 

@@ -4,6 +4,7 @@ const { careerOf, team, teams, POSITIONS } = require('../path/careers');
 const { T } = require('../../core/i18n');
 const { countryEn, teamEn } = require('../../data/names-en');
 const { honoursOf } = require('../../data/honours');
+const { viaServer } = require('../../core/photos');
 
 // Британські збірні у Wikidata — окремі команди, але країна в усіх «Сполучене Королівство».
 const NATION_NAMES = { Q47762: 'Англія', Q34044: 'Шотландія', Q180857: 'Уельс', Q190978: 'Північна Ірландія' };
@@ -143,7 +144,7 @@ function profileOf(p) {
     const flag = NATION_FLAGS[c.nation.t];
     nation = {
       name,
-      img: flag ? `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(flag)}?width=80` : t.img || null,
+      img: viaServer(flag ? `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(flag)}?width=80` : t.img) || null,
       conf: confOf.get(name) || null,
     };
   }

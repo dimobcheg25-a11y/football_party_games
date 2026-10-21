@@ -3,6 +3,14 @@
 // Після кожного помітного для гравців коміту — дописати сюди пункт (дата — день деплою).
 window.CHANGELOG = [
   {
+    date: '2026-10-21',
+    items: [
+      { game: null, uk: 'Фото гравців у підказках, герби клубів і прапори знову завантажуються — і швидше: тепер їх віддає наш сайт, а не Вікіпедія напряму.', en: 'Player photos in suggestions, club crests and flags load again — and faster: our site now serves them instead of Wikipedia directly.' },
+      { game: null, uk: 'Нані — правий вінгер (а не лівий).', en: 'Nani is a right winger (not left).' },
+      { game: 'archive', uk: 'Прибрали фото, на якому був непідписаний гравець, — дякуємо за звіт!', en: 'Removed a photo with an untagged player — thanks for the report!' },
+    ],
+  },
+  {
     date: '2026-10-19',
     items: [
       { game: null, uk: 'У кожній грі — кнопка «💬 Відгук про гру» внизу ліворуч: напиши, що подобається, чого бракує або що зламалось. Ми читаємо кожен відгук.', en: 'Every game has a “💬 Feedback” button at the bottom left: tell us what you like, what’s missing or what’s broken. We read every message.' },

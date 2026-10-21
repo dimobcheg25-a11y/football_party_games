@@ -12,7 +12,7 @@ const CODES = {
 
 const LIST = {
   // поточна позиція на Transfermarkt — не та, якою гравця знають
-  neymar: 'LW', 'raheem-sterling': 'LW',
+  neymar: 'LW', 'raheem-sterling': 'LW', nani: 'RW',
 
   // легенди без даних Transfermarkt
   'ronaldo-nazario': 'CF', ronaldinho: 'AM', 'luis-figo': 'RW', 'zinedine-zidane': 'AM', 'george-weah': 'CF', 'andriy-shevchenko': 'CF',

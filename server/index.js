@@ -3,7 +3,7 @@ const http = require('http');
 const express = require('express');
 const compression = require('compression');
 const { Server } = require('socket.io');
-const { publicPlayers } = require('./data');
+const { publicPlayers, playerById } = require('./data');
 const games = require('./games');
 
 const { localize, langOf } = require('./core/i18n');
@@ -35,6 +35,7 @@ app.get('/api/games', (req, res) => {
 });
 
 for (const game of games) game.register({ app, io });
+require('./core/photos').setupPhotos(app, playerById); // фото гравців через сервер (Wikimedia не дає браузерам тягнути напряму)
 require('./core/presence').setupPresence(io); // «Зараз на сайті» на головній
 require('./core/feedback').setupFeedback(app, games); // відгуки гравців (кнопка 💬 у кожній грі) → GitHub Issues
 
