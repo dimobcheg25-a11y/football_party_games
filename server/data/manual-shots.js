@@ -39,6 +39,7 @@ module.exports = {
     "2018-11-30 DFB presentation of the new head coach of the National Womens Team StP 6883 LR10 by Stepro.jpg",
     "2018-11-30 DFB presentation of the new head coach of the National Womens Team StP 6902 LR10 by Stepro.jpg",
     "20180602 FIFA Friendly Match Austria vs. Germany Team Germany 850 0740.jpg",
+    "20180610 FIFA Friendly Match Austria vs. Brazil 850 0197.jpg",
     "20180610 FIFA Friendly Match Austria vs. Brazil Arnautović Thiago Silva 850 2032.jpg",
     "2019-07-17 SG Dynamo Dresden vs. Paris Saint-Germain by Sandro Halank–070.jpg",
     "2019-07-17 SG Dynamo Dresden vs. Paris Saint-Germain by Sandro Halank–099.jpg",
