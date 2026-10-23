@@ -466,6 +466,22 @@ const scenarios = {
     await p.click('#guess-btn');
     await p.waitForSelector('.reveal-box .ans-num');
     await shot(p, 'allin-solo-reveal');
+    // до кінця й «Ще одна гра»: нова гра знову з роздачі 1 — питання й форма мають бути нові (інакше сервер не прийме оцінку)
+    const guessAny = async () => {
+      await p.waitForSelector('#guess-input');
+      await p.fill('#guess-input', (await p.getAttribute('#guess-input', 'placeholder')) === '2005' ? '2000' : '1');
+      await p.click('#guess-btn');
+      await p.waitForSelector('.reveal-box .ans-num');
+    };
+    for (let r = 2; r <= 7; r++) {
+      await p.click('#next-btn');
+      await guessAny();
+    }
+    await p.click('#next-btn');
+    await p.waitForSelector('#screen-final:not(.hidden)');
+    await shot(p, 'allin-final');
+    await p.click('#again-btn');
+    await guessAny();
     await p.context().close();
 
     const { host, guests } = await room(browser, 'allin', 3);

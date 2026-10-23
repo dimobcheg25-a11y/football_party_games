@@ -289,6 +289,7 @@ class AllinRoom extends BaseRoom {
     this.history.push({
       question: q.ask(p),
       unit: q.unit,
+      forms: q.forms,
       answer: value,
       year: !!q.year,
       winValue: this.solo ? null : this.slots[this.win].value,
@@ -328,7 +329,7 @@ class AllinRoom extends BaseRoom {
       mult: this.status === 'playing' ? this.mult : 1,
       rules: { start: START_BANK, free: FREE, bonus: AUTHOR_BONUS, low: LOW_ODDS, solo: SOLO_ODDS },
       question: cur ? {
-        id: cur.q.id, group: cur.q.group, text: cur.q.ask(cur.p), unit: cur.q.unit, note: cur.q.note, dec: !!cur.q.dec, year: !!cur.q.year,
+        id: cur.q.id, group: cur.q.group, text: cur.q.ask(cur.p), unit: cur.q.unit, forms: cur.q.forms, note: cur.q.note, dec: !!cur.q.dec, year: !!cur.q.year,
         // «У якому році народився?» — рік під іменем видав би відповідь
         player: { ...publicPlayer(cur.p), ...(cur.q.id === 'born' ? { born: null } : {}) },
         ranges: this.solo ? [0, 1, 2].map((l) => rangeText(cur.q, l)) : null,

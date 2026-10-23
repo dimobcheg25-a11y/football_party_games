@@ -45,7 +45,8 @@
       state = s;
       mySeat = s.you;
       const key = `${s.code}:${s.round}`;
-      if (key !== roundKey) {
+      if (s.status !== 'playing') roundKey = ''; // «Ще одна гра» знову починається з головоломки 1 — нова дошка
+      else if (key !== roundKey) {
         roundKey = key;
         selected = new Set();
         order = s.board.map((p) => p.id);

@@ -42,6 +42,7 @@
     onState(s, prev) {
       state = s;
       mySeat = s.you;
+      if (s.status !== 'playing') qKey = stageKey = feltKey = null; // нова гра знову починається з роздачі 1 — малюємо все заново
       playSounds(prev, s);
     },
     renderGame,
@@ -82,6 +83,7 @@
   // ── числа: «1 234», роки без пробілу, гроші з десятою
   const fmt = (n, dec) => Number(n).toLocaleString(EN ? 'en-US' : 'uk-UA', { minimumFractionDigits: 0, maximumFractionDigits: dec ? 1 : 0 });
   const num = (v) => (state.question?.year ? String(v) : fmt(v, state.question?.dec));
+  const unitOf = (n, unit, forms) => (forms ? pl(n, forms, forms) : unit); // «1 гол», «3 голи», «5 голів»
   const signed = (n) => (n > 0 ? `+${fmt(n)}` : n < 0 ? `−${fmt(-n)}` : '0');
 
   // ── гра
@@ -95,6 +97,8 @@
   let soloExtra = 0;
 
   const bank = () => state.banks[mySeat] || 0;
+  // роздача — це питання про конкретного гравця (номер роздачі в новій грі повторюється)
+  const handKey = () => `${state.code}:${state.round}:${state.question?.id}:${state.question?.player.id}`;
   const online = () => state.seats.filter((x) => x && x.connected).length;
 
   function renderGame() {
@@ -112,8 +116,9 @@
   // Картка питання: фото гравця, збірна, питання — перемальовуємо лише для нової роздачі.
   function renderQuestion() {
     const s = state;
-    if (qKey === s.round) return;
-    qKey = s.round;
+    const key = handKey();
+    if (qKey === key) return;
+    qKey = key;
     const q = s.question;
     const p = q.player;
     const meta = [p.nation ? `${p.nation.img ? `<img src="${p.nation.img}" alt="" loading="lazy" />` : ''}${escapeHtml(p.nation.name)}` : '', p.born ? L(`${p.born} р. н.`, `born ${p.born}`) : '']
@@ -130,7 +135,7 @@
   // Етап під питанням: скелет — лише коли змінилась фаза (щоб не збивати введення), далі — оновлюємо живі частини.
   function renderStage() {
     const s = state;
-    const key = `${s.round}:${s.phase}`;
+    const key = `${handKey()}:${s.phase}`;
     const el = $('#stage');
     if (key !== stageKey) {
       stageKey = key;
@@ -176,6 +181,7 @@
     soloExtra = Math.min(soloExtra, bank());
     $('#guess-form').addEventListener('submit', async (e) => {
       e.preventDefault();
+      const s = state;
       const value = $('#guess-input').value.trim();
       if (!value) { $('#guess-input').focus(); return; }
       const res = await emit('guess', s.solo ? { value, level: soloLevel, extra: soloExtra } : { value });
@@ -249,7 +255,7 @@
     const el = $('#felt');
     if (!el) return;
     const reveal = s.phase === 'reveal';
-    const key = `${s.round}:${s.phase}:${JSON.stringify(s.bets)}:${JSON.stringify(myBets)}:${s.ready.join()}`;
+    const key = `${handKey()}:${s.phase}:${JSON.stringify(s.bets)}:${JSON.stringify(myBets)}:${s.ready.join()}`;
     if (key === feltKey) return;
     feltKey = key;
     const bets = { ...s.bets };
@@ -350,7 +356,7 @@
         <p class="verdict ${r.net > 0 ? 'good' : r.net < 0 ? 'bad' : ''}">${r.net > 0 ? L(`Виграш ${signed(r.net)}`, `You win ${signed(r.net)}`) : r.net < 0 ? L(`Програш ${signed(r.net)}`, `You lose ${signed(r.net)}`) : L('При своїх', 'Break even')}</p>`;
     }
     $('#reveal-box').innerHTML = `<small class="field-label">${L('Правильна відповідь', 'The answer')}</small>
-      <b class="ans-num">${escapeHtml(num(a.value))} <span>${escapeHtml(s.question.unit)}</span></b>
+      <b class="ans-num">${escapeHtml(num(a.value))} <span>${escapeHtml(unitOf(a.value, s.question.unit, s.question.forms))}</span></b>
       ${a.detail ? `<small class="ans-detail">${escapeHtml(a.detail)}</small>` : ''}
       ${verdict}
       <p class="q-note">${escapeHtml(s.question.note)}</p>
@@ -425,7 +431,7 @@
     }
     $('#final-history').innerHTML = s.history.map((h) => {
       const r = h.results[mySeat];
-      return `<li><span class="nm">${escapeHtml(h.question)}<small>${L('Відповідь', 'Answer')}: <b>${escapeHtml(h.year ? String(h.answer) : fmt(h.answer, true))} ${escapeHtml(h.unit)}</b></small></span><span class="val">${r ? signed(r.net) : '—'}</span></li>`;
+      return `<li><span class="nm">${escapeHtml(h.question)}<small>${L('Відповідь', 'Answer')}: <b>${escapeHtml(h.year ? String(h.answer) : fmt(h.answer, true))} ${escapeHtml(unitOf(h.answer, h.unit, h.forms))}</b></small></span><span class="val">${r ? signed(r.net) : '—'}</span></li>`;
     }).join('');
     const isHost = mySeat === s.host;
     $('#again-btn').classList.toggle('hidden', !isHost);

@@ -17,6 +17,14 @@ const UNITS = {
   cm: T('см', 'cm'), meur: T('млн €', '€m'), trophies: T('трофеїв', 'trophies'), times: T('разів', 'times'), assists: T('асистів', 'assists'),
   cards: T('карток', 'cards'), langs: T('мов', 'languages'), mfol: T('млн підписників', 'm followers'),
 };
+// Форми одиниці після числа («1 гол», «3 голи», «5 голів») — за родовим відмінком множини (UNITS…uk); без форм — як є (см, млн €, рік).
+const FORMS = {
+  голів: [['гол', 'голи', 'голів'], ['goal', 'goals']], матчів: [['матч', 'матчі', 'матчів'], ['game', 'games']],
+  клубів: [['клуб', 'клуби', 'клубів'], ['club', 'clubs']], років: [['рік', 'роки', 'років'], ['year', 'years']],
+  трофеїв: [['трофей', 'трофеї', 'трофеїв'], ['trophy', 'trophies']], разів: [['раз', 'рази', 'разів'], ['time', 'times']],
+  асистів: [['асист', 'асисти', 'асистів'], ['assist', 'assists']], карток: [['картка', 'картки', 'карток'], ['card', 'cards']],
+  мов: [['мова', 'мови', 'мов'], ['language', 'languages']],
+};
 
 // Перехід, про який питаємо: клуб (не перший і не оренда), де гравець зіграв найбільше матчів.
 function bigMove(p) {
@@ -117,6 +125,8 @@ for (const q of QUESTIONS) {
   q.raw = b ? b.value : q.value;
   q.answer = (p) => { const v = q.raw(p); return v == null || !Number.isFinite(v) ? null : q.scale ? q.scale(v) : Math.round(v); };
   if (!q.note) q.note = b.note;
+  const f = FORMS[q.unit.uk];
+  q.forms = f ? T(f[0], f[1]) : null; // клієнт отримає форми своєю мовою
   q.detail = (p) => (b ? b.show(b.value(p), p).detail || null : null);
 }
 const questionById = new Map(QUESTIONS.map((q) => [q.id, q]));
