@@ -11,6 +11,7 @@ const GAMES = {
   lineup: ['📋', L('Склад матчу', 'Match Lineup')],
   archive: ['📷', L('Фотоархів', 'Photo Archive')],
   sketch: ['✏️', L('Тактичний ескіз', 'Tactical Sketch')],
+  fours: ['4️⃣', L('Чотири четвірки', 'Four Fours')],
 };
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title data-en="Four Fours — Football party games">Чотири четвірки</title>
+  <meta name="description" content="Чотири четвірки — 16 футболістів, знайди чотири групи по чотири зі спільною ознакою. Головоломка дня, соло або з друзями." data-en-content="Four Fours — sixteen footballers, find four groups of four that share something. Daily puzzle, solo or with friends." />
+  <meta property="og:site_name" content="Football party games" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://football-party-games.onrender.com/fours/" />
+  <meta property="og:title" content="Чотири четвірки — Football party games" data-en-content="Four Fours — Football party games" />
+  <meta property="og:description" content="Чотири четвірки — 16 футболістів, знайди чотири групи по чотири зі спільною ознакою. Головоломка дня, соло або з друзями." data-en-content="Four Fours — sixteen footballers, find four groups of four that share something. Daily puzzle, solo or with friends." />
+  <meta property="og:locale" content="uk_UA" />
+  <meta property="og:locale:alternate" content="en_US" />
+  <meta name="application-name" content="Football party games" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="theme-color" content="#070b1f" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Forum&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/shared/theme.css" />
+  <link rel="stylesheet" href="/shared/ui.css" />
+  <link rel="stylesheet" href="/path/style.css" />
+  <link rel="stylesheet" href="/fours/style.css" />
+</head>
+<body>
+  <div class="pitch-bg" aria-hidden="true"></div>
+
+  <div class="sound-ctl">
+    <button id="mute-btn" class="round-btn" aria-label="Звук" data-en-aria-label="Sound">🔊</button>
+  </div>
+
+  <!-- ── табличка сайту: завжди видно, веде на головну -->
+  <a class="home-link" href="/" aria-label="Усі ігри — на головну" data-en-aria-label="All games — home"><span class="home-arrow" aria-hidden="true">‹</span><span class="home-text"><span data-en="Football">Футбольні</span> <b data-en="games">ігри</b></span></a>
+
+  <!-- ── Головний екран: налаштування -->
+  <main id="screen-home" class="screen">
+    <header class="hero">
+      <div class="logo draw-logo" aria-label="Чотири четвірки" data-en-aria-label="Four Fours">
+        <span class="logo-balls" aria-hidden="true"><i class="c0"></i><i class="c1"></i><i class="c2"></i><i class="c3"></i></span>
+        <span class="logo-text" data-en-html="FOUR &lt;b&gt;FOURS&lt;/b&gt;">ЧОТИРИ <b>ЧЕТВІРКИ</b></span>
+      </div>
+      <p class="tagline" data-en="Sixteen footballers, four groups of four. Find what they share — a club, a nation, a trophy, a coach…">Шістнадцять футболістів — чотири групи по чотири. Знайди, що їх об'єднує: клуб, збірна, трофей, тренер…</p>
+    </header>
+
+    <section class="card setup">
+      <p id="invite-note" class="invite-note hidden"></p>
+      <button id="resume-btn" class="btn btn-secondary resume hidden"></button>
+
+      <label class="field" for="name-input">
+        <span class="field-label" data-en="Your name">Твоє ім'я</span>
+        <input id="name-input" maxlength="20" placeholder="Наприклад, Пеле" autocomplete="nickname" />
+      </label>
+
+      <button id="daily-btn" class="daily-btn" type="button">
+        <span class="daily-ball" aria-hidden="true">📅</span>
+        <span class="daily-text"><b id="daily-title" data-en="Puzzle of the day">Головоломка дня</b><small id="daily-note" data-en="The same for everyone — a new one at midnight">Однакова для всіх — нова опівночі</small></span>
+      </button>
+
+      <div id="setup-options">
+        <div class="field">
+          <span class="field-label" data-en="Difficulty">Складність</span>
+          <div class="chips" data-opt="difficulty" role="radiogroup" aria-label="Складність" data-en-aria-label="Difficulty">
+            <button type="button" class="chip" data-val="easy" data-en="🟢 Easy">🟢 Легкий</button>
+            <button type="button" class="chip" data-val="normal" data-en="🟡 Normal">🟡 Звичайний</button>
+            <button type="button" class="chip" data-val="fan" data-en="🟣 Fan">🟣 Фанат</button>
+          </div>
+          <p class="hint" id="difficulty-hint"></p>
+        </div>
+
+        <div class="field">
+          <span class="field-label" data-en="Mistakes">Помилок</span>
+          <div class="chips" data-opt="mistakes" role="radiogroup" aria-label="Помилок" data-en-aria-label="Mistakes">
+            <button type="button" class="chip" data-val="4">4</button>
+            <button type="button" class="chip" data-val="0" data-en="∞ no limit">∞ без обмеження</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="field-label" data-en="Puzzles">Головоломок</span>
+          <div class="chips" data-opt="rounds" role="radiogroup" aria-label="Головоломок" data-en-aria-label="Puzzles">
+            <button type="button" class="chip" data-val="1">1</button>
+            <button type="button" class="chip" data-val="3">3</button>
+            <button type="button" class="chip" data-val="5">5</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="field-label" data-en="Time per puzzle">Час на головоломку</span>
+          <div class="chips" data-opt="turnSeconds" role="radiogroup" aria-label="Час на головоломку" data-en-aria-label="Time per puzzle">
+            <button type="button" class="chip" data-val="120" data-en="2 min">2 хв</button>
+            <button type="button" class="chip" data-val="180" data-en="3 min">3 хв</button>
+            <button type="button" class="chip" data-val="300" data-en="5 min">5 хв</button>
+            <button type="button" class="chip" data-val="0">∞</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="start-buttons" id="start-buttons">
+        <button id="solo-btn" class="btn btn-secondary btn-lg" data-en="Play solo">Грати соло</button>
+        <button id="create-btn" class="btn btn-primary btn-lg" data-en="Room with friends">Кімната з друзями</button>
+      </div>
+      <button id="join-btn" class="btn btn-primary btn-lg hidden" data-en="Join the game">Приєднатися до гри</button>
+      <p id="home-error" class="error"></p>
+    </section>
+
+    <section class="card rules-card">
+      <h3 data-en="How to play">Як грати</h3>
+      <ul class="rules-list">
+        <li data-en-html="On the board — &lt;b&gt;16 footballers&lt;/b&gt;. They split into &lt;b&gt;4 groups of 4&lt;/b&gt; that share something: a club, a nation, a league, a trophy, a coach, an academy, the year of birth, the first name…">На полі — <b>16 футболістів</b>. Вони діляться на <b>4 групи по 4</b> зі спільною ознакою: клуб, збірна, чемпіонат, трофей, тренер, академія, рік народження, ім'я…</li>
+        <li data-en-html="Pick four and press &lt;b&gt;Check&lt;/b&gt;. Right — the group goes into its pot. &lt;b&gt;“One away”&lt;/b&gt; — three of the four are from the same group.">Обери чотирьох і натисни <b>«Перевірити»</b>. Вгадав — група лягає у свій кошик. <b>«Майже!»</b> — троє з чотирьох з однієї групи.</li>
+        <li data-en-html="Watch out for traps: some players fit two groups, but there is only one way to split all sixteen.">Обережно, пастки: дехто підходить до двох груп, але розкласти всіх шістнадцятьох можна лише одним способом.</li>
+        <li data-en-html="Groups by colour, from easy to tricky: &lt;span class=&quot;sw c0&quot;&gt;&lt;/span&gt; &lt;span class=&quot;sw c1&quot;&gt;&lt;/span&gt; &lt;span class=&quot;sw c2&quot;&gt;&lt;/span&gt; &lt;span class=&quot;sw c3&quot;&gt;&lt;/span&gt;.">Групи за кольором — від простої до підступної: <span class="sw c0"></span> <span class="sw c1"></span> <span class="sw c2"></span> <span class="sw c3"></span>.</li>
+        <li><span data-en="Points:">Очки:</span> <span id="points-rule"></span></li>
+        <li data-en-html="In a room everyone solves the same puzzle at their own pace. Others’ progress shows only as colours.">У кімнаті всі розв'язують ту саму головоломку, кожен у своєму темпі. Чужий прогрес видно лише кольорами.</li>
+      </ul>
+    </section>
+  </main>
+
+  <!-- ── Лобі кімнати -->
+  <main id="screen-lobby" class="screen hidden">
+    <section class="card lobby">
+      <p class="field-label" data-en="Room">Кімната</p>
+      <div class="room-code" id="lobby-code"></div>
+      <div class="share-row">
+        <button id="copy-link" class="btn btn-primary" data-en="Copy invite link">Скопіювати запрошення</button>
+      </div>
+      <div class="opt-chips" id="lobby-options"></div>
+      <ul class="lobby-players" id="lobby-players"></ul>
+      <button id="start-btn" class="btn btn-primary btn-lg hidden" data-en="Start game">Почати гру</button>
+      <p id="lobby-wait" class="hint"></p>
+      <button class="btn btn-secondary btn-sm btn-leave" data-action="leave" data-en="🚪 Leave room">🚪 Вийти з кімнати</button>
+    </section>
+  </main>
+
+  <!-- ── Гра -->
+  <main id="screen-game" class="screen screen-game fours-game hidden">
+    <div class="game-top">
+      <div class="round-info" id="round-info"></div>
+      <div class="timer" id="timer"></div>
+      <button class="btn btn-secondary btn-sm btn-leave" data-action="leave" data-en="🚪 Leave game">🚪 Вийти з гри</button>
+    </div>
+
+    <div class="game-layout">
+      <section class="board-col">
+        <div class="pots" id="pots"></div>
+        <div class="capsules" id="capsules"></div>
+
+        <div class="play-bar" id="play-bar">
+          <div class="mistakes" id="mistakes"></div>
+          <div class="play-actions">
+            <button id="shuffle-btn" class="btn btn-secondary btn-sm" data-en="🔀 Shuffle">🔀 Перемішати</button>
+            <button id="clear-btn" class="btn btn-secondary btn-sm" data-en="Deselect">Зняти вибір</button>
+            <button id="check-btn" class="btn btn-primary" data-en="Check">Перевірити</button>
+          </div>
+          <div class="answer-actions">
+            <button id="giveup-btn" class="btn btn-secondary btn-sm btn-giveup" data-en="🏳️ Give up">🏳️ Здатися</button>
+          </div>
+          <p class="hint" id="play-hint"></p>
+        </div>
+
+        <div class="reveal hidden" id="reveal"></div>
+      </section>
+
+      <aside class="side-col">
+        <section class="table-card">
+          <h3 class="table-title" id="table-title" data-en="Standings">Таблиця</h3>
+          <ol class="scoreboard" id="scoreboard"></ol>
+        </section>
+        <div class="reactions" id="reactions"></div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- ── Підсумок серії -->
+  <main id="screen-final" class="screen hidden">
+    <section class="card final">
+      <h2 id="final-title"></h2>
+      <ol class="standings" id="final-standings"></ol>
+      <h3 class="field-label" data-en="The groups">Групи</h3>
+      <ol class="history" id="final-history"></ol>
+      <div class="result-actions">
+        <button id="final-share" class="btn btn-secondary hidden" data-en="Share">Поділитися</button>
+        <button id="again-btn" class="btn btn-primary btn-lg" data-en="Play again">Ще одна гра</button>
+        <p id="again-wait" class="hint"></p>
+        <button class="btn btn-ghost" data-action="leave" data-en="Home">На головну</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Чат (лише в кімнаті) -->
+  <button id="chat-fab" class="chat-fab hidden" aria-label="Чат" data-en-aria-label="Chat">💬<span id="chat-badge" class="chat-badge hidden"></span></button>
+  <section id="chat-panel" class="chat-panel hidden" aria-label="Чат кімнати" data-en-aria-label="Room chat">
+    <div class="chat-head"><b data-en="Chat">Чат</b><button class="icon-btn" id="chat-close" aria-label="Закрити" data-en-aria-label="Close">✕</button></div>
+    <ul class="chat-list" id="chat-list"></ul>
+    <form class="chat-form" id="chat-form">
+      <input id="chat-input" maxlength="200" placeholder="Повідомлення…" data-en-placeholder="Message…" autocomplete="off" />
+      <button class="btn btn-primary btn-sm">↑</button>
+    </form>
+  </section>
+
+  <div id="toast" class="toast" role="status"></div>
+
+  <script src="/shared/i18n.js"></script>
+  <script src="/shared/feedback.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/shared/presence.js"></script>
+  <script src="/shared/sounds.js"></script>
+  <script src="/shared/room-client.js"></script>
+  <script src="/fours/app.js"></script>
+</body>
+</html>

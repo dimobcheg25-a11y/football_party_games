@@ -339,3 +339,19 @@ body {
   .group-list { gap: 34px; }
   .sticker { grid-template-rows: auto 106px auto 1fr; }
 }
+
+/* Чотири четвірки — жеребкування: темно-синя сцена під прожектором, чотири кольорові кульки в скляному кошику */
+.s-fours {
+  --st-bg: #0b1230; --st-fg: #f4f1e8; --st-muted: #a7acc4; --st-name: 400 27px/1 'Forum', serif;
+  background-image: radial-gradient(ellipse at 50% -15%, rgba(255, 226, 150, 0.35), transparent 65%);
+}
+.s-fours .st-name { color: #e2bf62; text-transform: uppercase; letter-spacing: 0.05em; }
+.s-fours .mode.solo { background: #e2bf62; color: #1d1500; }
+.a-bowl {
+  display: grid; grid-template-columns: repeat(2, 34px); gap: 6px; padding: 12px 16px 10px; border-radius: 10px 10px 46px 46px;
+  border: 2px solid rgba(255, 255, 255, 0.35); background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.14));
+}
+.a-bowl i {
+  width: 34px; height: 34px; border-radius: 50%; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.45);
+  background: radial-gradient(circle at 32% 28%, #fff 0 8%, var(--b) 42%, color-mix(in srgb, var(--b) 55%, #000) 100%);
+}

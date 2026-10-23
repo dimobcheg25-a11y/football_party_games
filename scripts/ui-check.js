@@ -33,7 +33,7 @@ const PHONE = { width: 390, height: 780 };
 async function startServer() {
   const server = spawn(process.execPath, [path.join(ROOT, 'server', 'index.js')], {
     cwd: ROOT,
-    env: { ...process.env, PORT, GUESS_REVEAL_MS: '300000', FIXED_ORDER: '1' }, // FIXED_ORDER — у «Перехресті» першим ходить господар
+    env: { ...process.env, PORT, GUESS_REVEAL_MS: '300000', FIXED_ORDER: '1', FOURS_TEST_ANSWER: '1', FOURS_REVEAL_MS: '300000' }, // FIXED_ORDER — у «Перехресті» першим ходить господар
     stdio: ['ignore', 'pipe', 'inherit'],
   });
   await new Promise((res) => server.stdout.on('data', (d) => d.toString().includes('запущено') && res()));
@@ -307,6 +307,48 @@ const scenarios = {
     await phoneShot(browser, 'sketch', '/sketch/');
     for (const x of all) await x.context().close();
     if (mobile) await sketchPhone(browser);
+  },
+
+  // Чотири четвірки: господар — у браузері, другий гравець — бот через сокет (від нього ж відповіді, щоб клікати правильні капсули).
+  async fours(browser) {
+    const { io } = require('socket.io-client');
+    const p = await person(browser, 'fours');
+    await p.goto(`${URL}/fours/`);
+    await shot(p, 'fours-home', { full: true });
+    await p.fill('#name-input', 'Хост');
+    await p.click('#create-btn');
+    await p.waitForSelector('#screen-lobby:not(.hidden) #lobby-code:not(:empty)');
+    const code = await p.textContent('#lobby-code');
+    const bot = io(`${URL}/fours`);
+    await new Promise((res) => bot.emit('join', { code, name: 'Бот' }, res));
+    const playing = new Promise((res) => bot.on('state', (s) => s.status === 'playing' && res(s)));
+    await p.click('#start-btn');
+    const st = await playing;
+    await p.waitForSelector('#capsules .capsule');
+    const pick = async (ids) => { for (const id of ids) await p.click(`.capsule[data-id="${id}"]`); await p.click('#check-btn'); };
+    await pick(st.testAnswer[0]);
+    await p.waitForSelector('.pot');
+    await pick([...st.testAnswer[1].slice(0, 3), st.testAnswer[2][0]]); // «майже»
+    await shot(p, 'fours-play', { full: true });
+    await new Promise((res) => bot.emit('check', { ids: st.testAnswer[3] }, res)); // бот знайшов групу — у таблиці кулька
+    await p.click('#giveup-btn');
+    await p.click('.ask-sheet [data-ask="1"]');
+    await new Promise((res) => bot.emit('giveUp', null, res));
+    await p.waitForSelector('#reveal:not(.hidden)');
+    await shot(p, 'fours-reveal', { full: true });
+    bot.close();
+    await p.context().close();
+    if (mobile) {
+      const m = await person(browser, 'fours-phone', PHONE);
+      await m.goto(`${URL}/fours/`);
+      await shot(m, 'fours-phone', { full: true });
+      await m.fill('#name-input', 'Тел');
+      await m.click('#daily-btn');
+      await m.waitForSelector('#capsules .capsule');
+      for (let i = 1; i <= 3; i++) await m.click(`#capsules .capsule:nth-child(${i})`);
+      await shot(m, 'fours-phone-game', { full: true });
+      await m.context().close();
+    }
   },
 
   async guess(browser) {

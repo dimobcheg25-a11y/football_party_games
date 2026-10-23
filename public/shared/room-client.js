@@ -17,7 +17,8 @@
 //   });
 //   g.$, g.emit, g.act (emit + тост помилки), g.toast, g.escapeHtml, g.initials, g.plural, g.seatName, g.seatStyle, g.SEAT_COLORS,
 //   g.state, g.mySeat, g.serverNow(), g.showScreen, g.store, g.socket, g.setup, g.renderSetup(),
-//   g.ask(питання, { note, ok, cancel, danger }) → Promise<true|false> — підтвердження у вікні в стилі гри (замість confirm()).
+//   g.ask(питання, { note, ok, cancel, danger }) → Promise<true|false> — підтвердження у вікні в стилі гри (замість confirm()),
+//   g.createRoom(solo, extra) — створити гру з додатковими налаштуваннями (своя кнопка старту, як «Головоломка дня»).
 // Розмітка сторінки — як у public/top/index.html (id елементів ті самі).
 window.RoomClient = (() => {
   const { L } = window.I18n; // мова сторінки — /shared/i18n.js (підключати раніше за цей файл)
@@ -208,11 +209,13 @@ window.RoomClient = (() => {
       return name;
     }
 
-    async function createRoom(solo) {
+    // extra — додаткові налаштування поверх вибраних (напр., «Головоломка дня» у «Чотирьох четвірках»: g.createRoom(true, { daily: true }))
+    async function createRoom(solo, extra = {}) {
       const name = requireName();
       if (!name) return;
-      onEntered(await emit('create', { ...cfg.createOptions(setup), solo, name }));
+      onEntered(await emit('create', { ...cfg.createOptions(setup), ...extra, solo, name }));
     }
+    g.createRoom = createRoom;
     $('#solo-btn')?.addEventListener('click', () => createRoom(true));
     $('#create-btn').addEventListener('click', () => createRoom(false));
 

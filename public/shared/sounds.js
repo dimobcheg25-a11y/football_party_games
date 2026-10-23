@@ -109,6 +109,12 @@ window.Sound = (() => {
         tone(2470, { start, dur: 0.3, type: 'triangle', vol: 0.025 });
       });
     },
+    // жеребкування: пластикові кульки стукаються в кошику й капсула відкривається ('Чотири четвірки' — знайдена група)
+    capsule() {
+      [0, 0.07, 0.12, 0.2].forEach((start, i) => tone(1700 - i * 180, { start, dur: 0.035, type: 'triangle', vol: 0.09, slideTo: 1100 }));
+      tone(420, { start: 0.32, dur: 0.12, type: 'sine', vol: 0.14, slideTo: 760 });
+      tone(1568, { start: 0.42, dur: 0.4, type: 'sine', vol: 0.07 });
+    },
     pop() {
       tone(600, { dur: 0.09, vol: 0.1, slideTo: 1100 });
     },
