@@ -10,6 +10,7 @@ const GAMES = {
   duel: ['🥊', L('Один на один', 'One on One')],
   lineup: ['📋', L('Склад матчу', 'Match Lineup')],
   archive: ['📷', L('Фотоархів', 'Photo Archive')],
+  sketch: ['✏️', L('Тактичний ескіз', 'Tactical Sketch')],
 };
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

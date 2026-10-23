@@ -55,14 +55,26 @@ class BaseRoom {
   }
 
   // ── чат
-  addChat(seat, text) {
+  // keep: false — повідомлення не потрапляє в історію (бачать лише ті, кому його розіслали зараз).
+  addChat(seat, text, { keep = true } = {}) {
     const clean = String(text || '').replace(/\s+/g, ' ').trim().slice(0, 200);
     if (!clean) return null;
     const msg = { id: ++this.chatSeq, seat, name: this.seats[seat]?.name || 'Гравець', text: clean, t: Date.now() };
-    this.chat.push(msg);
-    if (this.chat.length > 100) this.chat.shift();
+    if (keep) this.keepChat(msg);
     this.touch();
     return msg;
+  }
+
+  // Повідомлення від гри (текст — T(uk, en)): розіслати — this.postChat(msg) (ставить room-server).
+  addSystemChat(text) {
+    const msg = { id: ++this.chatSeq, seat: -1, system: true, text, t: Date.now() };
+    this.keepChat(msg);
+    return msg;
+  }
+
+  keepChat(msg) {
+    this.chat.push(msg);
+    if (this.chat.length > 100) this.chat.shift();
   }
 
   // ── сервісне

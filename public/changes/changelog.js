@@ -5,6 +5,7 @@ window.CHANGELOG = [
   {
     date: '2026-10-23',
     items: [
+      { game: 'sketch', uk: 'Нова гра «Тактичний ескіз»: один малює на серветці футболіста, клуб, футбольний термін, трофей чи стадіон — решта вгадує в чаті. Хто швидше, той більше очок, а художник отримує очки за кожного, хто вгадав. Від 2 до 10 гравців.', en: 'New game “Tactical Sketch”: one player sketches a footballer, a club, a football term, a trophy or a stadium on a napkin — everyone else guesses in the chat. The faster you are, the more you score, and the artist scores for everyone who gets it. 2 to 10 players.' },
       { game: null, uk: 'Футболістів росії й білорусі більше не загадуємо в жодній грі. Спробуєш ввести — побачиш, що з ними сталося 🚢', en: 'Players from russia and belarus are never the answer in any game anymore. Try typing one — you’ll see what happened to them 🚢' },
     ],
   },

@@ -6,6 +6,11 @@
 //                                           необов'язково privateState(seat) — те, що бачить лише цей гравець)
 //     actions   — { подія: (room, seat, payload) => відповідь } — ігрові дії гравця
 //     roomInfo  — (room) => поля для екрана запрошення (налаштування гри)
+//     streams   — { подія: (room, seat, payload) => дані | null } — часті дрібні події (штрихи малюнка): дані йдуть
+//                 іншим гравцям кімнати цією ж подією, без розсилки всього стану
+//   Кімната може мати screenChat(seat, text) → null (звичайне повідомлення) | { hide, only: [місця], reply } —
+//   перевірка чату (відповідь у «Тактичному ескізі»): hide — нікому не показувати, only — лише цим місцям (без історії),
+//   reply — що отримає автор. room.postChat(msg, seats?) — розіслати повідомлення гри (addSystemChat) мовою кожного.
 //   Тексти — парами T(uk, en) (server/core/i18n.js); кожен сокет отримує стан і відповіді своєю мовою.
 const crypto = require('crypto');
 const { T, localize, langOf } = require('./i18n');
@@ -19,7 +24,7 @@ function cleanName(name, lang) {
   return String(name || '').trim().slice(0, 20) || (lang === 'en' ? 'Player' : 'Гравець');
 }
 
-function createRoomServer({ app, io, id, createRoom, actions, roomInfo = () => ({}) }) {
+function createRoomServer({ app, io, id, createRoom, actions, streams = {}, roomInfo = () => ({}) }) {
   const nsp = io.of(`/${id}`);
   const rooms = new Map();
 
@@ -51,6 +56,14 @@ function createRoomServer({ app, io, id, createRoom, actions, roomInfo = () => (
   const stateFor = (room, state, seat, lang) =>
     localize({ ...state, you: seat, ...(room.privateState && seat !== -1 ? room.privateState(seat) : {}) }, lang);
 
+  // Повідомлення чату — кожному сокету кімнати його мовою (seats — лише цим місцям).
+  function sendChat(room, msg, seats = null) {
+    for (const sid of nsp.adapter.rooms.get(room.code) || []) {
+      const s = nsp.sockets.get(sid);
+      if (s && (!seats || seats.includes(room.seatOf(s.data.token)))) s.emit('chat', localize(msg, s.lang));
+    }
+  }
+
   // Кожному сокету — стан кімнати + його власне місце (воно може змінитися, коли хтось виходить).
   function broadcast(room) {
     const state = room.publicState();
@@ -76,12 +89,13 @@ function createRoomServer({ app, io, id, createRoom, actions, roomInfo = () => (
       socket.data = { code: room.code, token, seat: res.seat };
       cb?.({ ok: true, code: room.code, token, seat: res.seat });
       socket.emit('state', stateFor(room, room.publicState(), res.seat, socket.lang));
-      socket.emit('chatHistory', room.chat);
+      socket.emit('chatHistory', localize(room.chat, socket.lang));
     }
 
     socket.on('create', (options = {}, cb) => {
       const code = makeCode();
       const room = createRoom(code, options || {}, broadcast);
+      room.postChat = (msg, seats) => sendChat(room, msg, seats);
       rooms.set(code, room);
       enter(room, crypto.randomUUID(), options?.name, cb);
     });
@@ -100,6 +114,17 @@ function createRoomServer({ app, io, id, createRoom, actions, roomInfo = () => (
         const seat = room.seatOf(socket.data.token);
         if (seat === -1) return reply(cb, { error: NOT_PLAYER });
         reply(cb, handler(room, seat, payload, socket.lang));
+      });
+    }
+
+    // Часті події без відповіді (штрихи): перевіряє кімната, решті кімнати — як є.
+    for (const [event, handler] of Object.entries(streams)) {
+      socket.on(event, (payload) => {
+        const room = currentRoom();
+        const seat = room ? room.seatOf(socket.data.token) : -1;
+        if (seat === -1) return;
+        const data = handler(room, seat, payload);
+        if (data != null) socket.to(room.code).emit(event, data);
       });
     }
 
@@ -126,11 +151,14 @@ function createRoomServer({ app, io, id, createRoom, actions, roomInfo = () => (
       const seat = room.seatOf(socket.data.token);
       if (seat === -1) return reply(cb, { error: NOT_PLAYER });
       if (Date.now() - lastChat < 700) return reply(cb, { error: T('Не так швидко 🙂', 'Not so fast 🙂') });
-      const msg = room.addChat(seat, text);
-      if (!msg) return reply(cb, { error: T('Порожнє повідомлення', 'Empty message') });
+      if (!String(text || '').trim()) return reply(cb, { error: T('Порожнє повідомлення', 'Empty message') });
       lastChat = Date.now();
-      nsp.to(room.code).emit('chat', msg);
-      cb?.({ ok: true });
+      const verdict = room.screenChat?.(seat, String(text)) || null;
+      if (verdict?.hide) return reply(cb, verdict.reply || { ok: true });
+      const msg = room.addChat(seat, text, { keep: !verdict?.only });
+      if (verdict?.only) sendChat(room, msg, verdict.only);
+      else nsp.to(room.code).emit('chat', msg);
+      reply(cb, verdict?.reply || { ok: true });
     });
 
     // Швидкі реакції-емодзі: не частіше ніж раз на секунду.

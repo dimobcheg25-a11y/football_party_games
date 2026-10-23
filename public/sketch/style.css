@@ -1,0 +1,191 @@
+/* Тактичний ескіз. Лобі, таблиця, підсумок — з /path/style.css; тут — серветка-полотно, інструменти, пропуски, стрічка відповідей.
+
+   ── Оформлення гри: серветка в спортбарі. Темний дерев'яний стіл під теплою лампою, паперова серветка з тисненою рамкою
+   і слідом від келиха, малюнок — маркером; заголовки — рукописний Amatic SC; акцент — пивний бурштин.
+   Фірмова анімація — підставка під пиво з очками «прилітає» на серветку, коли хтось вгадав (+ звук clink). */
+:root {
+  --bg: #1b120c; --bg-2: #2c1d13;
+  --surface: rgba(44, 30, 21, 0.92); --surface-solid: #2d1f15; --surface-2: #3d2a1d;
+  --line: rgba(255, 228, 190, 0.12); --line-strong: rgba(255, 228, 190, 0.25);
+  --text: #f7ecdc; --muted: #c4ab8e;
+  --accent: #f2a93b; --accent-ink: #2a1700;
+  --radius: 10px;
+  --display: 'Amatic SC', 'Manrope', cursive;
+  /* серветка */
+  --paper: #fbf8f1; --paper-2: #efe8d9; --ink: #232020; --ink-muted: #6b6257;
+}
+.pitch-bg {
+  background:
+    radial-gradient(ellipse 55% 40% at 50% -6%, rgba(255, 196, 110, 0.22), transparent 70%), /* лампа над стійкою */
+    repeating-linear-gradient(90deg, transparent 0 140px, rgba(0, 0, 0, 0.22) 140px 143px), /* дошки столу */
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.015) 0 2px, transparent 2px 9px, rgba(0, 0, 0, 0.03) 9px 11px, transparent 11px 23px), /* волокна */
+    linear-gradient(180deg, var(--bg-2), var(--bg));
+}
+input::placeholder { color: var(--muted); }
+.round-info b, .room-code, .final h2, .rules-card h3, .answer-card h2 { font-family: var(--display); font-weight: 700; letter-spacing: 0.02em; }
+.round-info b { font-size: 26px; }
+.room-code { font-size: 54px; }
+.final h2 { font-size: 40px; }
+.rules-card h3 { font-size: 26px; }
+.timer { font-family: 'Manrope', sans-serif; color: var(--accent); }
+
+/* логотип: шматок серветки з написом маркером, «ескіз» підкреслено хвилькою */
+.napkin-logo span {
+  display: inline-grid; justify-items: center; padding: 0.12em 0.5em 0.18em; rotate: -3deg;
+  background: var(--paper); color: var(--ink); border-radius: 3px;
+  background-image: radial-gradient(circle at 1px 1px, rgba(140, 120, 90, 0.18) 1px, transparent 1.5px);
+  background-size: 7px 7px;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.5), inset 0 0 0 0.12em var(--paper), inset 0 0 0 0.14em rgba(150, 130, 100, 0.35);
+  font-family: var(--display); font-weight: 700; letter-spacing: 0.04em;
+}
+.napkin-logo small { font-family: var(--display); font-size: 0.42em; letter-spacing: 0.12em; padding: 0; color: var(--ink-muted); }
+.napkin-logo b {
+  background: none; color: var(--ink); transform: none; padding: 0; margin: 0; font-size: 1.15em; line-height: 0.95;
+  text-decoration: underline wavy var(--accent); text-decoration-thickness: 0.06em; text-underline-offset: 0.12em;
+}
+
+/* ── розкладка гри: серветка ліворуч, таблиця й стрічка відповідей праворуч */
+.sketch-game { max-width: 1180px; }
+.sketch-game .game-layout { grid-template-columns: minmax(0, 1fr) 300px; }
+@media (min-width: 761px) {
+  .sketch-game .game-top { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) 300px; }
+}
+.draw-col { display: grid; gap: 10px; min-width: 0; }
+body.sketching #chat-fab, body.sketching #chat-panel { display: none !important; } /* під час гри чат — стрічка поруч */
+
+/* слово: категорія + пропуски (клітинки-літери) */
+.word-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 16px; min-height: 44px; }
+.word-bar .cat { font-size: 13px; font-weight: 800; padding: 4px 11px; border-radius: 99px; background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); white-space: nowrap; }
+.word { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 18px; }
+.word .w { display: inline-flex; gap: 4px; }
+.word i {
+  display: inline-grid; place-items: end center; width: 0.85em; height: 1.15em; font-style: normal;
+  font: 700 32px/1 var(--display); color: var(--text); border-bottom: 3px solid var(--line-strong);
+}
+.word i.o { border-bottom-color: transparent; width: auto; }
+.word.known { display: block; font: 700 38px/1 var(--display); color: var(--accent); letter-spacing: 0.03em; text-align: center;
+  text-decoration: underline wavy var(--accent); text-decoration-thickness: 2px; text-underline-offset: 6px; }
+.word-bar .count { color: var(--muted); font-weight: 700; }
+
+/* серветка: тиснена рамка, згини, слід від келиха; полотно 4:3 */
+.napkin {
+  position: relative; padding: 18px; border-radius: 3px; rotate: -0.4deg;
+  background-color: var(--paper);
+  background-image: radial-gradient(circle at 2px 2px, rgba(140, 120, 90, 0.22) 1.2px, transparent 1.8px);
+  background-size: 9px 9px;
+  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.55), 0 2px 0 rgba(0, 0, 0, 0.25);
+}
+.napkin::before { /* рамка тиснення */
+  content: ""; position: absolute; inset: 8px; border: 2px solid rgba(150, 130, 100, 0.28); border-radius: 2px; pointer-events: none;
+}
+.napkin::after { /* слід від келиха */
+  content: ""; position: absolute; z-index: 2; right: -3%; top: -5%; width: 19%; aspect-ratio: 1; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, transparent 57%, rgba(190, 128, 45, 0.30) 60%, rgba(190, 128, 45, 0.12) 64%, transparent 68%);
+  rotate: 20deg;
+}
+.napkin canvas {
+  position: relative; display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; touch-action: none; cursor: default;
+  background:
+    linear-gradient(90deg, transparent calc(50% - 1px), rgba(120, 100, 70, 0.10) 50%, transparent calc(50% + 2px)), /* згин */
+    linear-gradient(0deg, transparent calc(50% - 1px), rgba(120, 100, 70, 0.08) 50%, transparent calc(50% + 2px)),
+    var(--paper);
+}
+.napkin.can-draw canvas { cursor: crosshair; }
+
+/* поверх полотна: вибір слова, «обирає…», відповідь */
+.napkin-over {
+  --text: var(--ink); --muted: var(--ink-muted);
+  position: absolute; inset: 18px; z-index: 3; display: grid; place-items: center; padding: 16px; overflow: auto;
+  background: color-mix(in srgb, var(--paper) 90%, transparent); color: var(--ink); text-align: center;
+}
+.napkin-over h3, .napkin-over h2 { font-family: var(--display); font-weight: 700; margin: 0 0 10px; }
+.napkin-over h3 { font-size: 34px; }
+.napkin-over h2 { font-size: 44px; line-height: 1; margin: 0 0 8px; color: var(--ink); }
+.napkin-over .wait { font: 700 34px/1.1 var(--display); }
+.napkin-over .rule { margin: 12px 0 0; font-weight: 700; color: #b5302b; font-size: 14px; }
+.pick-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+.pick-card {
+  display: grid; justify-items: center; gap: 8px; min-width: 150px; max-width: 220px; padding: 14px 16px; cursor: pointer;
+  background: #fff; color: var(--ink); border: 2px solid var(--ink); border-radius: 12px 4px 14px 5px; box-shadow: 3px 4px 0 var(--ink);
+  font: 700 28px/1.05 var(--display); transition: transform 0.12s;
+}
+.pick-card:hover { transform: rotate(-1.5deg) translateY(-2px); }
+.pick-card:nth-child(2):hover { transform: rotate(1.5deg) translateY(-2px); }
+.pick-img, .reveal-img { display: grid; place-items: center; width: 84px; height: 84px; border-radius: 50%; overflow: hidden; background: var(--paper-2); }
+.pick-img img, .reveal-img img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.pick-img.clubs, .reveal-img.clubs { border-radius: 10px; background: transparent; }
+.pick-img.clubs img, .reveal-img.clubs img { object-fit: contain; }
+.reveal-card { display: grid; justify-items: center; gap: 4px; }
+.reveal-img { width: 128px; height: 128px; border: 3px solid var(--ink); margin-bottom: 6px; }
+.reveal-img.clubs { border: 0; }
+.reveal-card .round-results { min-width: min(320px, 80vw); margin-top: 8px; }
+.reveal-card .round-results li { background: rgba(0, 0, 0, 0.05); color: var(--ink); }
+.reveal-card .round-results b { color: var(--ink); }
+
+/* підставки під пиво з очками — летять на серветку */
+.coasters { position: absolute; inset: 0; z-index: 4; pointer-events: none; overflow: hidden; }
+.coaster {
+  position: absolute; left: var(--x); top: 28%; width: 104px; aspect-ratio: 1; border-radius: 50%;
+  display: grid; place-content: center; justify-items: center; gap: 2px;
+  background: radial-gradient(circle, #e9d3a6 0 52%, #c9a368 53% 56%, #e2c48b 57% 100%);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.35), inset 0 0 0 5px #b98f52, inset 0 0 0 7px var(--pc);
+  color: #3a2410; animation: coaster 2.6s cubic-bezier(.2, .9, .3, 1.15) forwards;
+}
+.coaster b { font: 700 34px/0.9 var(--display); }
+.coaster span { max-width: 80px; font-size: 11px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@keyframes coaster {
+  0% { transform: translateY(-260%) rotate(-220deg) scale(1.4); opacity: 0; }
+  25% { transform: translateY(0) rotate(var(--r)) scale(1); opacity: 1; }
+  80% { transform: translateY(0) rotate(var(--r)) scale(1); opacity: 1; }
+  100% { transform: translateY(10%) rotate(var(--r)) scale(0.9); opacity: 0; }
+}
+
+/* інструменти художника */
+.tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px 14px; }
+.colors, .sizes { display: flex; gap: 6px; }
+.swatch, .size {
+  width: 34px; height: 34px; border-radius: 50%; cursor: pointer; display: grid; place-items: center; padding: 0;
+  border: 2px solid var(--line-strong); background: var(--c, var(--surface-2)); font-size: 16px;
+}
+.swatch.eraser { background: var(--paper); }
+.swatch.on, .size.on { outline: 3px solid var(--accent); outline-offset: 2px; border-color: transparent; }
+.size { background: var(--surface-2); }
+.size i { width: var(--w); height: var(--w); max-width: 26px; max-height: 26px; border-radius: 50%; background: var(--text); }
+
+/* стрічка відповідей — чат кімнати */
+.feed-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px; display: grid; gap: 8px; }
+.feed { list-style: none; margin: 0; padding: 0; display: grid; align-content: start; gap: 3px; height: 300px; overflow-y: auto; font-size: 14px; }
+.feed li { padding: 3px 8px; border-radius: 8px; overflow-wrap: anywhere; }
+.feed li b { color: var(--pc); }
+.feed li.mine { background: rgba(255, 255, 255, 0.04); }
+.feed li.sys { color: var(--accent); font-weight: 800; text-align: center; }
+.feed-form { display: flex; gap: 6px; }
+.feed-form input { flex: 1; min-width: 0; }
+.scoreboard b { font-family: 'Manrope', sans-serif; font-size: 16px; } /* цифри рукописним шрифтом погано читаються */
+.scoreboard li.drawer { border-color: color-mix(in srgb, var(--accent) 60%, transparent); }
+
+/* вікно підтвердження — шматок серветки */
+.ask-sheet { background: var(--paper); color: var(--ink); --text: var(--ink); --muted: var(--ink-muted); border-radius: 4px; rotate: -0.5deg; }
+.ask-sheet .ask-text { font: 700 30px/1.1 var(--display); }
+
+@media (max-width: 760px) {
+  .sketch-game .game-layout { grid-template-columns: 1fr; }
+  .napkin { padding: 10px; rotate: none; }
+  .napkin::before { inset: 4px; }
+  .napkin-over { inset: 10px; padding: 8px; }
+  .napkin-over h3 { font-size: 26px; }
+  .napkin-over h2 { font-size: 32px; }
+  .pick-card { min-width: 0; flex: 1 1 30%; padding: 8px; font-size: 22px; }
+  .pick-img { width: 56px; height: 56px; }
+  .reveal-img { width: 84px; height: 84px; }
+  .word i { font-size: 26px; }
+  .feed { height: 150px; }
+  .feed-card { order: 0; }
+  .swatch, .size { width: 30px; height: 30px; }
+  .coaster { width: 78px; }
+  .coaster b { font-size: 26px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .coaster { animation: none; display: none; }
+  .pick-card { transition: none; }
+}

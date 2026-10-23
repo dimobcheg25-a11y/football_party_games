@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title data-en="Tactical Sketch — Football party games">Тактичний ескіз</title>
+  <meta name="description" content="Тактичний ескіз — малюй футболіста, клуб чи термін на серветці, друзі вгадують у чаті." data-en-content="Tactical Sketch — sketch a footballer, a club or a term on a napkin, friends guess in the chat." />
+  <meta property="og:site_name" content="Football party games" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://football-party-games.onrender.com/sketch/" />
+  <meta property="og:title" content="Тактичний ескіз — Football party games" data-en-content="Tactical Sketch — Football party games" />
+  <meta property="og:description" content="Малюй футболіста, клуб чи термін на серветці — друзі вгадують у чаті." data-en-content="Sketch a footballer, a club or a term on a napkin — friends guess in the chat." />
+  <meta property="og:locale" content="uk_UA" />
+  <meta property="og:locale:alternate" content="en_US" />
+  <meta name="application-name" content="Football party games" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="theme-color" content="#1b120c" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✏️</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Amatic+SC:wght@700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/shared/theme.css" />
+  <link rel="stylesheet" href="/shared/ui.css" />
+  <link rel="stylesheet" href="/path/style.css" />
+  <link rel="stylesheet" href="/sketch/style.css" />
+</head>
+<body>
+  <div class="pitch-bg" aria-hidden="true"></div>
+
+  <div class="sound-ctl">
+    <button id="mute-btn" class="round-btn" aria-label="Звук" data-en-aria-label="Sound">🔊</button>
+  </div>
+
+  <a class="home-link" href="/" aria-label="Усі ігри — на головну" data-en-aria-label="All games — home"><span class="home-arrow" aria-hidden="true">‹</span><span class="home-text"><span data-en="Football">Футбольні</span> <b data-en="games">ігри</b></span></a>
+
+  <!-- ── Головний екран: налаштування -->
+  <main id="screen-home" class="screen">
+    <header class="hero">
+      <div class="logo napkin-logo" aria-label="Тактичний ескіз" data-en-aria-label="Tactical Sketch"
+        data-en-html="&lt;span aria-hidden=&quot;true&quot;&gt;&lt;small&gt;Tactical&lt;/small&gt;&lt;b&gt;Sketch&lt;/b&gt;&lt;/span&gt;"><span aria-hidden="true"><small>Тактичний</small><b>ескіз</b></span></div>
+      <p class="tagline" data-en="One player sketches on a napkin — the rest guess in the chat. A footballer, a club, a term, a trophy or a stadium.">Один малює на серветці — решта вгадує в чаті. Футболіст, клуб, термін, трофей чи стадіон.</p>
+    </header>
+
+    <section class="card setup">
+      <p id="invite-note" class="invite-note hidden"></p>
+      <button id="resume-btn" class="btn btn-secondary resume hidden"></button>
+
+      <label class="field" for="name-input">
+        <span class="field-label" data-en="Your name">Твоє ім'я</span>
+        <input id="name-input" maxlength="20" placeholder="Наприклад, Пеле" autocomplete="nickname" />
+      </label>
+
+      <div id="setup-options">
+        <div class="field">
+          <span class="field-label" data-en="Footballers">Футболісти</span>
+          <div class="chips" data-opt="difficulty" role="radiogroup" aria-label="Складність" data-en-aria-label="Difficulty">
+            <button type="button" class="chip" data-val="easy" data-en="🟢 Easy">🟢 Легкий</button>
+            <button type="button" class="chip" data-val="normal" data-en="🟡 Normal">🟡 Звичайний</button>
+          </div>
+          <p class="hint" id="difficulty-hint"></p>
+        </div>
+
+        <div class="field">
+          <span class="field-label" data-en="Laps (everyone draws once per lap)">Кіл (за коло кожен малює раз)</span>
+          <div class="chips" data-opt="laps" role="radiogroup" aria-label="Кіл" data-en-aria-label="Laps">
+            <button type="button" class="chip" data-val="1">1</button>
+            <button type="button" class="chip" data-val="2">2</button>
+            <button type="button" class="chip" data-val="3">3</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="field-label" data-en="Time to draw">Час на малюнок</span>
+          <div class="chips" data-opt="drawSeconds" role="radiogroup" aria-label="Час на малюнок" data-en-aria-label="Time to draw">
+            <button type="button" class="chip" data-val="60" data-en="60 s">60 с</button>
+            <button type="button" class="chip" data-val="80" data-en="80 s">80 с</button>
+            <button type="button" class="chip" data-val="100" data-en="100 s">100 с</button>
+          </div>
+        </div>
+      </div>
+
+      <button id="create-btn" class="btn btn-primary btn-lg" data-en="Room with friends">Кімната з друзями</button>
+      <button id="join-btn" class="btn btn-primary btn-lg hidden" data-en="Join the game">Приєднатися до гри</button>
+      <p id="home-error" class="error"></p>
+    </section>
+
+    <section class="card rules-card">
+      <h3 data-en="How to play">Як грати</h3>
+      <ul class="rules-list">
+        <li data-en-html="Players take turns to draw. The artist picks one of three words — a &lt;b&gt;footballer, a club, a football term, a trophy or a stadium&lt;/b&gt; (categories come up equally often).">Гравці малюють по черзі. Художник обирає одне з трьох слів — <b>футболіста, клуб, футбольний термін, трофей чи стадіон</b> (категорії трапляються однаково часто).</li>
+        <li data-en-html="Everyone else writes guesses in the chat. The right answer is hidden from others — they only see that you got it. For a footballer the surname is enough; any language is fine.">Решта пишуть відповіді в чат. Правильну відповідь інші не бачать — лише що ти вгадав. Для футболіста досить прізвища; можна будь-якою мовою.</li>
+        <li data-en-html="&lt;b&gt;Not allowed:&lt;/b&gt; writing letters or words and drawing national flags. Only a drawing!"><b>Не можна:</b> писати літери чи слова й малювати прапори країн. Лише малюнок!</li>
+        <li data-en-html="Gaps show how many letters; at half and three quarters of the time a letter opens.">Пропуски показують, скільки літер; на половині й на ¾ часу відкривається літера.</li>
+        <li data-en-html="Points: a guess is worth 100 → 20 depending on the time left, the first one +20. The artist gets +25 for everyone who guessed.">Очки: вгадав — від 100 до 20 залежно від того, скільки лишилось часу, найшвидшому +20. Художнику — +25 за кожного, хто вгадав.</li>
+      </ul>
+    </section>
+  </main>
+
+  <!-- ── Лобі кімнати -->
+  <main id="screen-lobby" class="screen hidden">
+    <section class="card lobby">
+      <p class="field-label" data-en="Room">Кімната</p>
+      <div class="room-code" id="lobby-code"></div>
+      <div class="share-row">
+        <button id="copy-link" class="btn btn-primary" data-en="Copy invite link">Скопіювати запрошення</button>
+      </div>
+      <div class="opt-chips" id="lobby-options"></div>
+      <ul class="lobby-players" id="lobby-players"></ul>
+      <p id="lobby-notice" class="hint hidden"></p>
+      <button id="start-btn" class="btn btn-primary btn-lg hidden" data-en="Start game">Почати гру</button>
+      <p id="lobby-wait" class="hint"></p>
+      <button class="btn btn-secondary btn-sm btn-leave" data-action="leave" data-en="🚪 Leave room">🚪 Вийти з кімнати</button>
+    </section>
+  </main>
+
+  <!-- ── Гра -->
+  <main id="screen-game" class="screen screen-game sketch-game hidden">
+    <div class="game-top">
+      <div class="round-info" id="round-info"></div>
+      <div class="timer" id="timer"></div>
+      <button class="btn btn-secondary btn-sm btn-leave" data-action="leave" data-en="🚪 Leave game">🚪 Вийти з гри</button>
+    </div>
+
+    <div class="game-layout">
+      <section class="draw-col">
+        <div class="word-bar" id="word-bar"></div>
+        <div class="napkin" id="napkin">
+          <canvas id="canvas" width="1000" height="750" aria-label="Малюнок" data-en-aria-label="Drawing"></canvas>
+          <div class="napkin-over hidden" id="over"></div>
+          <div class="coasters" id="coasters" aria-hidden="true"></div>
+        </div>
+        <div class="tools hidden" id="tools">
+          <div class="colors" id="colors"></div>
+          <div class="sizes" id="sizes"></div>
+          <button type="button" class="btn btn-secondary btn-sm" id="undo-btn" data-en="↶ Undo">↶ Назад</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="clear-btn" data-en="🗑 Clear">🗑 Стерти все</button>
+        </div>
+      </section>
+
+      <aside class="side-col">
+        <section class="table-card">
+          <h3 class="table-title" data-en="Standings">Таблиця</h3>
+          <ol class="scoreboard" id="scoreboard"></ol>
+        </section>
+        <section class="feed-card">
+          <ul class="feed" id="feed"></ul>
+          <form class="feed-form" id="feed-form">
+            <input id="feed-input" maxlength="100" autocomplete="off" placeholder="Твоя відповідь…" data-en-placeholder="Your guess…" />
+            <button class="btn btn-primary btn-sm" aria-label="Надіслати" data-en-aria-label="Send">↑</button>
+          </form>
+        </section>
+        <div class="reactions" id="reactions"></div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- ── Підсумок -->
+  <main id="screen-final" class="screen hidden">
+    <section class="card final">
+      <h2 id="final-title"></h2>
+      <ol class="standings" id="final-standings"></ol>
+      <h3 class="field-label" data-en="What we drew">Що малювали</h3>
+      <ol class="history" id="final-history"></ol>
+      <div class="result-actions">
+        <button id="again-btn" class="btn btn-primary btn-lg" data-en="Play again">Ще одна гра</button>
+        <p id="again-wait" class="hint"></p>
+        <button class="btn btn-ghost" data-action="leave" data-en="Home">На головну</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Чат (лише в кімнаті; під час гри — стрічка поруч із серветкою) -->
+  <button id="chat-fab" class="chat-fab hidden" aria-label="Чат" data-en-aria-label="Chat">💬<span id="chat-badge" class="chat-badge hidden"></span></button>
+  <section id="chat-panel" class="chat-panel hidden" aria-label="Чат кімнати" data-en-aria-label="Room chat">
+    <div class="chat-head"><b data-en="Chat">Чат</b><button class="icon-btn" id="chat-close" aria-label="Закрити" data-en-aria-label="Close">✕</button></div>
+    <ul class="chat-list" id="chat-list"></ul>
+    <form class="chat-form" id="chat-form">
+      <input id="chat-input" maxlength="200" placeholder="Повідомлення…" data-en-placeholder="Message…" autocomplete="off" />
+      <button class="btn btn-primary btn-sm">↑</button>
+    </form>
+  </section>
+
+  <div id="toast" class="toast" role="status"></div>
+
+  <script src="/shared/i18n.js"></script>
+  <script src="/shared/feedback.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/shared/presence.js"></script>
+  <script src="/shared/players.js"></script>
+  <script src="/shared/sounds.js"></script>
+  <script src="/shared/room-client.js"></script>
+  <script src="/sketch/app.js"></script>
+</body>
+</html>

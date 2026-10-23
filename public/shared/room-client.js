@@ -13,6 +13,7 @@
 //     onState(state, prev),                    // новий стан: свої змінні гри, звуки
 //     renderGame(), renderFinal(),             // екрани гри й підсумку (state — g.state)
 //     lobbyExtra(seat) → html,                 // необов'язково: дописати до гравця в лобі
+//     onChat(list, нове?),                     // необов'язково: чат кімнати змінився (своя стрічка в грі; m.system — повідомлення гри)
 //   });
 //   g.$, g.emit, g.act (emit + тост помилки), g.toast, g.escapeHtml, g.initials, g.plural, g.seatName, g.seatStyle, g.SEAT_COLORS,
 //   g.state, g.mySeat, g.serverNow(), g.showScreen, g.store, g.socket, g.setup, g.renderSetup(),
@@ -365,12 +366,13 @@ window.RoomClient = (() => {
     }
     function renderChat() {
       $('#chat-list').innerHTML = chat.length
-        ? chat.map((m) => `<li class="${m.seat === g.mySeat ? 'mine' : ''}" style="${g.seatStyle(m.seat)}"><span class="chat-who">${escapeHtml(m.seat === g.mySeat ? L('Ти', 'You') : m.name)}</span><span class="chat-text">${escapeHtml(m.text)}</span></li>`).join('')
+        ? chat.map((m) => m.system ? `<li class="chat-system">${escapeHtml(m.text)}</li>` : `<li class="${m.seat === g.mySeat ? 'mine' : ''}" style="${g.seatStyle(m.seat)}"><span class="chat-who">${escapeHtml(m.seat === g.mySeat ? L('Ти', 'You') : m.name)}</span><span class="chat-text">${escapeHtml(m.text)}</span></li>`).join('')
         : `<li class="chat-empty">${L('Тут ще тихо', 'Nothing here yet')}</li>`;
       $('#chat-list').scrollTop = 1e6;
     }
-    socket.on('chatHistory', (list) => { chat = list; renderChat(); });
+    socket.on('chatHistory', (list) => { chat = list; renderChat(); cfg.onChat?.(chat); });
     socket.on('chat', (m) => {
+      cfg.onChat?.([...chat, m], m);
       chat.push(m);
       if (chatPanel.classList.contains('hidden') && m.seat !== g.mySeat) unread++;
       renderChat();

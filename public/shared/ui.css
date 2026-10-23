@@ -241,6 +241,7 @@ input::placeholder, textarea::placeholder { color: #6b8577; }
 .chat-list li.mine { justify-self: end; background: color-mix(in srgb, var(--pc) 16%, var(--surface-solid)); }
 .chat-list li.chat-empty { max-width: none; border: 0; background: none; color: var(--muted); text-align: center; justify-self: center; }
 .chat-who { font-size: 11px; font-weight: 800; color: var(--muted); }
+.chat-list li.chat-system { max-width: none; justify-self: center; border: 0; background: none; color: var(--accent); font-size: 13px; font-weight: 700; text-align: center; padding: 2px 8px; }
 .chat-text { font-size: 14px; }
 .chat-form { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--line); }
 .chat-form input { padding: 9px 12px; font-size: 15px; }

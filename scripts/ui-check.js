@@ -173,6 +173,45 @@ const scenarios = {
     for (const x of all) await x.context().close();
   },
 
+  // Тактичний ескіз: художник обирає слово й малює мишею; гість пише хибну, потім правильну відповідь (слово — з екрана художника).
+  async sketch(browser) {
+    const { host, guests } = await room(browser, 'sketch', 3);
+    await shot(host, 'sketch-lobby');
+    await host.click('#start-btn');
+    const all = [host, ...guests];
+    for (const x of all) await x.waitForSelector('#over:not(.hidden)');
+    const drawer = (await Promise.all(all.map(async (x) => ((await x.$('.pick-card')) ? x : null)))).find(Boolean);
+    const guest = all.find((x) => x !== drawer);
+    await shot(drawer, 'sketch-choose');
+    await drawer.click('.pick-card');
+    await drawer.waitForSelector('#tools:not(.hidden)');
+    const box = await drawer.locator('#canvas').boundingBox();
+    const at = (fx, fy) => [box.x + box.width * fx, box.y + box.height * fy];
+    for (const path of [[[0.3, 0.5], [0.4, 0.3], [0.5, 0.5], [0.4, 0.7], [0.3, 0.5]], [[0.55, 0.5], [0.8, 0.5]], [[0.75, 0.42], [0.8, 0.5], [0.75, 0.58]]]) {
+      await drawer.mouse.move(...at(...path[0]));
+      await drawer.mouse.down();
+      for (const p of path.slice(1)) await drawer.mouse.move(...at(...p), { steps: 6 });
+      await drawer.mouse.up();
+    }
+    await drawer.click('.swatch[data-c="#d7262e"]');
+    await drawer.mouse.move(...at(0.15, 0.2));
+    await drawer.mouse.down();
+    await drawer.mouse.move(...at(0.22, 0.28), { steps: 4 });
+    await drawer.mouse.up();
+    const word = (await drawer.textContent('#word-bar .word')).replace(/\s+/g, '');
+    await shot(drawer, 'sketch-drawer');
+    await guest.fill('#feed-input', 'пенальті?');
+    await guest.press('#feed-input', 'Enter');
+    await guest.waitForTimeout(800);
+    await shot(guest, 'sketch-guess');
+    await guest.fill('#feed-input', word);
+    await guest.press('#feed-input', 'Enter');
+    await guest.waitForSelector('.coaster');
+    await shot(guest, 'sketch-coaster');
+    await phoneShot(browser, 'sketch', '/sketch/');
+    for (const x of all) await x.context().close();
+  },
+
   async guess(browser) {
     const p = await person(browser, 'guess');
     await p.goto(`${URL}/guess/`);

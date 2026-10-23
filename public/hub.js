@@ -23,6 +23,8 @@ const ART = {
   lineup: `<span class="a-pitch"><i class="ap-half"></i><i class="ap-circle"></i><i class="ap-box"></i><b class="" style="left:9%;top:50%">1</b><b class="" style="left:28%;top:13%">2</b><b class="" style="left:28%;top:38%">4</b><b class="" style="left:28%;top:62%">5</b><b class="" style="left:28%;top:87%">3</b><b class="" style="left:52%;top:26%">8</b><b class="" style="left:52%;top:50%">6</b><b class="" style="left:52%;top:74%">10</b><b class="" style="left:75%;top:18%">7</b><b class="q" style="left:79%;top:50%">?</b><b class="" style="left:75%;top:82%">11</b></span>`,
   // фото на білому папері, половина квадратиків сітки 5×5 ще закрита
   archive: `<span class="a-print"><span class="a-shot">${[1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1].map((c) => `<i class="${c ? '' : 'o'}"></i>`).join('')}</span></span>`,
+  // серветка з тактичною схемою маркером і слідом від келиха
+  sketch: `<span class="a-napkin"><span class="a-paper"><svg viewBox="0 0 120 80" aria-hidden="true"><g fill="none" stroke="#1f4fd8" stroke-width="3" stroke-linecap="round"><circle cx="30" cy="22" r="6"/><circle cx="30" cy="58" r="6"/><path d="M38 24 Q62 12 82 30" stroke-dasharray="5 5"/><path d="M76 24 l7 6 -9 3"/></g><g stroke="#d7262e" stroke-width="3.5" stroke-linecap="round"><path d="M86 48 l12 12 M98 48 l-12 12"/></g><circle cx="58" cy="62" r="5" fill="#1d1d1f"/></svg></span></span>`,
   duel: `<span class="a-bout"><i class="r">${L('Червоний', 'Red')}</i><b>VS</b><i class="b">${L('Синій', 'Blue')}</i></span>`,
 };
 
