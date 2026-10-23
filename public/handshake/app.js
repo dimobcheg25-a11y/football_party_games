@@ -23,9 +23,9 @@
     },
     hints: {
       difficulty: {
-        easy: L('Відомі гравці, між ними — один: «хто грав і з тим, і з тим?»', 'Famous players with one in between: “who played with both?”'),
-        normal: L('Між стартом і фінішем — два гравці.', 'Two players between the start and the finish.'),
-        fan: L('Три-чотири кроки, кінці — і менш відомі гравці.', 'Three or four steps, and the ends can be lesser-known players.'),
+        easy: L('Найвідоміші гравці, між ними — один: «хто грав і з тим, і з тим?»', 'The most famous players with one in between: “who played with both?”'),
+        normal: L('Найвідоміші гравці, між ними — двоє.', 'The most famous players with two in between.'),
+        fan: L('Три-чотири кроки; кінці — відомі гравці топ-ліг і збірних.', 'Three or four steps; the ends are well-known players from top leagues and national teams.'),
       },
     },
     onSetup() {
