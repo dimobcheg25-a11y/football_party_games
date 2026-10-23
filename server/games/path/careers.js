@@ -36,6 +36,19 @@ try {
 } catch {
   // асисти ще не зібрані (npm run build-stats)
 }
+let facts = {};
+let assists = { to: {} };
+try {
+  facts = require('../../data/facts.json');
+} catch {
+  // зріст ще не зібраний (npm run build-facts)
+}
+try {
+  assists = require('../../data/assists.json');
+} catch {
+  // хто кому асистував — ще не зібрано (npm run build-assists)
+}
+const { nicknameOf } = require('../../data/nicknames');
 
 function recognition(p) {
   const c = careerOf(p);
@@ -86,7 +99,17 @@ function poolFor(era, difficulty) {
 
 const years = (s, e) => (!s ? T(`до ${e}`, `until ${e}`) : e === s ? `${s}` : `${s}–${e ?? ''}`);
 
+// Британські збірні у Wikidata — окремі команди, але назва й прапор в усіх — «Сполучене Королівство»
+const BRITISH = {
+  Q47762: ['Англія', 'England', 'Flag of England.svg'], Q34044: ['Шотландія', 'Scotland', 'Flag of Scotland.svg'],
+  Q180857: ['Уельс', 'Wales', 'Flag of Wales.svg'], Q190978: ['Північна Ірландія', 'Northern Ireland', 'Ulster banner.svg'],
+};
+
 function team(qid) {
+  if (BRITISH[qid]) {
+    const [name, nameEn, flag] = BRITISH[qid];
+    return { name, nameEn, country: name, img: viaServer(`https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(flag)}?width=80`) };
+  }
   const t = data.teams[qid] || { name: '?' };
   const cat = t.cat ? categoryById.get(t.cat) : null;
   // «Барселона (жіночий футбольний клуб)» → «Барселона (жін.)», «Полтава (спортивний клуб)» → «Полтава»
@@ -148,14 +171,26 @@ function stagesFor(p, { start = 'first', showYears = true, showStats = true } = 
 
 // ── підказки: гравець сам обирає, яку взяти; кожна знімає бали з можливих
 // Ціна підказки — частка «кроку» (скільки очок забирає наступний клуб), але не менше min:
-// що коротша кар'єра, то дорожчі підказки. Позиція і збірна — рівноцінні; рік народження слабкий
-// (епоху й так видно з років у клубах); перша літера прізвища — найсильніша, тому найдорожча.
+// що коротша кар'єра, то дорожчі підказки. Позиція і збірна — рівноцінні; рік народження й зріст слабкі
+// (епоху й так видно з років у клубах); хто найбільше асистував і прізвисько — сильні; перша літера прізвища — найсильніша,
+// тому найдорожча. has(p) — підказка є лише для цього гравця (є дані); без has — для всіх.
 const HINTS = [
   { id: 'position', label: T('Позиція', 'Position'), steps: 0.6, min: 5 },
   { id: 'nation', label: T('Збірна', 'National team'), steps: 0.6, min: 5 },
   { id: 'born', label: T('Рік народження', 'Year of birth'), steps: 0.3, min: 3 },
+  { id: 'height', label: T('Зріст', 'Height'), steps: 0.3, min: 3, has: (p) => !!facts[p.qid]?.h },
+  { id: 'partner', label: T('Найбільше гольових йому віддав', 'Most assists to him from'), steps: 1, min: 8, has: (p) => !!topAssister(p) },
+  { id: 'nickname', label: T('Прізвисько', 'Nickname'), steps: 1.2, min: 10, has: (p) => !!nicknameOf(p) },
   { id: 'letter', label: T('Перша літера прізвища', 'First letter of surname'), steps: 2, min: 15 },
 ];
+const hintsFor = (p) => HINTS.filter((h) => !h.has || h.has(p));
+
+// Хто найбільше асистував гравцю (Transfermarkt, приблизно з 2012/13) — гравець бази з 3+ передачами, інакше null.
+const byTm = new Map(players.filter((p) => transfers[p.id]?.tm).map((p) => [transfers[p.id].tm, p]));
+function topAssister(p) {
+  const row = (assists.to[transfers[p.id]?.tm] || []).find(([tm]) => byTm.has(tm) && byTm.get(tm) !== p);
+  return row && row[1] >= 3 ? { p: byTm.get(row[0]), n: row[1] } : null;
+}
 const POSITIONS = { GK: 'Воротар', DF: 'Захисник', MF: 'Півзахисник', FW: 'Нападник' }; // рядками — їх бере й «Вгадай гравця»
 const POSITIONS_EN = { GK: 'Goalkeeper', DF: 'Defender', MF: 'Midfielder', FW: 'Forward' };
 
@@ -171,6 +206,14 @@ function hintValue(p, id, { showStats = true } = {}) {
     const t = team(c.nation.t);
     return { text: T(t.name, t.nameEn), img: t.img, apps: showStats ? c.nation.a : undefined, goals: showStats ? c.nation.g : undefined };
   }
+  if (id === 'height') return { text: facts[p.qid]?.h ? T(`${facts[p.qid].h} см`, `${facts[p.qid].h} cm`) : T('невідомий', 'unknown') };
+  if (id === 'partner') {
+    const a = topAssister(p);
+    if (!a) return { text: T('невідомо', 'unknown') };
+    const n = a.n % 10 === 1 && a.n % 100 !== 11 ? 'передача' : a.n % 10 >= 2 && a.n % 10 <= 4 && (a.n % 100 < 12 || a.n % 100 > 14) ? 'передачі' : 'передач';
+    return { text: T(`${a.p.uk || a.p.name} (${a.n} ${n})`, `${a.p.name} (${a.n} assists)`), img: a.p.photo ? `${a.p.photo}?s=120` : null };
+  }
+  if (id === 'nickname') return { text: nicknameOf(p) || T('немає', 'none') };
   if (id === 'letter') {
     // англійською — літера англійського прізвища (так, як його шукатимуть у списку)
     const first = (n) => `${(n || '').trim().split(/\s+/).pop()[0]?.toUpperCase() || '?'}…`;
@@ -179,4 +222,4 @@ function hintValue(p, id, { showStats = true } = {}) {
   return null;
 }
 
-module.exports = { poolFor, stagesFor, hintValue, careerOf, recognition, team, teams: data.teams, POSITIONS, POSITIONS_EN, HINTS, ERAS, DIFFICULTIES };
+module.exports = { poolFor, stagesFor, hintValue, hintsFor, careerOf, recognition, team, teams: data.teams, POSITIONS, POSITIONS_EN, HINTS, ERAS, DIFFICULTIES };

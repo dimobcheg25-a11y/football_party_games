@@ -7,6 +7,7 @@ const { normalize, categories } = require('../../data');
 const { poolFor, careerOf, team, teams } = require('../path/careers');
 const { leagueOf } = require('../guess/compare');
 const { T } = require('../../core/i18n');
+const { nicknameVariants } = require('../../data/nicknames');
 
 const CATS = {
   players: { icon: '⚽', label: T('Футболіст', 'Footballer') },
@@ -231,9 +232,9 @@ const clubWords = (() => {
   return out;
 })();
 
-// Гравець: повне ім'я обома мовами, псевдоніми, і прізвище (останні слова імені, від 4 літер).
+// Гравець: повне ім'я обома мовами, псевдоніми, прізвиська («Шева», «El Niño») і прізвище (останні слова імені, від 4 літер).
 function playerWord(p) {
-  const full = [p.uk, p.name, ...(p.aliases || [])].filter(Boolean).map(norm);
+  const full = [p.uk, p.name, ...(p.aliases || []), ...nicknameVariants(p)].filter(Boolean).map(norm);
   const tails = [];
   for (const v of [norm(p.uk || ''), norm(p.name)]) {
     const parts = v.split(' ');

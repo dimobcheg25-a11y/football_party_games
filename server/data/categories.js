@@ -100,6 +100,9 @@ const awards = [
   { id: 'TS_L1', level: 'fan', label: 'Найкращий бомбардир сезону Ліги 1', short: 'Бомбардир №1 сезону Ліги 1', icon: '🎯' },
   // Golden Boy — нагорода кращому молодому (до 21) гравцю Європи; у статті головне фото — гравець, тому лише значок
   { id: 'GBOY', level: 'fan', label: 'Golden Boy', icon: '🌟' },
+  // рейтинги «Золотого м'яча» (ballon.json): на перетині з самим «Золотим м'ячем» і одне з одним не ставляться — завжди так
+  { id: 'BDO3', level: 'normal', label: "Трійка «Золотого м'яча»", short: "Топ-3 Золотого м'яча", imageOf: 'BALLON', icon: '🥉', home: ['BALLON', 'BDO10'] },
+  { id: 'BDO10', level: 'fan', label: "Десятка «Золотого м'яча»", short: "Топ-10 Золотого м'яча", imageOf: 'BALLON', icon: '🔟', home: ['BALLON', 'BDO3'] },
 ].map((c) => ({ ...c, type: 'award', colors: ['#d4af37', '#8a6d1d'] }));
 
 const stats = [
@@ -112,6 +115,8 @@ const stats = [
   { id: 'T80', level: 'normal', label: 'Трансфер за €80+ млн', short: 'Трансфер 80+ млн', icon: '💶' },
   { id: 'UCL30', level: 'normal', label: '30+ голів у Лізі чемпіонів', short: '30+ голів у ЛЧ', icon: '⭐' },
   { id: 'JOURNEY', level: 'fan', label: 'Мандрівник: 10+ клубів', short: 'Мандрівник 10+ клубів', icon: '🧳' },
+  { id: 'H190', level: 'normal', label: 'Зріст 190+ см', icon: '📏' },
+  { id: 'H170', level: 'fan', label: 'Зріст до 170 см', icon: '📐' },
 ].map((c) => ({ ...c, type: 'stat', colors: ['#5ad1b8', '#1d6b5c'] }));
 
 // Грав під керівництвом тренера (каденції з Wikidata: клуби + завершені у збірних; перетин ≥ 3 місяців)
@@ -139,6 +144,19 @@ const academies = [
   { id: 'AC_OL', label: 'Вихованець Ліона', short: 'Академія Ліона', clubQid: 'Q704', image: 'Olympique Lyonnais' },
   { id: 'AC_BAY', label: 'Вихованець Баварії', short: 'Академія Баварії', clubQid: 'Q15789', imageOf: 'BAY' },
 ].map((c) => ({ ...c, type: 'academy', level: 'fan', colors: ['#2f6f4f', '#123322'], icon: '🎓' }));
+
+// Віддав зірці гольову передачу (assists.json, Transfermarkt — матчі приблизно з 2012/13); фото — фото зірки (server/data/derived-tags.js)
+const partners = [
+  { id: 'AS_MES', partnerOf: 'lionel-messi', label: 'Асистував Мессі (з 2012)', short: 'Асистував Мессі', en: 'Assisted Messi (since 2012)', enShort: 'Assisted Messi' },
+  { id: 'AS_CR7', partnerOf: 'cristiano-ronaldo', label: 'Асистував Роналду (з 2012)', short: 'Асистував Роналду', en: 'Assisted Ronaldo (since 2012)', enShort: 'Assisted Ronaldo' },
+  { id: 'AS_LEW', partnerOf: 'robert-lewandowski', label: 'Асистував Левандовському (з 2012)', short: 'Асистував Левандовському', en: 'Assisted Lewandowski (since 2012)', enShort: 'Assisted Lewandowski' },
+  { id: 'AS_BNZ', partnerOf: 'karim-benzema', label: 'Асистував Бензема (з 2012)', short: 'Асистував Бензема', en: 'Assisted Benzema (since 2012)', enShort: 'Assisted Benzema' },
+  { id: 'AS_SUA', partnerOf: 'luis-suarez-q26517', label: 'Асистував Суаресу (з 2012)', short: 'Асистував Суаресу', en: 'Assisted Suárez (since 2012)', enShort: 'Assisted Suárez' },
+  { id: 'AS_MBA', partnerOf: 'kylian-mbappe', label: 'Асистував Мбаппе (з 2012)', short: 'Асистував Мбаппе', en: 'Assisted Mbappé (since 2012)', enShort: 'Assisted Mbappé' },
+  { id: 'AS_SAL', partnerOf: 'mohamed-salah', label: 'Асистував Салаху (з 2012)', short: 'Асистував Салаху', en: 'Assisted Salah (since 2012)', enShort: 'Assisted Salah' },
+  { id: 'AS_KAN', partnerOf: 'harry-kane', label: 'Асистував Кейну (з 2012)', short: 'Асистував Кейну', en: 'Assisted Kane (since 2012)', enShort: 'Assisted Kane' },
+  { id: 'AS_HAA', partnerOf: 'erling-haaland', label: 'Асистував Голанду (з 2012)', short: 'Асистував Голанду', en: 'Assisted Haaland (since 2012)', enShort: 'Assisted Haaland' },
+].map((c) => ({ ...c, type: 'partner', level: ['AS_MES', 'AS_CR7'].includes(c.id) ? 'fan' : 'hard', colors: ['#e0663a', '#5c2210'], icon: '🅰️' }));
 
 const positions = [
   { id: 'GK', label: 'Воротар', positionQid: 'Q201330', icon: '🧤' },
@@ -170,6 +188,8 @@ const EN = {
   G300: ['300+ career goals', '300+ goals'], G50N: ['50+ international goals'], CAPS100: ['100+ international caps'],
   A100: ['100+ assists'], T100: ['€100m+ transfer', 'Transfer €100m+'], T80: ['€80m+ transfer', 'Transfer €80m+'],
   UCL30: ['30+ Champions League goals', '30+ UCL goals'], JOURNEY: ['Journeyman: 10+ clubs', 'Journeyman 10+ clubs'],
+  H190: ['Height 190+ cm'], H170: ['Height up to 170 cm'],
+  BDO3: ["Ballon d'Or top 3"], BDO10: ["Ballon d'Or top 10"],
   CO_GUA: ['Played under Guardiola'], CO_FER: ['Played under Ferguson'], CO_MOU: ['Played under Mourinho'], CO_ZID: ['Played under Zidane'],
   CO_KLO: ['Played under Klopp'], CO_ANC: ['Played under Ancelotti'], CO_WEN: ['Played under Wenger'],
   CO_LUE: ['Played under Luis Enrique', 'Under Luis Enrique'], CO_LOB: ['Played under Lobanovskyi', 'Under Lobanovskyi'],
@@ -181,8 +201,8 @@ const EN = {
   GK: ['Goalkeeper'], DF: ['Defender'], MF: ['Midfielder'], FW: ['Forward'],
 };
 
-const categories = [...clubs, ...nations, ...leagues, ...awards, ...stats, ...coaches, ...academies, ...positions];
-for (const c of categories) [c.en, c.enShort] = EN[c.id] || [c.label];
+const categories = [...clubs, ...nations, ...leagues, ...awards, ...stats, ...coaches, ...academies, ...partners, ...positions];
+for (const c of categories) [c.en, c.enShort] = EN[c.id] || [c.en || c.label, c.enShort];
 const categoryById = new Map(categories.map((c) => [c.id, c]));
 
 module.exports = { categories, categoryById };

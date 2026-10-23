@@ -174,11 +174,18 @@
     if (w.length < 2) return w[0] || '';
     return PARTICLES.test(w[w.length - 2]) ? w.slice(-2).join(' ') : w[w.length - 1];
   }
+  // форма: колір тулуба й рукавів + малюнок з Вікіпедії (смуги, «шахи», окантовка) поверх кольору
+  function kitStyle(t, k) {
+    const body = t.kit || (k ? '#1d3f8f' : '#b3121d');
+    const url = (u) => (u ? `url("${u}")` : 'none');
+    return escapeHtml(`--kit:${body};--kit-arms:${t.kitArms || body};--kit-ink:${light(t.kit) && !t.kitPattern ? '#1b2a4a' : '#fff'};`
+      + `--kit-pat:${url(t.kitPattern)}`);
+  }
   let shown = new Set(); // кого вже показали відкритим — анімацію перевороту лише для нових
   function renderTeams() {
     const s = state;
     $('#teams').innerHTML = s.match.teams.map((t, k) => `
-      <section class="team-sheet" style="--kit:${escapeHtml(t.kit || (k ? '#1d3f8f' : '#b3121d'))};--kit-ink:${light(t.kit) ? '#1b2a4a' : '#fff'}">
+      <section class="team-sheet${t.kitPattern ? ' patterned' : ''}" style="${kitStyle(t, k)}">
         <header class="ts-head">${crest(t.img, t.name)}<b>${escapeHtml(t.name)}</b></header>
         <div class="pitch">
           <i class="pl-box"></i><i class="pl-arc"></i><i class="pl-half"></i>

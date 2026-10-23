@@ -5,6 +5,7 @@
 const { playerById } = require('../../data');
 const { BaseRoom } = require('../../core/base-room');
 const { T } = require('../../core/i18n');
+const { nicknameVariants } = require('../../data/nicknames');
 const { poolFor, ERAS, DIFFICULTIES } = require('../path/careers');
 
 const MIN_PLAYERS = 3;
@@ -27,9 +28,11 @@ function shuffle(list) {
   return a;
 }
 
-// Слова імені футболіста (від 4 літер) — щоб агент не написав його в підказці.
-const nameWords = (p) =>
-  [p.uk, p.name].filter(Boolean).join(' ').toLowerCase().split(/[\s\-'’.]+/).filter((w) => w.length >= 4);
+// Слова імені футболіста (від 4 літер) і його прізвиська цілком («Шева», «CR7», «La Pulga») — щоб агент не написав їх у підказці.
+const nameWords = (p) => [
+  ...[p.uk, p.name].filter(Boolean).join(' ').toLowerCase().split(/[\s\-'’.]+/).filter((w) => w.length >= 4),
+  ...nicknameVariants(p).map((n) => n.toLowerCase()).filter((n) => n.length >= 3),
+];
 
 class SpyRoom extends BaseRoom {
   constructor(code, onChange, opts = {}) {

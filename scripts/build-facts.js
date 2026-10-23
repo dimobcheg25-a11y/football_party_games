@@ -1,9 +1,14 @@
 // Додаткові факти про гравців (для гри «Один на один») → server/data/facts.json:
 // { qid: { h: зріст у см, dob: 'YYYY-MM-DD', views: перегляди статті en.wikipedia за останні 12 повних місяців } }.
 // Зріст (P2048) і дата народження (P569, лише з точністю до дня) — з Wikidata пачками; перегляди — Wikimedia REST API.
-// Поля, яких немає, пропускаються. Продовжує з перерваного (прогрес — у facts.progress.json поруч); --fresh — заново.
+// Зріст, якого немає у Wikidata, — з таблиці гравців transfermarkt-datasets (CC0; за tm id з transfers.json).
+// Поля, яких немає, пропускаються. Продовжує з перерваного (прогрес — у facts.progress.json поруч); --fresh — заново;
+// --tm — лише дописати зріст з Transfermarkt (≈10 с).
 const fs = require('fs');
 const path = require('path');
+const zlib = require('zlib');
+const readline = require('readline');
+const { Readable } = require('stream');
 const { getJson, sparql, sleep, qidOf, values } = require('./lib/wikidata');
 
 const DIR = path.join(__dirname, '..', 'server', 'data');
@@ -73,7 +78,52 @@ async function fetchViews(p, range, out) {
   }
 }
 
+// Рядок CSV з лапками → масив полів.
+function csvFields(line) {
+  const out = [];
+  let cur = '', q = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (q) {
+      if (ch === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += ch;
+    } else if (ch === '"') q = true;
+    else if (ch === ',') { out.push(cur); cur = ''; }
+    else cur += ch;
+  }
+  out.push(cur);
+  return out;
+}
+
+// Зріст з Transfermarkt тим, у кого його немає (Wikidata має перевагу).
+async function fillHeightsFromTm(out) {
+  let transfers = {};
+  try { transfers = require('../server/data/transfers.json'); } catch { return 0; }
+  const byTm = new Map();
+  for (const p of players) if (p.qid && transfers[p.id]?.tm) byTm.set(String(transfers[p.id].tm), p.qid);
+  const res = await fetch('https://pub-e682421888d945d684bcae8890b0ec20.r2.dev/data/players.csv.gz');
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const rl = readline.createInterface({ input: Readable.fromWeb(res.body).pipe(zlib.createGunzip()), crlfDelay: Infinity });
+  let head = null, n = 0;
+  for await (const line of rl) {
+    if (!line) continue;
+    const f = csvFields(line);
+    if (!head) { head = Object.fromEntries(f.map((h, i) => [h, i])); continue; }
+    const qid = byTm.get(f[head.player_id]);
+    if (!qid || out[qid]?.h) continue;
+    const cm = Number(f[head.height_in_cm]);
+    if (cm >= 150 && cm <= 215) { (out[qid] ||= {}).h = cm; n++; }
+  }
+  return n;
+}
+
 (async () => {
+  if (process.argv.includes('--tm')) {
+    const out = JSON.parse(fs.readFileSync(OUT, 'utf8'));
+    const n = await fillHeightsFromTm(out);
+    fs.writeFileSync(OUT, JSON.stringify(out));
+    console.log(`Зріст з Transfermarkt: +${n} гравців → ${path.relative(process.cwd(), OUT)}`);
+    return;
+  }
   const fresh = process.argv.includes('--fresh');
   let out = {};
   let progress = { wd: [], views: [] };
@@ -116,6 +166,8 @@ async function fetchViews(p, range, out) {
     if (wait > 0) await sleep(wait);
   }
   save();
+  console.log(`Зріст з Transfermarkt: +${await fillHeightsFromTm(out)}`);
+  fs.writeFileSync(OUT, JSON.stringify(out));
   fs.unlinkSync(PROGRESS); // усе зібрано
   const vals = Object.values(out);
   console.log(`Готово: ${vals.length} гравців; зріст ${vals.filter((o) => o.h).length}, дата ${vals.filter((o) => o.dob).length}, перегляди ${vals.filter((o) => o.views).length} → ${path.relative(process.cwd(), OUT)}`);

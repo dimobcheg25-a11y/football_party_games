@@ -439,8 +439,8 @@
 
   function categoryHtml(cat) {
     const typeLabel = L(
-      { club: 'клуб', nation: 'збірна', award: 'трофей', stat: 'рекорд', position: 'позиція', league: 'ліга', coach: 'тренер', academy: 'академія' },
-      { club: 'club', nation: 'national team', award: 'trophy', stat: 'record', position: 'position', league: 'league', coach: 'manager', academy: 'academy' },
+      { club: 'клуб', nation: 'збірна', award: 'трофей', stat: 'рекорд', position: 'позиція', league: 'ліга', coach: 'тренер', academy: 'академія', partner: 'партнер' },
+      { club: 'club', nation: 'national team', award: 'trophy', stat: 'record', position: 'position', league: 'league', coach: 'manager', academy: 'academy', partner: 'teammate' },
     )[cat.type];
     let crest;
     if (cat.img) {

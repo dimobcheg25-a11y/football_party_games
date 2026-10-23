@@ -14,6 +14,13 @@ try {
 } catch {
   // склади ще не зібрані (npm run build-lineups)
 }
+// форми з Вікіпедії: у самому матчі (фінали) і основна/виїзна команди (npm run build-kits)
+let kits = { match: {}, team: {} };
+try {
+  kits = require('../../data/kits.json');
+} catch {
+  // форм ще немає — лише колір з KITS
+}
 
 // ── прапори: код ФІФА → файл Вікісховища
 const FLAG_FILES = {
@@ -152,6 +159,12 @@ function slotOf(p, m, national, key, extra = {}) {
 // Той самий тренер у різних джерелах — «Alex Ferguson» і «Sir Alex Ferguson», з гравцем бази й без: ключ — англійське ім'я без титулу.
 const coachKeyOf = (c, pl) => normalize(String(pl ? pl.name : c.name).replace(/^Sir\s+/i, ''));
 
+// Форма → поля команди для клієнта: kit — колір тулуба, kitArms — рукави, kitPattern — малюнок тулуба через наш сервер.
+function kitFields(kit) {
+  if (!kit) return { kit: null };
+  return { kit: kit.body, kitArms: kit.arms || kit.body, kitPattern: viaServer(kit.pattern) || null };
+}
+
 function teamOf(t, m, k) {
   const qid = t.qid || UEFA_QIDS[t.uefaTeam] || null;
   const our = qid ? team(qid) : null;
@@ -176,7 +189,9 @@ function teamOf(t, m, k) {
     };
   }
   const img = national ? (qid ? team(qid).img : null) || null : (viaServer(t.logo) || our?.img || null);
-  return { name, img, kit: t.kit || KITS[qid] || null, national, xi, bench, coach, qid };
+  // форма: у цьому матчі → основна з інфобоксу → лише колір (KITS); малюнок (смуги, «шахи») — поверх кольору, як у Вікіпедії
+  const kit = kits.match[m.id]?.[k] || kits.team[qid] || (t.kit || KITS[qid] ? { body: (t.kit || KITS[qid]).toLowerCase() } : null);
+  return { name, img, national, xi, bench, coach, qid, ...kitFields(kit), away: kits.match[m.id] ? null : kitFields(kits.team[qid]?.away) };
 }
 
 const BANNED_CLUBS = /Zenit|CSKA|Spartak|Lokomotiv Moscow|Rubin/i;
@@ -190,8 +205,12 @@ function banned(m) {
 
 function build(m) {
   const teams = m.teams.map((t, k) => teamOf(t, m, k));
-  // однакові кольори (обидва в білому / жовтому) — гостей у темно-синьому, щоб команди не зливались
-  if (teams[0].kit && teams[0].kit.toLowerCase() === teams[1].kit?.toLowerCase()) teams[1].kit = '#1b2a4a';
+  // однакові кольори (обидва в білому / жовтому) — гості у виїзній формі, а якщо її немає — у темно-синьому, щоб команди не зливались.
+  // Форма зі статті про матч — справжня, її не чіпаємо (колір під малюнком там буває будь-який).
+  if (!kits.match[m.id] && teams[0].kit && teams[0].kit === teams[1].kit) {
+    Object.assign(teams[1], teams[1].away?.kit && teams[1].away.kit !== teams[0].kit ? teams[1].away : { kit: '#1b2a4a', kitArms: '#1b2a4a', kitPattern: null });
+  }
+  for (const t of teams) delete t.away;
   const [cu, ce] = compName(m);
   const [ru, re] = ROUNDS[m.round] || [m.round || '', m.round || ''];
   const y = year(m);
@@ -236,4 +255,4 @@ const matchesFor = (cats) => matches.filter((m) => m.tags.some((t) => cats.inclu
 const coaches = [...new Map(matches.flatMap((m) => m.teams.map((t) => t.coach)).filter(Boolean)
   .map((c) => [c.coachKey, { key: c.coachKey, name: c.name, pid: c.pid, photo: c.photo }])).values()];
 
-module.exports = { matches, matchById, matchesFor, CATEGORIES, LEVELS, coaches, flagImg, countryEn };
+module.exports = { matches, matchById, matchesFor, CATEGORIES, LEVELS, coaches, flagImg, countryEn, UEFA_QIDS };

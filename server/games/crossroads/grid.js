@@ -173,12 +173,14 @@ function pickCompatible(mode, mustMatch, taken, count) {
   return options.length >= count ? options.slice(0, count) : null;
 }
 
-const SPECIAL = ['award', 'stat', 'coach', 'academy'];
+const SPECIAL = ['award', 'stat', 'coach', 'academy', 'partner'];
 function validMix(picked, n) {
-  // Трофеї, рекорди, тренери, академії — не більше третини категорій (на 3×3 — дві), основа — клуби, збірні, ліги.
+  // Трофеї, рекорди, тренери, академії, асистенти зірок — не більше третини категорій (на 3×3 — дві), основа — клуби, збірні, ліги.
   if (picked.filter((id) => SPECIAL.includes(typeOf(id))).length > Math.floor((2 * n) / 3)) return false;
   // Тренер — максимум один: два тренери на сітці дають надто вузькі й схожі клітинки.
   if (picked.filter((id) => typeOf(id) === 'coach').length > 1) return false;
+  // Асистент зірки — так само максимум один.
+  if (picked.filter((id) => typeOf(id) === 'partner').length > 1) return false;
   // Ліги — максимум дві: «АПЛ × Серія А» цікаво, але сітка з самих ліг нудна.
   if (picked.filter((id) => typeOf(id) === 'league').length > 2) return false;
   // Позиція — максимум одна: «воротар × нападник» — порожня клітинка, а дві позиції роблять сітку нудною.

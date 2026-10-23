@@ -115,6 +115,12 @@ try {
 } catch {
   // асисти ще не зібрані (npm run build-stats) — без клітинки асистів
 }
+let facts = {};
+try {
+  facts = require('../../data/facts.json');
+} catch {
+  // зріст ще не зібраний (npm run build-facts) — клітинка зросту з «?»
+}
 // Асисти є лише з сезону 2012/13: клітинку показуємо, тільки якщо загаданий почав кар'єру з 2012-го (інакше число неповне).
 const STATS_FROM = 2012;
 
@@ -154,6 +160,7 @@ function profileOf(p) {
     nation,
     position: positionOf(p),
     born: p.born || null,
+    height: facts[p.qid]?.h || null,
     last: { t: last.t, ...team(last.t), current: last.e == null },
     country: leagueOf(last.t),
     countries: new Set(c.clubs.map((x) => leagueOf(x.t)).filter(Boolean)),
@@ -211,6 +218,7 @@ const COLUMNS = [
   { id: 'nation', label: T('Збірна', 'Nation') },
   { id: 'position', label: T('Позиція', 'Position') },
   { id: 'born', label: T('Рік народження', 'Born') },
+  { id: 'height', label: T('Зріст', 'Height') },
   { id: 'last', label: T('Останній клуб', 'Last club') },
   { id: 'league', label: T('Чемпіонат', 'League') },
   { id: 'goals', label: T('Голи в чемпіонатах', 'League goals') },
@@ -263,6 +271,16 @@ function compare(g, t) {
       note: d === 0 ? T('однолітки', 'same age') : t.born > g.born ? T('загаданий молодший', 'mystery player is younger') : T('загаданий старший', 'mystery player is older'),
     };
   } else cells.born = { text: g.born ? String(g.born) : '?', color: 'grey' };
+
+  // зріст: зелена — однаковий, жовта — до 3 см різниці
+  if (g.height && t.height) {
+    const d = Math.abs(g.height - t.height);
+    cells.height = {
+      text: T(`${g.height} см`, `${g.height} cm`),
+      color: d === 0 ? 'green' : d <= 3 ? 'yellow' : 'grey', arrow: d === 0 ? null : t.height > g.height ? 'up' : 'down',
+      note: d === 0 ? T('однаковий зріст', 'same height') : t.height > g.height ? T('загаданий вищий', 'mystery player is taller') : T('загаданий нижчий', 'mystery player is shorter'),
+    };
+  } else cells.height = { text: g.height ? T(`${g.height} см`, `${g.height} cm`) : '?', color: 'grey', note: g.height ? T('зріст загаданого невідомий', 'mystery player’s height unknown') : null };
 
   const playedThere = t.clubs.some((x) => x.t === g.last.t);
   cells.last = {

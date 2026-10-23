@@ -2,11 +2,12 @@
 // Трансфери й вартість — server/data/transfers.json (Transfermarkt; legends до ~2012 — частково, див. manual-transfers.js),
 // голи й матчі — кар'єри з Вікіпедії (голи в чемпіонатах за кожен клуб, матчі й голи за збірну),
 // асисти, гол+пас, рекорди сезону, картки — stats.json (Transfermarkt, з 2012/13), бомбардири турнірів — tournaments.json,
-// трофеї (скільки разів виграв) — honours.json (server/data/honours.js).
+// трофеї (скільки разів виграв) — honours.json (server/data/honours.js), рейтинги «Золотого м'яча» — ballon.json,
+// зріст — facts.json, хто кому асистував — assists.json.
 // Топ = [{ p, value, text, detail }] за спаданням; гравець може бути в топі кілька разів (два великі трансфери, кілька сезонів) —
 // тоді, назвавши його, відкриваєш усі його рядки. p = null — гравця немає в базі: тоді є name, і рядок відкрито одразу (без очок).
 // Тексти тем — парами T(укр, англ) (server/core/i18n.js): гравець бачить свою мову.
-const { players, playerById } = require('../../data');
+const { players, playerById, categories: categoriesList } = require('../../data');
 const { careerOf, team, teams, poolFor, recognition } = require('../path/careers');
 const compare = require('../guess/compare');
 const { T } = require('../../core/i18n');
@@ -26,6 +27,24 @@ let transfers = {};
 let tmClubs = {};
 let tournaments = {};
 let stats = { names: {}, comp: {}, club: {} };
+let ballon = {};
+let facts = {};
+let assists = { names: {}, to: {}, by: {} };
+try {
+  ballon = require('../../data/ballon.json');
+} catch {
+  // рейтинги «Золотого м'яча» ще не зібрані (npm run build-ballon)
+}
+try {
+  facts = require('../../data/facts.json');
+} catch {
+  // зріст ще не зібраний (npm run build-facts)
+}
+try {
+  assists = require('../../data/assists.json');
+} catch {
+  // хто кому асистував — ще не зібрано (npm run build-assists)
+}
 try {
   stats = require('../../data/stats.json');
 } catch {
@@ -47,6 +66,7 @@ const SIZES = [5, 10, 20];
 const CATEGORIES = {
   transfers: T('Трансфери', 'Transfers'), goals: T('Голи', 'Goals'), assists: T('Асисти', 'Assists'),
   apps: T('Матчі й кар’єра', 'Appearances & career'), cards: T('Картки', 'Cards'), trophies: T('Трофеї', 'Trophies'),
+  ballon: T('Золотий м’яч', 'Ballon d’Or'), height: T('Зріст', 'Height'),
 };
 // Скільки рядків топу можна відкрити одразу (гравців немає в базі): більше — тема для цього розміру не годиться.
 const MAX_MISSING = 0.25;
@@ -364,6 +384,95 @@ for (const [country, names] of Object.entries(LEAGUE_TITLES)) {
   honoursTopic(`honours-league:${country}`, T(`Найбільше чемпіонств ${LEAGUE_OF[country]}`, `Most league titles: ${countryEn(country)}`), n, timesT, (h) => summary(h, ['ucl', 'uel']));
 }
 
+// ── «Золотий м'яч»: рейтинги по роках (ballon.json, Вікіпедія) — скільки разів у трійці / десятці / рейтингу, рейтинг окремого року
+const placeT = (n) => T(`${n}-е місце`, `${n}${n % 10 === 1 && n % 100 !== 11 ? 'st' : n % 10 === 2 && n % 100 !== 12 ? 'nd' : n % 10 === 3 && n % 100 !== 13 ? 'rd' : 'th'} place`);
+const pointsT = (n) => T(`${n} ${plural3('бал', 'бали', 'балів')(n)}`, en1(n, 'point', 'points'));
+const BALLON_NOTE = T('За рейтингами «Золотого м’яча» у Вікіпедії (2010–2015 — FIFA Ballon d’Or; 2020-го нагороду не вручали).', 'Per the Ballon d’Or rankings on Wikipedia (2010–2015 — FIFA Ballon d’Or; not awarded in 2020).');
+const ballonOf = new Map(); // id → [[рік, місце]]
+for (const [y, list] of Object.entries(ballon)) {
+  for (const [id, place] of list) if (id && playerById.get(id)) (ballonOf.get(id) || ballonOf.set(id, []).get(id)).push([Number(y), place]);
+}
+const yearsText = (list) => { const ys = list.map(([y]) => y); return ys.length > 4 ? `${ys.slice(0, 3).join(', ')}… ${ys[ys.length - 1]}` : ys.join(', '); };
+const ballonCount = (id, title, max, filter = () => true) => addTopic(id, 'ballon', title, [...ballonOf].filter(([pid]) => filter(playerById.get(pid))).map(([pid, list]) => {
+  const hits = list.filter(([, place]) => place <= max);
+  const text = yearsText(hits);
+  return { p: playerById.get(pid), value: hits.length, text: timesT(hits.length), detail: T(text, text) };
+}), BALLON_NOTE);
+ballonCount('ballon-top3', T('Найбільше разів у трійці «Золотого м’яча»', 'Most Ballon d’Or top-3 finishes'), 3);
+ballonCount('ballon-top10', T('Найбільше разів у десятці «Золотого м’яча»', 'Most Ballon d’Or top-10 finishes'), 10);
+ballonCount('ballon-any', T('Найбільше разів у рейтингу «Золотого м’яча»', 'Most Ballon d’Or ranking appearances'), Infinity);
+ballonCount('ballon-nowin', T('Найчастіше в десятці «Золотого м’яча» — без перемоги', 'Most Ballon d’Or top-10 finishes without winning'), 10, (p) => !ballonOf.get(p.id).some(([, place]) => place === 1));
+// найвище місце — менше краще: value = 100 − місце
+const bestEntry = (p) => {
+  const [y, place] = [...ballonOf.get(p.id)].sort((a, b) => a[1] - b[1] || a[0] - b[0])[0];
+  return { p, value: 100 - place, text: placeT(place), detail: T(String(y), String(y)) };
+};
+const citizenship = (() => { try { return require('../../data/citizenship.json'); } catch { return {}; } })();
+const ukrBorn = (p) => ukr(p) || (citizenship[p.qid] || []).includes('UA'); // і радянські українці (Блохін, Бєланов)
+addTopic('ballon-ua', 'ballon', T('Українці в рейтингу «Золотого м’яча»: найвище місце', 'Ukrainians in the Ballon d’Or rankings: best finish'),
+  [...ballonOf.keys()].map((id) => playerById.get(id)).filter(ukrBorn).map(bestEntry), BALLON_NOTE);
+const ballonByNation = new Map();
+for (const id of ballonOf.keys()) {
+  const n = careerOf(playerById.get(id))?.nation?.t;
+  if (n) (ballonByNation.get(n) || ballonByNation.set(n, []).get(n)).push(playerById.get(id));
+}
+for (const [q, list] of ballonByNation) {
+  const name = nationName(q);
+  if (!name || BANNED.has(name) || name === 'Україна' || list.length < 12) continue;
+  ballonCount(`ballon-nation:${q}`, T(`Найбільше разів у рейтингу «Золотого м’яча»: ${name}`, `Most Ballon d’Or ranking appearances: ${countryEn(name)}`), Infinity, (p) => careerOf(p)?.nation?.t === q);
+}
+// рейтинг окремого року — лише повний (є переможець і гравців бази досить)
+for (const [y, list] of Object.entries(ballon)) {
+  if (list[0]?.[1] !== 1) continue;
+  addTopic(`ballon-year:${y}`, 'ballon', T(`Рейтинг «Золотого м’яча» ${y}`, `Ballon d’Or ${y} ranking`), list.map(([id, place, pts, name]) => ({
+    p: id ? playerById.get(id) || null : null, name: name || null, value: 100 - place, text: placeT(place), detail: pts ? pointsT(pts) : null,
+  })), BALLON_NOTE);
+}
+
+// ── зріст (facts.json: Wikidata, де немає — Transfermarkt) — серед упізнаваних (топ-1300), інакше топ з невідомих велетнів
+const HEIGHT_NOTE = T('Зріст — за Вікіданими (де немає — за Transfermarkt); серед відомих гравців нашої бази.', 'Height per Wikidata (Transfermarkt where missing); among well-known players in our database.');
+const cmT = (h) => T(`${h} см`, `${h} cm`);
+const heightPool = poolFor('all', 'fan').filter((p) => facts[p.qid]?.h);
+const tall = (list) => list.map((p) => ({ p, value: facts[p.qid].h, text: cmT(facts[p.qid].h), detail: null }));
+const short = (list) => list.map((p) => ({ p, value: 300 - facts[p.qid].h, text: cmT(facts[p.qid].h), detail: null })); // нижчий — вище в топі
+const mainPos = (p) => ['GK', 'DF', 'MF', 'FW'].find((t) => p.tags.has(t));
+addTopic('height-tall', 'height', T('Найвищі футболісти', 'Tallest footballers'), tall(heightPool), HEIGHT_NOTE);
+addTopic('height-short', 'height', T('Найнижчі футболісти', 'Shortest footballers'), short(heightPool), HEIGHT_NOTE);
+const HEIGHT_POS = { GK: ['воротарі', 'goalkeepers'], DF: ['захисники', 'defenders'], MF: ['півзахисники', 'midfielders'], FW: ['нападники', 'forwards'] };
+for (const [pos, [uk, en]] of Object.entries(HEIGHT_POS)) {
+  const list = heightPool.filter((p) => mainPos(p) === pos);
+  addTopic(`height-tall:${pos}`, 'height', T(`Найвищі ${uk}`, `Tallest ${en}`), tall(list), HEIGHT_NOTE);
+  if (pos !== 'GK') addTopic(`height-short:${pos}`, 'height', T(`Найнижчі ${uk}`, `Shortest ${en}`), short(list), HEIGHT_NOTE);
+}
+// за клубами з категорій бази і збірними
+const heightWide = poolFor('all', 'expert').filter((p) => facts[p.qid]?.h);
+for (const c of categoriesList.filter((x) => x.type === 'club' && x.qid)) {
+  const list = heightWide.filter((p) => careerOf(p)?.clubs.some((x) => x.t === c.qid));
+  const name = clubTitle(c.qid);
+  addTopic(`height-club:${c.qid}`, 'height', T(`Найвищі гравці: ${name.uk}`, `Tallest players: ${name.en}`), tall(list), HEIGHT_NOTE);
+}
+for (const c of categoriesList.filter((x) => x.type === 'nation' && x.qid)) {
+  const list = heightWide.filter((p) => careerOf(p)?.nation?.t === c.qid);
+  addTopic(`height-nation:${c.qid}`, 'height', T(`Найвищі гравці збірної: ${c.label}`, `Tallest players: ${c.en}`), tall(list), HEIGHT_NOTE);
+}
+
+// ── хто кому асистував (assists.json, Transfermarkt — матчі приблизно з 2012/13): лише про найвідоміших (топ-400)
+const ASSIST_NOTE = T('Гольові передачі в усіх матчах (клуби й збірні) приблизно з сезону 2012/13 — за Transfermarkt.', 'Assists in all matches (club and national team) since about the 2012/13 season — per Transfermarkt.');
+const passesT = (n) => T(`${n} ${plural3('передача', 'передачі', 'передач')(n)}`, en1(n, 'assist', 'assists'));
+const assistClub = (id) => (tmClubs[id] ? clubName(id) : null);
+for (const p of poolFor('all', 'easy')) {
+  const tm = transfers[p.id]?.tm;
+  if (!tm) continue;
+  const name = T(p.uk || p.name, p.name);
+  const rows = (list) => list.filter(([other]) => byTm.get(other) !== p).map(([other, n, club]) => ({
+    p: byTm.get(other) || null, name: assists.names[other] || '?', value: n, text: passesT(n), detail: assistClub(club),
+  }));
+  const to = assists.to[tm] || [], by = assists.by[tm] || [];
+  // лише коли є про що питати: у десятому рядку — 3+ передачі
+  if (to.length >= 10 && to[9][1] >= 3) addTopic(`assist-to:${p.id}`, 'assists', T(`Хто найбільше асистував: ${name.uk}`, `Who assisted ${name.en} the most`), rows(to), ASSIST_NOTE);
+  if (by.length >= 10 && by[9][1] >= 3) addTopic(`assist-by:${p.id}`, 'assists', T(`Кому найбільше асистував: ${name.uk}`, `Who ${name.en} assisted the most`), rows(by), ASSIST_NOTE);
+}
+
 // Для вибору теми господарем: тип (загальні / клуб / ліга / збірна / турнір), країна й клуб — щоб фільтрувати список.
 const LEAGUE_COUNTRY = {
   GB1: 'Англія', ES1: 'Іспанія', IT1: 'Італія', L1: 'Німеччина', FR1: 'Франція', UKR1: 'Україна', PO1: 'Португалія', NL1: 'Нідерланди',
@@ -378,6 +487,11 @@ for (const t of topics) {
   } else if (kind === 'club-stat') Object.assign(t, { kind: 'club', country: leagueOf(tmClubs[key].team), club: clubName(Number(key)) });
   else if (kind === 'fees-nation') Object.assign(t, { kind: 'nation', country: nationName(key) });
   else if (['fees-age', 'fees-pos', 'value-pos', 'fees-decade', 'fees-move', 'journeymen'].includes(kind)) t.kind = 'misc';
+  else if ((kind === 'height-tall' || kind === 'height-short') && key) t.kind = 'misc'; // за позицією
+  else if (kind === 'assist-to' || kind === 'assist-by') t.kind = 'player';
+  else if (kind === 'ballon-year') t.kind = 'year';
+  else if (kind === 'ballon-nation' || kind === 'height-nation') Object.assign(t, { kind: 'nation', country: nationName(key) });
+  else if (kind === 'height-club') Object.assign(t, { kind: 'club', country: leagueOf(key), club: clubTitle(key) });
   else if (kind === 'buys' || kind === 'sales') Object.assign(t, { kind: 'club', country: leagueOf(tmClubs[key].team), club: clubName(Number(key)) });
   else if (kind === 'club-goals' || kind === 'club-apps') Object.assign(t, { kind: 'club', country: leagueOf(key), club: clubTitle(key) });
   else if (kind === 'league-buys') Object.assign(t, { kind: 'league', country: LEAGUE_COUNTRY[key] });

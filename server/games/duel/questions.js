@@ -17,6 +17,14 @@ const transfers = tryRequire('../../data/transfers.json', {});
 const stats = tryRequire('../../data/stats.json', null);
 const facts = tryRequire('../../data/facts.json', {}); // { qid: { h: см, dob: 'YYYY-MM-DD', views: перегляди за рік } }
 const instagram = tryRequire('../../data/manual-instagram.js', { date: null, followers: {} });
+const ballon = tryRequire('../../data/ballon.json', {}); // { рік: [[id, місце, очки]] }
+
+// «Золотий м'яч»: id → [[рік, місце]]
+const ballonRanks = new Map();
+for (const [y, list] of Object.entries(ballon)) for (const [id, place] of list) if (id) (ballonRanks.get(id) || ballonRanks.set(id, []).get(id)).push([Number(y), place]);
+const ballonOf = (p) => ballonRanks.get(p.id) || null;
+const ballonYears = (p, max) => { const ys = ballonOf(p).filter(([, x]) => x <= max).map(([y]) => y); return ys.length > 5 ? `${ys.slice(0, 4).join(', ')}… ${ys[ys.length - 1]}` : ys.join(', ') || null; };
+const BALLON_SRC = T('За рейтингами «Золотого м’яча» у Вікіпедії (лише гравці, які хоч раз у них потрапляли).', 'Per the Ballon d’Or rankings on Wikipedia (only players who were ranked at least once).');
 
 const NOW = new Date().getFullYear();
 const STATS_FROM = 2012; // статистика Transfermarkt — з сезону 2012/13
@@ -214,6 +222,29 @@ const QUESTIONS = [
     value: (p) => count(honoursOf(p), 'ucl'),
     show: plain,
     gap: { kind: 'abs', easy: 2, hard: 1 },
+  },
+
+  // рейтинги «Золотого м'яча» (ballon.json) — лише ті, хто хоч раз у них потрапляв
+  {
+    id: 'ballonTop10', group: 'trophies',
+    title: T('Хто частіше потрапляв у десятку «Золотого м’яча»?', 'Who has more Ballon d’Or top-10 finishes?'), unit: T('разів у десятці', 'top-10 finishes'),
+    note: BALLON_SRC,
+    value: (p) => (ballonOf(p) ? ballonOf(p).filter(([, place]) => place <= 10).length : null),
+    show: (v, p) => ({ num: v, dec: 0, detail: ballonYears(p, 10) }),
+    gap: { kind: 'abs', easy: 3, hard: 1 },
+  },
+  {
+    id: 'ballonBest', group: 'trophies',
+    title: T('Хто піднімався вище в рейтингу «Золотого м’яча»?', 'Who has the better Ballon d’Or finish?'), unit: T('найвище місце', 'best finish'),
+    note: BALLON_SRC,
+    // менше місце — краще, тож значення «100 − місце»; показуємо саме місце
+    value: (p) => (ballonOf(p) ? 100 - Math.min(...ballonOf(p).map(([, place]) => place)) : null),
+    show: (v, p) => {
+      const place = 100 - v;
+      const years = ballonOf(p).filter(([, x]) => x === place).map(([y]) => y);
+      return { num: place, dec: 0, post: T('-е місце', place === 1 ? 'st' : place === 2 ? 'nd' : place === 3 ? 'rd' : 'th'), detail: years.join(', ') };
+    },
+    gap: { kind: 'abs', easy: 8, hard: 2 },
   },
 
   // ── популярність

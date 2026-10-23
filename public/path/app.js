@@ -1,5 +1,6 @@
 // «Шлях футболіста» — клієнт. Спільне (налаштування, вхід, лобі, чат, вихід) — /shared/room-client.js; тут — етапи кар'єри, підказки, підсумок.
 (() => {
+  const LABELED = new Set(['partner', 'nickname']); // на картці відповіді — з підписом (інакше незрозуміло, що це за ім'я)
   const { ERA: ERA_LABELS, DIFF: DIFF_LABELS } = RoomClient.LABELS;
   const { L, name: pname } = window.I18n;
   const pl = window.I18n.plural;
@@ -115,7 +116,7 @@
       rv.innerHTML = `<div class="answer-card">
           <div class="answer-photo">${a.photo ? `<img src="${a.photo}" alt="" />` : `<span>${escapeHtml(initials(a.name))}</span>`}</div>
           <div><small>${L('Це був', 'It was')}</small><h2>${escapeHtml(pname(a))}</h2>${a.uk && a.uk !== a.name && window.I18n.lang === 'uk' ? `<small class="muted">${escapeHtml(a.name)}</small>` : ''}
-            <div class="facts">${a.facts.map((f) => `<span>${f.img ? `<img src="${f.img}" alt="" />` : ''}${escapeHtml(f.text)}${f.apps != null ? ` · ${f.apps} / ${f.goals ?? '—'}` : ''}</span>`).join('')}</div></div>
+            <div class="facts">${a.facts.map((f) => `<span>${f.img ? `<img src="${f.img}" alt="" />` : ''}${LABELED.has(f.id) ? `${escapeHtml(f.label)}: ` : ''}${escapeHtml(f.text)}${f.apps != null ? ` · ${f.apps} / ${f.goals ?? '—'}` : ''}</span>`).join('')}</div></div>
         </div>
         ${s.solo ? '' : `<ul class="round-results">${results}</ul>`}
         <button id="next-btn" class="btn btn-primary btn-lg" ${iVoted ? 'disabled' : ''}>${s.round >= s.rounds ? L('Підсумки', 'Results') : L('Наступний гравець →', 'Next player →')}</button>`;

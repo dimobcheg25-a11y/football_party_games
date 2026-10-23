@@ -3,6 +3,9 @@
 //   UCL30 — 30+ голів у Лізі чемпіонів (tournaments.json, з Вікіпедії)
 //   T80   — трансфер за €80+ млн (transfers.json)
 //   JOURNEY — «мандрівник»: 10+ різних клубів у кар'єрі (повернення в той самий клуб — один клуб; careers.json)
+//   H190 / H170 — зріст 190+ / до 170 см (facts.json: Wikidata, де немає — Transfermarkt)
+//   BDO3 / BDO10 — хоч раз у трійці / десятці рейтингу «Золотого м'яча» (ballon.json)
+//   AS_* — віддав зірці гольову передачу (assists.json, Transfermarkt з ~2012); фото категорії — фото зірки
 const load = (file) => {
   try {
     return require(file);
@@ -12,6 +15,8 @@ const load = (file) => {
 };
 
 const JOURNEY_CLUBS = 10;
+const TALL = 190;
+const SHORT = 170;
 
 // Клуби, де гравець не зіграв жодного матчу (підписав, але не грав; оренда без матчів) — це не етап кар'єри.
 // Лишаємо лише поточний клуб (ще без матчів). Той самий об'єкт careers.json бачать усі ігри (кеш require), тож чистимо один раз.
@@ -59,8 +64,12 @@ function addDerivedTags(players) {
   const stats = load('./stats.json');
   const tournaments = load('./tournaments.json');
   const careers = load('./careers.json');
+  const facts = load('./facts.json') || {};
+  const ballon = load('./ballon.json') || {};
+  const assists = load('./assists.json');
   cleanCareers(careers);
   const byId = new Map(players.map((p) => [p.id, p]));
+  const byTm = new Map(players.filter((p) => transfers[p.id]?.tm).map((p) => [transfers[p.id].tm, p]));
 
   for (const p of players) {
     const t = transfers[p.id];
@@ -74,6 +83,26 @@ function addDerivedTags(players) {
   }
   for (const [id, goals] of tournaments?.ucl || []) {
     if (id && goals >= 30) byId.get(id)?.tags.add('UCL30');
+  }
+  for (const p of players) {
+    const h = facts[p.qid]?.h;
+    if (h >= TALL) p.tags.add('H190');
+    if (h && h <= SHORT) p.tags.add('H170');
+  }
+  for (const list of Object.values(ballon)) {
+    for (const [id, place] of list) {
+      if (!id) continue;
+      if (place <= 3) byId.get(id)?.tags.add('BDO3');
+      if (place <= 10) byId.get(id)?.tags.add('BDO10');
+    }
+  }
+  // «асистенти зірки»: категорії з partnerOf (categories.js)
+  const { categories } = require('./categories');
+  for (const c of categories.filter((x) => x.partnerOf)) {
+    const star = byId.get(c.partnerOf);
+    if (!star) continue;
+    c.img = star.photo;
+    for (const [tm, n] of (assists?.to?.[transfers[star.id]?.tm] || [])) byTm.get(tm)?.tags.add(c.id);
   }
 }
 

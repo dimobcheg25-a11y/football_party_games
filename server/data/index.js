@@ -52,6 +52,7 @@ const players = rawPlayers.filter((p) => !EXCLUDED.has(p.qid) && !isBanned(p)).m
 }));
 require('./derived-tags').addDerivedTags(players); // 100+ асистів, 30+ голів у ЛЧ, трансфер 80+ млн, мандрівник
 const playerById = new Map(players.map((p) => [p.id, p]));
+const { nicknameVariants } = require('./nicknames');
 
 function matches(player, categoryId) {
   return player.tags.has(categoryId);
@@ -66,7 +67,7 @@ const publicPlayers = players.map((p) => ({
   uk: p.uk,
   born: p.born,
   thumb: p.photo ? `${p.photo}?s=120` : null, // мініатюра 120 px
-  aliases: p.aliases,
+  aliases: [...(p.aliases || []), ...nicknameVariants(p)], // і прізвиська: «Шева», «Kun» теж знаходять гравця
 })).concat(bannedPlayers.map((p) => ({ // лише для підказок: сірі, з принизливою приміткою, вибрати не можна
   id: p.id, name: p.name, ru: p.ru, uk: p.uk, born: p.born, thumb: null, aliases: p.aliases, banned: true,
 })));

@@ -14,11 +14,12 @@ for (const c of categories) {
   if (c.type === 'league') TIER[c.id] = c.level === 'fan' ? 3 : 1;
   if (c.type === 'coach') TIER[c.id] = 1;
   if (c.type === 'academy') TIER[c.id] = 2;
+  if (c.type === 'partner') TIER[c.id] = 3;
 }
 setTier(0, ['BALLON', 'WC']);
-setTier(1, ['UCL', 'EURO', 'APL', 'CH_IT', 'CH_ES', 'CH_DE', 'CAPS100', 'G300']);
-setTier(2, ['COPA', 'UEL', 'BOOT', 'T80', 'T100', 'UCL30', 'G50N', 'A100', 'CO_LUE', 'CO_LOB']);
-setTier(3, ['TS_EPL', 'TS_SA', 'TS_LL', 'TS_BL', 'TS_L1', 'GBOY', 'JOURNEY']);
+setTier(1, ['UCL', 'EURO', 'APL', 'CH_IT', 'CH_ES', 'CH_DE', 'CAPS100', 'G300', 'BDO3']);
+setTier(2, ['COPA', 'UEL', 'BOOT', 'T80', 'T100', 'UCL30', 'G50N', 'A100', 'CO_LUE', 'CO_LOB', 'BDO10', 'H190']);
+setTier(3, ['TS_EPL', 'TS_SA', 'TS_LL', 'TS_BL', 'TS_L1', 'GBOY', 'JOURNEY', 'H170']);
 const BORN_TIER = 2; // рік народження — складна
 const NAME_TIER = 3; // тезки — підступна
 
@@ -117,13 +118,16 @@ function uniquePartitions(board, groups) {
 }
 
 // Ознаки, які не можна ставити поруч: дві однакові за суттю (рік і рік, тезки й тезки) — інакше нудно.
-const clash = (a, b) => (a.kind === 'born' && b.kind === 'born') || (a.kind === 'name' && b.kind === 'name') || a.key === b.key;
+const clash = (a, b) => (a.kind === 'born' && b.kind === 'born') || (a.kind === 'name' && b.kind === 'name')
+  || (a.kind === 'partner' && b.kind === 'partner') || a.key === b.key;
+// «Асистував зірці» перетинається з клубами майже завжди, тож як «пов'язана» ознака вигравала б щоразу — беремо її рідше
+const RARE = { partner: 0.25 };
 
 // Одна спроба зібрати головоломку; null — не вийшло.
 function attempt(features, cfg, rnd) {
   const chosen = [];
   for (const tier of cfg.tiers) {
-    const options = shuffle(features.filter((f) => f.tier === tier && !chosen.some((c) => clash(c, f))), rnd);
+    const options = shuffle(features.filter((f) => f.tier === tier && !chosen.some((c) => clash(c, f)) && (!RARE[f.kind] || rnd() < RARE[f.kind])), rnd);
     // пастки бувають, коли ознаки перетинаються — тож після першої беремо пов'язану з уже обраними, якщо така є
     const related = options.find((f) => chosen.some((c) => f.members.filter((p) => c.test(p)).length >= 2));
     const pick = chosen.length && related && rnd() < 0.7 ? related : options[0];

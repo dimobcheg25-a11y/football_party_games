@@ -5,7 +5,7 @@
 const { playerById } = require('../../data');
 const { BaseRoom } = require('../../core/base-room');
 const { T } = require('../../core/i18n');
-const { poolFor, stagesFor, hintValue, HINTS, ERAS, DIFFICULTIES } = require('./careers');
+const { poolFor, stagesFor, hintValue, hintsFor, HINTS, ERAS, DIFFICULTIES } = require('./careers');
 
 // Очки: на першому клубі — MAX, на останньому — LAST, між ними рівномірно (для кар'єри будь-якої довжини
 // останні клуби ще мають вагу). Правильна відповідь з підказками — щонайменше MIN.
@@ -15,7 +15,9 @@ const MIN_POINTS = 5;
 const stagePoints = (n) =>
   Array.from({ length: n }, (_, i) => (n === 1 ? MAX_POINTS : Math.round(MAX_POINTS - (i * (MAX_POINTS - LAST_POINTS)) / (n - 1))));
 const stepFor = (n) => (MAX_POINTS - LAST_POINTS) / Math.max(1, n - 1);
-const hintCosts = (n) => HINTS.map((h) => ({ id: h.id, label: h.label, cost: Math.max(h.min, Math.round(h.steps * stepFor(n))) }));
+// Підказки для цього гравця (зріст, прізвисько… — лише якщо є дані) з ціною для кар'єри з n клубів.
+const hintCosts = (n, p = null) => (p ? hintsFor(p) : HINTS.filter((h) => !h.has))
+  .map((h) => ({ id: h.id, label: h.label, cost: Math.max(h.min, Math.round(h.steps * stepFor(n))) }));
 const ALLOWED_TIMERS = [0, 15, 20, 30, 45]; // секунд на етап; 0 — без обмеження
 const ALLOWED_ROUNDS = [5, 10, 15];
 const MAX_PLAYERS = 8;
@@ -131,7 +133,7 @@ class PathRoom extends BaseRoom {
     this.answer = this.picks[this.roundNo++];
     this.stages = stagesFor(this.answer, this.options);
     this.points = stagePoints(this.stages.length);
-    this.costs = hintCosts(this.stages.length);
+    this.costs = hintCosts(this.stages.length, this.answer);
     this.phase = 'guess';
     this.startTimer();
     this.changed();
@@ -157,7 +159,7 @@ class PathRoom extends BaseRoom {
   hint(seat, id) {
     if (this.status !== 'playing' || this.phase !== 'guess') return { error: NOT_NOW };
     if (this.solved.has(seat)) return { error: ALREADY };
-    if (!HINTS.some((h) => h.id === id)) return { error: T('Немає такої підказки', 'No such hint') };
+    if (!this.costs.some((h) => h.id === id)) return { error: T('Немає такої підказки', 'No such hint') };
     const taken = this.hints.get(seat) || [];
     if (taken.includes(id)) return { ok: true };
     this.hints.set(seat, [...taken, id]);
@@ -282,7 +284,7 @@ class PathRoom extends BaseRoom {
       deadline: this.deadline,
       serverNow: Date.now(),
       answer: this.phase === 'reveal' && this.answer
-        ? { ...publicPlayer(this.answer), facts: HINTS.filter((h) => h.id !== 'letter').map((h) => ({ id: h.id, label: h.label, ...hintValue(this.answer, h.id, this.options) })) }
+        ? { ...publicPlayer(this.answer), facts: hintsFor(this.answer).filter((h) => h.id !== 'letter').map((h) => ({ id: h.id, label: h.label, ...hintValue(this.answer, h.id, this.options) })) }
         : null,
       history: this.status === 'finished'
         ? this.history.map((h) => ({ answer: publicPlayer(h.answer), results: h.results }))
