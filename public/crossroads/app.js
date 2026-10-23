@@ -868,8 +868,9 @@
       ul.innerHTML = '';
       return;
     }
+    const shamed = window.Players.shame(pickerInput.value); // росіяни — сірі, вибрати не можна
     if (!currentSuggestions.length) {
-      ul.innerHTML = `<li class="empty">${L('Нікого не знайдено', 'No one found')}</li>`;
+      ul.innerHTML = shamed || `<li class="empty">${L('Нікого не знайдено', 'No one found')}</li>`;
       return;
     }
     ul.innerHTML = currentSuggestions
@@ -887,7 +888,7 @@
           ${used ? `<span class="s-flag">${L('вже був у грі', 'already used')}</span>` : ''}
         </li>`;
       })
-      .join('');
+      .join('') + shamed;
   }
 
   function highlight(idx) {

@@ -326,12 +326,13 @@
     const cs = coaches.filter((c) => window.Players.normalize(c.name).split(' ').some((w) => w.startsWith(nq)) || window.Players.normalize(c.name).includes(nq)).slice(0, 3)
       .map((c) => ({ coach: true, key: c.key, name: c.name, thumb: c.photo }));
     suggestions = [...cs, ...window.Players.search(q).slice(0, 8)];
-    list.innerHTML = suggestions.length
+    const shamed = window.Players.shame(input.value); // росіяни — сірі, вибрати не можна
+    list.innerHTML = (suggestions.length
       ? suggestions.map((p, i) => `<li data-i="${i}" class="${i === active ? 'active' : ''}">
           <span class="s-avatar">${p.thumb ? `<img src="${p.thumb}" alt="" loading="lazy" />` : escapeHtml(initials(p.name))}</span>
           <span class="s-text"><span class="s-main">${escapeHtml(p.coach ? p.name : pname(p))}</span><span class="s-sub">${p.coach ? L('тренер', 'coach')
             : window.I18n.lang === 'en' ? (p.born || '') : `${escapeHtml(p.name)}${p.born ? ` · ${p.born}` : ''}`}</span></span></li>`).join('')
-      : `<li class="empty">${L('Нікого не знайдено', 'No one found')}</li>`;
+      : shamed ? '' : `<li class="empty">${L('Нікого не знайдено', 'No one found')}</li>`) + shamed;
   }
 
   input.addEventListener('input', () => { active = 0; renderSuggestions(); });

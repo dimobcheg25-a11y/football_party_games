@@ -41,8 +41,11 @@ try {
 const COACH_FAME = 0.6;
 
 // fame — у скількох мовних розділах Вікіпедії є стаття (грубий показник світової відомості); rawFame — без знижки тренерам.
+// Гравців росії й білорусі в базі немає (server/data/banned.js) — жодна гра їх не загадує й не приймає як відповідь.
 const { EXCLUDED } = require('./derived-tags');
-const players = rawPlayers.filter((p) => !EXCLUDED.has(p.qid)).map((p) => ({
+const { isBanned } = require('./banned');
+const bannedPlayers = rawPlayers.filter((p) => !EXCLUDED.has(p.qid) && isBanned(p));
+const players = rawPlayers.filter((p) => !EXCLUDED.has(p.qid) && !isBanned(p)).map((p) => ({
   // photo — через наш сервер (server/core/photos.js), photoSrc — посилання на Wikimedia.
   ...p, tags: new Set(p.tags), photoSrc: photos[p.id] || null, photo: photos[p.id] ? `/api/photo/${p.id}` : null,
   rawFame: p.fame, coach: coaches.has(p.qid), fame: coaches.has(p.qid) ? Math.round(p.fame * COACH_FAME) : p.fame,
@@ -64,6 +67,8 @@ const publicPlayers = players.map((p) => ({
   born: p.born,
   thumb: p.photo ? `${p.photo}?s=120` : null, // мініатюра 120 px
   aliases: p.aliases,
-}));
+})).concat(bannedPlayers.map((p) => ({ // лише для підказок: сірі, з принизливою приміткою, вибрати не можна
+  id: p.id, name: p.name, ru: p.ru, uk: p.uk, born: p.born, thumb: null, aliases: p.aliases, banned: true,
+})));
 
 module.exports = { players, playerById, categories, categoryById, matches, normalize, publicPlayers };

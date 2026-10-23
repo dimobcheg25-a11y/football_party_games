@@ -295,16 +295,14 @@ function fitsLevel(q, a, b, level) {
 module.exports = { QUESTIONS, GROUPS, questionById, fitsLevel, gapOf };
 
 // ── пули гравців і пари
-// Хто загадується — верхівка спільного рейтингу відомості (poolFor зі «Шляху»), без гравців збірних росії й білорусі.
+// Хто загадується — верхівка спільного рейтингу відомості (poolFor зі «Шляху»); росіян і білорусів у базі немає (server/data/banned.js).
 const { poolFor, DIFFICULTIES } = require('../path/careers');
-const { nationName } = require('../guess/compare');
-const BANNED = new Set(['Росія', 'Білорусь']);
 const MIN_PLAYERS = 12; // менше гравців зі значенням — питання на цьому рівні не ставимо
 
 const pools = new Map(); // складність → Map(питання → [{ p, v }])
 function poolOf(difficulty) {
   if (!pools.has(difficulty)) {
-    const base = poolFor('all', difficulty).filter((p) => { const n = careerOf(p)?.nation; return !n || !BANNED.has(nationName(n.t)); });
+    const base = poolFor('all', difficulty);
     const byQ = new Map();
     for (const q of QUESTIONS) {
       const list = [];

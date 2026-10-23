@@ -209,12 +209,13 @@
     if (!input.value.trim() || input.disabled) { list.innerHTML = ''; suggestions = []; return; }
     suggestions = window.Players.search(input.value);
     const wrong = new Set(state.myGuesses.filter((g) => !g.correct).map((g) => g.player.id));
-    list.innerHTML = suggestions.length
+    const shamed = window.Players.shame(input.value); // росіяни — сірі, вибрати не можна
+    list.innerHTML = (suggestions.length
       ? suggestions.map((p, i) => `<li data-i="${i}" class="${i === active ? 'active' : ''} ${wrong.has(p.id) ? 'used' : ''}">
           <span class="s-avatar">${p.thumb ? `<img src="${p.thumb}" alt="" loading="lazy" />` : escapeHtml(initials(p.name))}</span>
           <span class="s-text"><span class="s-main">${escapeHtml(pname(p))}</span><span class="s-sub">${window.I18n.lang === 'en' ? (p.born || '') : `${escapeHtml(p.name)}${p.born ? ` · ${p.born}` : ''}`}</span></span>
           ${wrong.has(p.id) ? `<span class="s-flag">${L('уже був', 'already tried')}</span>` : ''}</li>`).join('')
-      : `<li class="empty">${L('Нікого не знайдено', 'No one found')}</li>`;
+      : shamed ? '' : `<li class="empty">${L('Нікого не знайдено', 'No one found')}</li>`) + shamed;
   }
 
   input.addEventListener('input', () => { active = 0; renderSuggestions(); });

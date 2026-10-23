@@ -3,6 +3,12 @@
 // Після кожного помітного для гравців коміту — дописати сюди пункт (дата — день деплою).
 window.CHANGELOG = [
   {
+    date: '2026-10-23',
+    items: [
+      { game: null, uk: 'Футболістів росії й білорусі більше не загадуємо в жодній грі. Спробуєш ввести — побачиш, що з ними сталося 🚢', en: 'Players from russia and belarus are never the answer in any game anymore. Try typing one — you’ll see what happened to them 🚢' },
+    ],
+  },
+  {
     date: '2026-10-21',
     items: [
       { game: null, uk: 'Фото гравців у підказках, герби клубів і прапори знову завантажуються — і швидше: тепер їх віддає наш сайт, а не Вікіпедія напряму.', en: 'Player photos in suggestions, club crests and flags load again — and faster: our site now serves them instead of Wikipedia directly.' },

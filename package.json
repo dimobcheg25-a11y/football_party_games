@@ -15,6 +15,7 @@
     "build-tournaments": "node scripts/build-tournaments.js",
     "build-stats": "node scripts/build-stats.js",
     "build-coaches": "node scripts/build-coaches.js",
+    "build-citizenship": "node scripts/build-citizenship.js",
     "build-names-en": "node scripts/build-names-en.js",
     "build-facts": "node scripts/build-facts.js",
     "build-honours": "node scripts/build-honours.js",

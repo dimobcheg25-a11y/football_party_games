@@ -346,11 +346,12 @@
     const q = input.value.trim();
     if (!q || input.disabled) { list.innerHTML = ''; suggestions = []; return; }
     suggestions = window.Players.search(q).slice(0, 8);
-    list.innerHTML = suggestions.length
+    const shamed = window.Players.shame(input.value); // росіяни — сірі, вибрати не можна
+    list.innerHTML = (suggestions.length
       ? suggestions.map((p, i) => `<li data-i="${i}" class="${i === active ? 'active' : ''}">
           <span class="s-avatar">${p.thumb ? `<img src="${p.thumb}" alt="" loading="lazy" />` : escapeHtml(initials(p.name))}</span>
           <span class="s-text"><span class="s-main">${escapeHtml(pname(p))}</span><span class="s-sub">${window.I18n.lang === 'en' ? (p.born || '') : `${escapeHtml(p.name)}${p.born ? ` · ${p.born}` : ''}`}</span></span></li>`).join('')
-      : `<li class="empty">${L('Нікого не знайдено', 'No one found')}</li>`;
+      : shamed ? '' : `<li class="empty">${L('Нікого не знайдено', 'No one found')}</li>`) + shamed;
   }
 
   input.addEventListener('input', () => { active = 0; renderSuggestions(); });

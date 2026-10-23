@@ -278,11 +278,12 @@
     const draw = () => {
       if (!input.value.trim()) { list.innerHTML = ''; suggestions = []; return; }
       suggestions = window.Players.search(input.value);
-      list.innerHTML = suggestions.length
+      const shamed = window.Players.shame(input.value); // росіяни — сірі, вибрати не можна
+      list.innerHTML = (suggestions.length
         ? suggestions.map((p, i) => `<li data-i="${i}" class="${i === active ? 'active' : ''}">
             <span class="s-avatar">${p.thumb ? `<img src="${p.thumb}" alt="" loading="lazy" />` : escapeHtml(initials(p.name))}</span>
             <span class="s-text"><span class="s-main">${escapeHtml(pname(p))}</span><span class="s-sub">${escapeHtml(L(`${p.name}${p.born ? ` · ${p.born}` : ''}`, `${p.born || ''}`))}</span></span></li>`).join('')
-        : `<li class="empty">${L('Нікого не знайдено', 'No one found')}</li>`;
+        : shamed ? '' : `<li class="empty">${L('Нікого не знайдено', 'No one found')}</li>`) + shamed;
     };
     const choose = async (p) => {
       if (!p || !(await ask(L(`Твоя відповідь: ${pname(p)}?`, `Your answer: ${pname(p)}?`), { note: L('Спроба лише одна.', 'One try only.'), ok: L('Відповісти', 'Answer') }))) return;

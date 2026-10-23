@@ -344,7 +344,7 @@ const titlesWord = (n) => (n % 10 === 1 && n % 100 !== 11 ? 'трофей' : n %
 const titlesT = (n) => T(`${n} ${titlesWord(n)}`, en1(n, 'trophy', 'trophies'));
 const timesWord = (n) => (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 'рази' : 'разів');
 const timesT = (n) => T(n === 1 ? '1 раз' : `${n} ${timesWord(n)}`, n === 1 ? 'once' : `${n} times`);
-const withHonours = players.filter((p) => honoursOf(p) && !BANNED.has(nationName(careerOf(p)?.nation?.t)));
+const withHonours = players.filter((p) => honoursOf(p)); // росіян і білорусів у базі немає
 const honoursTopic = (id, title, value, text, detail, filter = () => true) => addTopic(id, 'trophies', title,
   withHonours.filter(filter).map((p) => { const h = honoursOf(p), v = value(h); return { p, value: v, text: text(v), detail: detail(h) }; }), NOTES.trophies);
 honoursTopic('honours-total', T('Найбільше трофеїв за кар’єру', 'Most trophies in a career'), (h) => h.total || 0, titlesT, (h) => summary(h, ['league', 'ucl', 'wc', 'euro', 'copa']));
