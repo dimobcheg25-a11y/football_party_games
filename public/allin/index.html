@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title data-en="All in — Football party games">All in</title>
+  <meta name="description" content="All in — скільки голів забив, за скільки продали, у якому році перейшов? Назви число й став фішки на найближчу оцінку. Соло або з друзями." data-en-content="All in — how many goals, how much was the fee, what year was the move? Name a number and bet chips on the closest guess. Solo or with friends." />
+  <meta property="og:site_name" content="Football party games" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://football-party-games.onrender.com/allin/" />
+  <meta property="og:title" content="All in — Football party games" />
+  <meta property="og:description" content="Назви число й став фішки на найближчу оцінку: голи, трансфери, роки, трофеї." data-en-content="Name a number and bet chips on the closest guess: goals, transfers, years, trophies." />
+  <meta property="og:locale" content="uk_UA" />
+  <meta property="og:locale:alternate" content="en_US" />
+  <meta name="application-name" content="Football party games" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="theme-color" content="#06301f" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎰</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Yeseva+One&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/shared/theme.css" />
+  <link rel="stylesheet" href="/shared/ui.css" />
+  <link rel="stylesheet" href="/path/style.css" />
+  <link rel="stylesheet" href="/allin/style.css" />
+</head>
+<body>
+  <div class="pitch-bg" aria-hidden="true"></div>
+
+  <div class="sound-ctl">
+    <button id="mute-btn" class="round-btn" aria-label="Звук" data-en-aria-label="Sound">🔊</button>
+  </div>
+
+  <!-- ── табличка сайту: завжди видно, веде на головну -->
+  <a class="home-link" href="/" aria-label="Усі ігри — на головну" data-en-aria-label="All games — home"><span class="home-arrow" aria-hidden="true">‹</span><span class="home-text"><span data-en="Football">Футбольні</span> <b data-en="games">ігри</b></span></a>
+
+  <!-- ── Головний екран: налаштування -->
+  <main id="screen-home" class="screen">
+    <header class="hero">
+      <div class="logo casino-logo"><small data-en="FOOTBALL · CASINO">ФУТБОЛЬНЕ · КАЗИНО</small><span>All <i class="logo-chip" aria-hidden="true">10</i> in</span></div>
+      <p class="tagline" data-en="How many goals, how much was the fee, what year was the move? Name a number — then bet your chips on whoever is closest.">Скільки голів забив, за скільки продали, у якому році перейшов? Назви число — і став фішки на того, хто найближче.</p>
+    </header>
+
+    <section class="card setup">
+      <p id="invite-note" class="invite-note hidden"></p>
+      <button id="resume-btn" class="btn btn-secondary resume hidden"></button>
+
+      <label class="field" for="name-input">
+        <span class="field-label" data-en="Your name">Твоє ім'я</span>
+        <input id="name-input" maxlength="20" placeholder="Наприклад, Пеле" autocomplete="nickname" />
+      </label>
+
+      <div id="setup-options">
+        <div class="field">
+          <span class="field-label" data-en="Questions">Питання</span>
+          <div class="chips" data-multi="groups" aria-label="Питання" data-en-aria-label="Questions">
+            <button type="button" class="chip" data-val="personal" data-en="🧍 Personal">🧍 Особисте</button>
+            <button type="button" class="chip" data-val="career" data-en="👕 Career">👕 Кар’єра</button>
+            <button type="button" class="chip" data-val="nation" data-en="🏳️ National team">🏳️ Збірна</button>
+            <button type="button" class="chip" data-val="money" data-en="💶 Money">💶 Гроші</button>
+            <button type="button" class="chip" data-val="stats" data-en="🎯 Stats since 2012">🎯 Статистика з 2012</button>
+            <button type="button" class="chip" data-val="trophies" data-en="🏆 Honours">🏆 Трофеї</button>
+            <button type="button" class="chip" data-val="fame" data-en="🌍 Fame">🌍 Популярність</button>
+            <button type="button" class="chip" data-val="instagram" data-en="📸 Instagram">📸 Instagram</button>
+          </div>
+          <p class="hint" id="groups-list"></p>
+        </div>
+
+        <div class="field">
+          <span class="field-label" data-en="Players">Гравці</span>
+          <div class="chips" data-opt="difficulty" role="radiogroup" aria-label="Гравці" data-en-aria-label="Players">
+            <button type="button" class="chip" data-val="easy" data-en="🟢 Easy">🟢 Легкий</button>
+            <button type="button" class="chip" data-val="normal" data-en="🟡 Normal">🟡 Звичайний</button>
+            <button type="button" class="chip" data-val="fan" data-en="🟣 Fan">🟣 Фанат</button>
+            <button type="button" class="chip" data-val="hard" data-en="🔴 Hard">🔴 Складний</button>
+            <button type="button" class="chip" data-val="expert" data-en="⚫ Expert">⚫ Експерт</button>
+          </div>
+          <p class="hint" id="difficulty-hint"></p>
+        </div>
+
+        <div class="field">
+          <span class="field-label" data-en="Rounds">Раундів</span>
+          <div class="chips" data-opt="rounds" role="radiogroup" aria-label="Раундів" data-en-aria-label="Rounds">
+            <button type="button" class="chip" data-val="5">5</button>
+            <button type="button" class="chip" data-val="7">7</button>
+            <button type="button" class="chip" data-val="10">10</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="field-label" data-en="Time to guess (with friends)">Час на оцінку (з друзями)</span>
+          <div class="chips" data-opt="seconds" role="radiogroup" aria-label="Час на оцінку" data-en-aria-label="Time to guess">
+            <button type="button" class="chip" data-val="20" data-en="20 s">20 с</button>
+            <button type="button" class="chip" data-val="30" data-en="30 s">30 с</button>
+            <button type="button" class="chip" data-val="45" data-en="45 s">45 с</button>
+            <button type="button" class="chip" data-val="0" data-en="∞ no timer">∞ без таймера</button>
+          </div>
+          <p class="hint" id="seconds-hint"></p>
+        </div>
+      </div>
+
+      <div class="start-buttons" id="start-buttons">
+        <button id="solo-btn" class="btn btn-secondary btn-lg" data-en="Play solo">Грати соло</button>
+        <button id="create-btn" class="btn btn-primary btn-lg" data-en="Room with friends">Кімната з друзями</button>
+      </div>
+      <button id="join-btn" class="btn btn-primary btn-lg hidden" data-en="Join the game">Приєднатися до гри</button>
+      <p id="home-error" class="error"></p>
+    </section>
+
+    <section class="card rules-card">
+      <h3 data-en="How to play">Як грати</h3>
+      <ul class="rules-list">
+        <li data-en="A question with a number for an answer: “How many league goals did Shevchenko score?”, “What was Neymar’s record fee?”, “What year did Mbappé join PSG?”. Everyone writes their guess — secretly.">Питання, де відповідь — число: «Скільки голів у чемпіонатах забив Шевченко?», «За скільки відбувся найдорожчий трансфер Неймара?», «У якому році Мбаппе перейшов у ПСЖ?». Кожен пише свою оцінку — таємно.</li>
+        <li data-en="The guesses go onto the table in order. The middle one pays ×2, further out ×3, ×4, ×5, and “lower than all” pays ×6.">Оцінки лягають на сукно за зростанням. Середня платить ×2, далі від центру — ×3, ×4, ×5, а клітинка «менше за всіх» — ×6.</li>
+        <li data-en-html="Everyone has &lt;b&gt;two free markers&lt;/b&gt; worth 10 chips each — put them on any guess, yours or someone else’s, and add chips from your stack if you are sure. &lt;b&gt;ALL IN&lt;/b&gt; puts everything on one. Bets are visible live.">У кожного <b>два безкоштовні маркери</b> по 10 фішок — став їх на будь-яку оцінку, свою чи чужу, і докладай фішки зі свого стосу, якщо впевнений. <b>ALL IN</b> — усе на одну. Ставки видно наживо.</li>
+        <li data-en-html="The winner is the guess closest to the answer &lt;b&gt;without going over&lt;/b&gt;. It pays (marker + your chips) × odds; chips on other guesses are lost. Whoever wrote the winning guess gets +20. The last round pays double.">Виграє оцінка, найближча до правди, але <b>не більша</b> за неї. Вона платить (маркер + докладені фішки) × коефіцієнт, фішки на інших згорають. Автор виграшної оцінки отримує +20. Останній раунд — виграші ×2.</li>
+        <li data-en-html="Running out of chips never knocks you out — markers are free. &lt;b&gt;Solo&lt;/b&gt;: name a number and choose how sure you are — a narrow range pays ×5, a medium one ×3, a wide one ×2.">Без фішок ти не вибуваєш — маркери безкоштовні. <b>Соло</b>: назви число й обери, наскільки впевнений: вузька вилка платить ×5, середня ×3, широка ×2.</li>
+      </ul>
+    </section>
+  </main>
+
+  <!-- ── Лобі кімнати -->
+  <main id="screen-lobby" class="screen hidden">
+    <section class="card lobby">
+      <p class="field-label" data-en="Room">Кімната</p>
+      <div class="room-code" id="lobby-code"></div>
+      <div class="share-row">
+        <button id="copy-link" class="btn btn-primary" data-en="Copy invite link">Скопіювати запрошення</button>
+      </div>
+      <div class="opt-chips" id="lobby-options"></div>
+      <ul class="lobby-players" id="lobby-players"></ul>
+      <button id="start-btn" class="btn btn-primary btn-lg hidden" data-en="Start game">Почати гру</button>
+      <p id="lobby-wait" class="hint"></p>
+      <button class="btn btn-secondary btn-sm btn-leave" data-action="leave" data-en="🚪 Leave room">🚪 Вийти з кімнати</button>
+    </section>
+  </main>
+
+  <!-- ── Гра: питання, сукно з оцінками, ставки -->
+  <main id="screen-game" class="screen screen-game hidden">
+    <div class="game-top">
+      <div class="round-info" id="round-info"></div>
+      <div class="timer" id="timer"></div>
+      <button class="btn btn-secondary btn-sm btn-leave" data-action="leave" data-en="🚪 Leave game">🚪 Вийти з гри</button>
+    </div>
+
+    <div class="game-layout">
+      <section class="table-col">
+        <div class="q-card" id="q-card"></div>
+        <div class="ai-stage" id="stage"></div>
+      </section>
+
+      <aside class="side-col">
+        <section class="table-card">
+          <h3 class="table-title" id="table-title" data-en="Chip count">Фішки</h3>
+          <ol class="scoreboard" id="scoreboard"></ol>
+        </section>
+        <div class="reactions" id="reactions"></div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- ── Підсумок -->
+  <main id="screen-final" class="screen hidden">
+    <section class="card final">
+      <h2 id="final-title"></h2>
+      <ol class="standings" id="final-standings"></ol>
+      <h3 class="field-label" data-en="Hands">Роздачі</h3>
+      <ol class="history" id="final-history"></ol>
+      <div class="result-actions">
+        <button id="again-btn" class="btn btn-primary btn-lg" data-en="Play again">Ще одна гра</button>
+        <p id="again-wait" class="hint"></p>
+        <button class="btn btn-ghost" data-action="leave" data-en="Home">На головну</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Чат (лише в кімнаті) -->
+  <button id="chat-fab" class="chat-fab hidden" aria-label="Чат" data-en-aria-label="Chat">💬<span id="chat-badge" class="chat-badge hidden"></span></button>
+  <section id="chat-panel" class="chat-panel hidden" aria-label="Чат кімнати" data-en-aria-label="Room chat">
+    <div class="chat-head"><b data-en="Chat">Чат</b><button class="icon-btn" id="chat-close" aria-label="Закрити" data-en-aria-label="Close">✕</button></div>
+    <ul class="chat-list" id="chat-list"></ul>
+    <form class="chat-form" id="chat-form">
+      <input id="chat-input" maxlength="200" placeholder="Повідомлення…" data-en-placeholder="Message…" autocomplete="off" />
+      <button class="btn btn-primary btn-sm">↑</button>
+    </form>
+  </section>
+
+  <div id="toast" class="toast" role="status"></div>
+
+  <script src="/shared/i18n.js"></script>
+  <script src="/shared/feedback.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/shared/presence.js"></script>
+  <script src="/shared/players.js"></script>
+  <script src="/shared/sounds.js"></script>
+  <script src="/shared/room-client.js"></script>
+  <script src="/allin/app.js"></script>
+</body>
+</html>

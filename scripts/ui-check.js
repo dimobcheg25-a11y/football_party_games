@@ -1,6 +1,6 @@
 // Перевірка інтерфейсу у справжньому Chrome (без вікна): проходить основні екрани ігор, ловить помилки JS
 // і зберігає знімки в .shots/ (їх дивиться Claude перед пушем — лише нові/змінені екрани, щоб не витрачати токени).
-// Запуск: npm run ui-check -- [hub|top|spy|guess|duel|path|crossroads ...] [--mobile]   (без назв — усе)
+// Запуск: npm run ui-check -- [hub|top|spy|guess|duel|allin|path|crossroads ...] [--mobile]   (без назв — усе)
 // Chrome: встановлений у системі (або шлях у змінній CHROME). Браузер не завантажується — лише playwright-core.
 
 const fs = require('fs');
@@ -33,7 +33,7 @@ const PHONE = { width: 390, height: 780 };
 async function startServer() {
   const server = spawn(process.execPath, [path.join(ROOT, 'server', 'index.js')], {
     cwd: ROOT,
-    env: { ...process.env, PORT, GUESS_REVEAL_MS: '300000', FIXED_ORDER: '1', FOURS_TEST_ANSWER: '1', FOURS_REVEAL_MS: '300000', HANDSHAKE_TEST_ANSWER: '1', HANDSHAKE_REVEAL_MS: '300000' }, // FIXED_ORDER — у «Перехресті» першим ходить господар
+    env: { ...process.env, PORT, GUESS_REVEAL_MS: '300000', FIXED_ORDER: '1', FOURS_TEST_ANSWER: '1', FOURS_REVEAL_MS: '300000', HANDSHAKE_TEST_ANSWER: '1', HANDSHAKE_REVEAL_MS: '300000', ALLIN_REVEAL_MS: '300000' }, // FIXED_ORDER — у «Перехресті» першим ходить господар
     stdio: ['ignore', 'pipe', 'inherit'],
   });
   await new Promise((res) => server.stdout.on('data', (d) => d.toString().includes('запущено') && res()));
@@ -448,6 +448,80 @@ const scenarios = {
     await shot(p, `crossroads-game${sfx}`, { full: true });
     bot.close();
     await p.context().close();
+  },
+
+  // All in: соло (оцінка, вилка, ставка → відповідь), кімната на трьох (сукно з оцінками, ставки наживо, ALL IN, відповідь), телефон.
+  async allin(browser) {
+    const p = await person(browser, 'allin');
+    await p.goto(`${URL}/allin/`);
+    await p.waitForSelector('[data-multi="groups"] .chip.active');
+    await shot(p, 'allin-home', { full: true });
+    await p.fill('#name-input', 'Тест');
+    await p.click('#solo-btn');
+    await p.waitForSelector('#guess-input');
+    await p.fill('#guess-input', '30');
+    await p.click('#levels [data-level="0"]');
+    await p.click('#stake [data-d="50"]');
+    await shot(p, 'allin-solo-guess');
+    await p.click('#guess-btn');
+    await p.waitForSelector('.reveal-box .ans-num');
+    await shot(p, 'allin-solo-reveal');
+    await p.context().close();
+
+    const { host, guests } = await room(browser, 'allin', 3);
+    await host.click('#start-btn');
+    const people = [host, ...guests];
+    for (const [k, x] of people.entries()) {
+      await x.waitForSelector('#guess-input');
+      await x.fill('#guess-input', String(20 + k * 15));
+      await x.click('#guess-btn');
+    }
+    for (const x of people) await x.waitForSelector('#felt .slot');
+    await host.click('#felt .slot[data-slot="2"]');
+    await host.click('#bet-stake [data-all]');
+    await guests[0].click('#felt .slot[data-slot="1"]');
+    await guests[0].click('#felt .slot[data-slot="0"]');
+    await guests[1].click('#felt .slot[data-slot="2"]');
+    await host.waitForSelector('#felt .slot[data-slot="0"] .token');
+    await shot(host, 'allin-room-bet', { full: true });
+    for (const x of people) await x.click('#done-btn');
+    await host.waitForSelector('#felt.revealed');
+    await shot(host, 'allin-room-reveal', { full: true });
+    for (const x of people) await x.context().close();
+
+    await phoneShot(browser, 'allin', '/allin/', async (x) => {
+      await x.fill('#name-input', 'Тест');
+      await x.click('#solo-btn');
+      await x.waitForSelector('#guess-input');
+    });
+    if (mobile) {
+      // телефон у кімнаті: сукно зі ставками
+      const ph = await person(browser, 'allin-phone-room', PHONE);
+      await ph.goto(`${URL}/allin/`);
+      await ph.fill('#name-input', 'Телефон');
+      await ph.click('#create-btn');
+      await ph.waitForSelector('#lobby-code:not(:empty)');
+      const code = await ph.textContent('#lobby-code');
+      const pc = await person(browser, 'allin-pc');
+      await pc.goto(`${URL}/allin/?room=${code}`);
+      await pc.fill('#name-input', 'ПК');
+      await pc.click('#join-btn');
+      await ph.waitForSelector('#start-btn:not(.hidden)');
+      await ph.click('#start-btn');
+      for (const [k, x] of [ph, pc].entries()) {
+        await x.waitForSelector('#guess-input');
+        await x.fill('#guess-input', String(10 + k * 25));
+        await x.click('#guess-btn');
+      }
+      await ph.waitForSelector('#felt .slot');
+      await ph.click('#felt .slot[data-slot="1"]');
+      await ph.click('#bet-stake [data-d="50"]');
+      await pc.click('#felt .slot[data-slot="2"]');
+      await ph.waitForSelector('#felt .slot[data-slot="2"] .token');
+      await shot(ph, 'allin-bet-phone', { full: true });
+      await ph.context().close();
+      await pc.context().close();
+    }
   },
 
   // Один на один: соло-серія (пара → відповідь → числа), кімната з другом (хто кого обрав), телефон — ринг без прокрутки.

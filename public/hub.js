@@ -29,6 +29,8 @@ const ART = {
   fours: `<span class="a-bowl"><i style="--b:#e9c450"></i><i style="--b:#5fc48c"></i><i style="--b:#5aa2ef"></i><i style="--b:#b385f0"></i></span>`,
   // комутатор: два гнізда з'єднані червоним кабелем
   handshake: `<span class="a-board">${[0, 1, 0, 0, 0, 0, 1, 0].map((on) => `<i class="${on ? 'on' : ''}"></i>`).join('')}<svg viewBox="0 0 160 86" aria-hidden="true"><path d="M58 25 C70 80 100 80 110 61" fill="none" stroke="#c63a2b" stroke-width="5" stroke-linecap="round"/></svg></span>`,
+  // сукно казино: стос фішок і «ALL IN»
+  allin: `<span class="a-felt"><span class="a-stack"><i style="--c:#7d1730"></i><i style="--c:#1d5fd4"></i><i style="--c:#e8c162"></i><i style="--c:#7d1730"></i></span><b>ALL IN</b><span class="a-stack"><i style="--c:#e8c162"></i><i style="--c:#7d1730"></i></span></span>`,
   duel: `<span class="a-bout"><i class="r">${L('Червоний', 'Red')}</i><b>VS</b><i class="b">${L('Синій', 'Blue')}</i></span>`,
 };
 

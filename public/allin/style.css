@@ -1,0 +1,233 @@
+/* All in. Лобі, таблиця, підсумок — з /path/style.css; тут — тема, картка питання, сукно з клітинками-оцінками, фішки.
+
+   ── Оформлення гри: стіл казино Монте-Карло. Зелене сукно з тисненим візерунком, золота окантовка й розмітка клітинок,
+   бордовий оксамит по краях. Заголовки й числа — Yeseva One (кирилиця). Фішки — глиняні диски з насічками в кольорі гравця.
+   Фірмова анімація: фішки «падають» на клітинку, коли їх ставлять; після відповіді фішки з програшних клітинок згрібає
+   лопатка крупʼє (ковзають і зникають), виграшна клітинка спалахує золотом, а над нею злітають виграші (без руху —
+   prefers-reduced-motion). Звук — chips(). */
+:root {
+  --bg: #04251a; --bg-2: #0a3b29;
+  --surface: rgba(6, 44, 30, 0.92); --surface-solid: #072e20; --surface-2: #0d4430;
+  --line: rgba(232, 199, 120, 0.18); --line-strong: rgba(232, 199, 120, 0.38);
+  --text: #f7f0de; --muted: #b8c7b4;
+  --accent: #e8c162; --accent-ink: #2a1a04;
+  --gold: #e8c162;
+  --wine: #7d1730;
+  --felt: #0b5a3b; --felt-2: #08442c;
+  --radius: 12px;
+  --display: 'Yeseva One', Georgia, serif;
+}
+.pitch-bg {
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 30%, rgba(60, 170, 110, 0.32), transparent 70%), /* лампа над столом */
+    repeating-radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.05) 0 1px, transparent 1px 3px), /* ворс сукна */
+    radial-gradient(ellipse 120% 90% at 50% 40%, var(--felt) 0, var(--felt-2) 55%, #031a12 100%);
+}
+input::placeholder { color: color-mix(in srgb, var(--muted) 70%, transparent); }
+
+.round-info b, .room-code, .timer, .final h2, .rules-card h3, .scoreboard b, .table-title, .verdict, .ans-num { font-family: var(--display); font-weight: 400; }
+.round-info b { font-size: 24px; letter-spacing: .01em; }
+.round-info .final-round { color: var(--accent); font-weight: 800; }
+.timer { font-size: 28px; color: var(--accent); }
+.timer.soft { font: 600 14px/1.2 var(--font); color: var(--muted); }
+.timer.low { color: #ff6b6b; }
+.room-code { font-size: 52px; color: var(--accent); }
+.final h2 { font-size: 36px; color: var(--accent); }
+.rules-card h3 { font-size: 22px; }
+.scoreboard b { font-size: 20px; color: var(--accent); }
+.table-title { font-size: 18px; }
+.card { border-color: var(--line-strong); }
+
+/* ── логотип: «All in» золотом, між словами — фішка */
+.casino-logo { font-family: var(--display); font-size: clamp(56px, 14vw, 96px); line-height: 1; gap: .18em; color: var(--accent); text-shadow: 0 3px 0 #3d2b07, 0 0 30px rgba(232, 193, 98, .35); }
+.casino-logo small { font: 800 .17em/1 var(--font); letter-spacing: .45em; color: var(--muted); text-shadow: none; }
+.casino-logo span { display: inline-flex; align-items: center; gap: .16em; }
+.logo-chip {
+  --pc: var(--wine);
+  display: inline-grid; place-items: center; width: .78em; height: .78em; border-radius: 50%; font: 800 .24em/1 var(--font); font-style: normal; color: #fff; text-shadow: none;
+  background: radial-gradient(circle, var(--pc) 0 52%, #fff 53% 57%, var(--pc) 58%);
+  box-shadow: 0 0 0 .05em var(--pc), inset 0 0 0 .06em rgba(255, 255, 255, .85), 0 .06em 0 .02em #3d0a17;
+  border: .06em dashed rgba(255, 255, 255, .9);
+  animation: chip-spin 6s linear infinite;
+}
+@keyframes chip-spin { to { rotate: 360deg; } }
+
+/* ── гра */
+.screen-game { max-width: 1040px; }
+.screen-game .game-layout { grid-template-columns: minmax(0, 1fr) 260px; }
+.screen-game.solo .game-layout { grid-template-columns: minmax(0, 1fr) 220px; }
+.table-col { display: grid; gap: 14px; min-width: 0; }
+
+/* картка питання: фото на латунній рамці, питання великим шрифтом */
+.q-card {
+  display: grid; grid-template-columns: 128px minmax(0, 1fr); gap: 18px; align-items: center; padding: 16px 18px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--wine) 85%, #000), color-mix(in srgb, var(--wine) 60%, #000));
+  border: 2px solid var(--gold); border-radius: var(--radius); box-shadow: 0 12px 30px rgba(0, 0, 0, .45), inset 0 0 0 4px rgba(0, 0, 0, .25);
+}
+.q-photo { width: 128px; height: 150px; border-radius: 8px; overflow: hidden; background: rgba(0, 0, 0, .3); box-shadow: 0 0 0 3px var(--gold), 0 6px 16px rgba(0, 0, 0, .5); display: grid; place-items: center; }
+.q-photo img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 18%; }
+.q-initials { font: 46px/1 var(--display); color: var(--accent); }
+.q-body { display: grid; gap: 5px; min-width: 0; }
+.q-name { font: 800 15px/1.2 var(--font); text-transform: uppercase; letter-spacing: .12em; color: var(--accent); }
+.q-meta { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 13px; font-weight: 700; color: rgba(255, 255, 255, .8); }
+.q-meta img { width: 22px; height: 15px; object-fit: cover; border-radius: 2px; }
+.q-text { font: clamp(22px, 3vw, 30px)/1.15 var(--display); color: var(--text); overflow-wrap: anywhere; }
+.q-unit { font-size: 13px; font-weight: 700; color: rgba(255, 255, 255, .72); }
+
+/* оцінка */
+.ai-stage { display: grid; gap: 12px; }
+.guess-form { display: grid; gap: 12px; justify-items: center; padding: 18px; background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--radius); }
+.guess-form > .field-label { margin: 0; }
+.guess-row { display: flex; align-items: center; gap: 10px; }
+.guess-row input {
+  width: min(260px, 60vw); padding: 10px 14px; font: 40px/1 var(--display); text-align: center; color: var(--accent);
+  background: rgba(0, 0, 0, .3); border: 2px solid var(--line-strong); border-radius: 10px; -moz-appearance: textfield;
+}
+.guess-row input::-webkit-outer-spin-button, .guess-row input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.guess-row input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent); }
+.g-unit { font-weight: 800; color: var(--muted); }
+.guess-form .field { width: 100%; margin: 0; justify-items: center; text-align: center; }
+.levels { justify-content: center; }
+.levels .chip em { font-style: normal; font: 16px/1 var(--display); color: var(--accent); margin-left: 4px; }
+.levels .chip.active em { color: var(--accent-ink); }
+.ai-stage .center { text-align: center; margin: 0; }
+.ai-stage .hint b { color: var(--accent); }
+
+/* ставка */
+.stake { display: grid; gap: 6px; justify-items: center; }
+.stake-label { font-size: 13px; font-weight: 700; color: var(--muted); text-align: center; }
+.stake-row { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px; }
+.stake-row .chip:disabled { opacity: .4; cursor: default; }
+.stake-val { min-width: 64px; text-align: center; font: 28px/1 var(--display); color: var(--accent); }
+.btn-allin {
+  padding: 8px 14px; border-radius: 99px; border: 2px solid #ffd77a; cursor: pointer;
+  font: 15px/1 var(--display); letter-spacing: .06em; color: #fff;
+  background: radial-gradient(circle at 50% 30%, #c22a4b, var(--wine)); box-shadow: 0 0 14px rgba(232, 60, 90, .45);
+}
+.btn-allin:disabled { opacity: .4; cursor: default; box-shadow: none; }
+.btn-allin:not(:disabled):hover { filter: brightness(1.15); }
+
+/* ── сукно: клітинки-оцінки з коефіцієнтами, золота розмітка */
+.felt {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 8px; padding: 14px;
+  border-radius: 22px; border: 3px solid #5b3a12;
+  background:
+    repeating-radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.05) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at 50% 40%, #157a50, #0a4d32 80%);
+  box-shadow: inset 0 0 0 3px var(--gold), inset 0 0 40px rgba(0, 0, 0, .45), 0 0 0 8px var(--wine), 0 16px 40px rgba(0, 0, 0, .5);
+}
+.slot {
+  position: relative; display: grid; align-content: start; justify-items: center; gap: 6px; min-height: 150px; padding: 10px 6px 12px;
+  font: inherit; color: var(--text); text-align: center; cursor: pointer;
+  background: rgba(0, 0, 0, .12); border: 2px solid color-mix(in srgb, var(--gold) 70%, transparent); border-radius: 10px;
+  transition: background .2s, box-shadow .2s, opacity .4s, filter .4s;
+}
+.slot:disabled { cursor: default; }
+.felt.picking .slot:hover { background: rgba(232, 193, 98, .12); }
+.slot.sel { box-shadow: 0 0 0 3px var(--accent), 0 0 18px color-mix(in srgb, var(--accent) 45%, transparent); }
+.slot.low { border-style: dashed; }
+.s-odds { font: 26px/1 var(--display); color: var(--accent); text-shadow: 0 2px 0 rgba(0, 0, 0, .4); }
+.s-val { font: 22px/1.05 var(--display); font-weight: 400; overflow-wrap: anywhere; }
+.slot.low .s-val { font: 800 13px/1.2 var(--font); text-transform: uppercase; letter-spacing: .06em; color: rgba(255, 255, 255, .8); }
+.s-authors { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; }
+.author { padding: 1px 7px; border-radius: 99px; font-size: 11.5px; font-weight: 800; background: rgba(0, 0, 0, .45); border: 1.5px solid var(--pc); white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.s-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin-top: auto; padding-top: 4px; }
+
+/* фішка: глиняний диск у кольорі гравця з білими насічками по краю; докладені — більша */
+.token {
+  --sz: 32px;
+  position: relative; display: grid; place-items: center; width: var(--sz); height: var(--sz); border-radius: 50%; font-style: normal;
+  background: radial-gradient(circle, var(--pc) 0 50%, rgba(255, 255, 255, .95) 51% 55%, var(--pc) 56%);
+  border: 3px dashed rgba(255, 255, 255, .92); box-shadow: 0 0 0 2px var(--pc), 0 3px 0 1px rgba(0, 0, 0, .45);
+}
+.token em { font: 800 10.5px/1 var(--font); font-style: normal; color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, .7); }
+.token.mid { --sz: 38px; }
+.token.big { --sz: 44px; }
+.token.big em { font-size: 11.5px; }
+.token.mine { box-shadow: 0 0 0 2px var(--pc), 0 0 0 4px var(--accent), 0 3px 0 3px rgba(0, 0, 0, .45); }
+.token.drop { animation: chip-drop .45s cubic-bezier(.3, 1.5, .5, 1) both; }
+@keyframes chip-drop { from { transform: translateY(-46px) scale(1.25); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* відповідь: програшні фішки згрібає лопатка, виграшна клітинка спалахує, виграші злітають */
+.felt.revealed .slot.lose { opacity: .5; filter: saturate(.5); }
+.felt.revealed .slot.lose .token { animation: chip-sweep .7s ease-in .35s both; }
+.felt.revealed .slot.lose .token:nth-child(2) { animation-delay: .42s; }
+.felt.revealed .slot.lose .token:nth-child(3) { animation-delay: .49s; }
+@keyframes chip-sweep { to { transform: translate(60px, -30px) rotate(140deg) scale(.6); opacity: 0; } }
+.felt.revealed .slot.win { background: rgba(232, 193, 98, .2); box-shadow: 0 0 0 3px var(--accent), 0 0 34px color-mix(in srgb, var(--accent) 60%, transparent); animation: win-glow 1s ease-out .6s both; z-index: 1; }
+.felt.revealed .slot.win .token { animation: chip-bounce .5s ease-out .9s both; }
+@keyframes win-glow { 0% { filter: brightness(1); } 30% { filter: brightness(1.8); } 100% { filter: none; } }
+@keyframes chip-bounce { 0%, 100% { transform: none; } 50% { transform: translateY(-10px); } }
+.s-payouts { position: absolute; left: 0; right: 0; top: -12px; display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; pointer-events: none; }
+.payout { padding: 2px 7px; border-radius: 99px; background: var(--accent); color: var(--accent-ink); font: 800 12px/1.2 var(--font); box-shadow: 0 0 0 2px var(--pc); animation: payout-rise 1.1s ease-out 1s both; }
+@keyframes payout-rise { from { transform: translateY(20px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* маркери й «Готово» */
+.bet-panel { display: grid; gap: 10px; justify-items: center; padding: 14px; background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--radius); }
+.markers { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.marker {
+  display: flex; align-items: center; gap: 8px; padding: 6px 12px 6px 6px; border-radius: 99px; cursor: pointer; text-align: left;
+  font: inherit; color: var(--text); background: rgba(0, 0, 0, .25); border: 2px solid var(--line-strong);
+}
+.marker span { display: grid; line-height: 1.2; }
+.marker small { font-size: 12px; color: var(--muted); font-weight: 700; }
+.marker.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.marker .token { --sz: 34px; }
+
+/* відповідь */
+.reveal-box { display: grid; gap: 6px; justify-items: center; text-align: center; padding: 16px; background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--radius); }
+.reveal-box .field-label { margin: 0; }
+.ans-num { font-size: clamp(44px, 7vw, 64px); line-height: 1; color: var(--accent); text-shadow: 0 3px 0 #3d2b07; }
+.ans-num span { font: 800 16px/1 var(--font); color: var(--text); text-shadow: none; }
+.ans-detail { font-size: 13px; font-weight: 700; color: var(--muted); }
+.mine-line { margin: 6px 0 0; font-weight: 700; }
+.mine-line b { color: var(--accent); }
+.verdict { margin: 0; font-size: 30px; }
+.verdict.good { color: var(--accent); }
+.verdict.bad { color: #ff7a7a; }
+.q-note { margin: 0; max-width: 62ch; font-size: 13px; color: var(--muted); }
+.reveal-box .btn-lg { min-width: 240px; margin-top: 4px; }
+
+/* ALL IN — напис на весь екран */
+.allin-flash {
+  position: fixed; left: 50%; top: 42%; z-index: 90; translate: -50% -50%; pointer-events: none;
+  font: clamp(64px, 16vw, 140px)/1 var(--display); color: var(--accent); text-shadow: 0 4px 0 #3d2b07, 0 0 40px rgba(232, 193, 98, .7);
+  animation: allin-pop 1.1s ease-out both;
+}
+@keyframes allin-pop { 0% { transform: scale(.4) rotate(-8deg); opacity: 0; } 25% { transform: scale(1.08) rotate(-3deg); opacity: 1; } 70% { opacity: 1; } 100% { transform: scale(1.2) rotate(-3deg); opacity: 0; } }
+
+.history .nm small { display: block; font-weight: 600; color: var(--muted); font-size: 13px; }
+.history .nm small b { color: var(--text); }
+
+/* підтвердження — табличка крупʼє: золото на бордовому */
+.ask-sheet { background: linear-gradient(180deg, color-mix(in srgb, var(--wine) 80%, #000), #2a0812); border: 2px solid var(--gold); }
+.ask-sheet .ask-text { font-family: var(--display); font-size: 26px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-chip, .token.drop, .felt.revealed .slot.lose .token, .felt.revealed .slot.win, .felt.revealed .slot.win .token, .payout { animation: none; }
+  .felt.revealed .slot.lose .token { opacity: 0; }
+}
+
+@media (max-width: 760px) {
+  .screen-game .game-layout, .screen-game.solo .game-layout { grid-template-columns: 1fr; }
+  .table-card { order: 1; }
+}
+@media (max-width: 560px) {
+  .screen-game { padding-top: 12px; }
+  .round-info { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 8px; }
+  .round-info b { font-size: 20px; }
+  .round-info span { font-size: 12px; }
+  .q-card { grid-template-columns: 84px minmax(0, 1fr); gap: 12px; padding: 12px; }
+  .q-photo { width: 84px; height: 100px; }
+  .q-text { font-size: 20px; }
+  .felt { grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 10px; gap: 6px; border-radius: 16px; }
+  .slot { min-height: 120px; padding: 8px 4px 10px; }
+  .s-odds { font-size: 21px; }
+  .s-val { font-size: 18px; }
+  .token { --sz: 28px; }
+  .token.mid { --sz: 32px; }
+  .token.big { --sz: 36px; }
+  .guess-row input { font-size: 32px; }
+  .ans-num { font-size: 46px; }
+  .verdict { font-size: 24px; }
+}

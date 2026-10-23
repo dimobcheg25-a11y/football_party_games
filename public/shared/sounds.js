@@ -121,6 +121,14 @@ window.Sound = (() => {
       tone(160, { start: 0.01, dur: 0.07, type: 'sine', vol: 0.16, slideTo: 90 });
       tone(440, { start: 0.1, dur: 0.18, type: 'sawtooth', vol: 0.025 });
     },
+    // фішки казино: глиняні диски цокають один об один — count ударів з невеликим розкидом ('All in')
+    chips(count = 3) {
+      for (let i = 0; i < count; i++) {
+        const start = i * 0.045 + Math.random() * 0.02;
+        tone(3200 + Math.random() * 900, { start, dur: 0.025, type: 'triangle', vol: 0.07, slideTo: 2200 });
+        tone(900 + Math.random() * 200, { start, dur: 0.04, type: 'sine', vol: 0.05 });
+      }
+    },
     pop() {
       tone(600, { dur: 0.09, vol: 0.1, slideTo: 1100 });
     },
