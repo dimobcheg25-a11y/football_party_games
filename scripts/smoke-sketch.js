@@ -1,6 +1,7 @@
 // Автотест «Тактичного ескізу» через справжній сервер: вибір слова (лише художник, три слова однієї категорії), штрихи (лише від
 // художника й лише іншим), повний малюнок (snapshot), чат: правильна відповідь прихована, «майже» — лише автору й художнику,
-// художник не може написати відповідь, чат тих, хто вгадав, — лише між ними; очки, повне коло, пізній вхід, англійська.
+// художник не може написати відповідь, чат тих, хто вгадав, — лише між ними; очки, повне коло, пізній вхід, англійська;
+// фігури, заливка, гумка; «не знаю» і «здатися»; гра без таймера (очки за порядком); словник підказок.
 // Запуск: npm test (сервер піднімається сам на випадковому порту).
 
 const { spawn } = require('child_process');
@@ -46,6 +47,9 @@ async function main() {
   const games = await (await fetch(`${URL}/api/games`)).json();
   assert.ok(games.some((g) => g.id === 'sketch' && g.title === 'Тактичний ескіз' && !g.solo), 'гра є в каталозі, лише з друзями');
   assert.strictEqual((await fetch(`${URL}/sketch/`)).status, 200);
+  const dict = await (await fetch(`${URL}/api/sketch/words?lang=en`)).json();
+  assert.ok(dict.length > 900 && dict.every((w) => w.t && w.c && w.v.length), 'словник підказок');
+  assert.ok(dict.some((w) => w.t === 'Offside') && !dict.some((w) => w.t === 'Офсайд'), 'словник — мовою запиту');
 
   const [a, b, c] = [bot(), bot(), bot('en')];
   const res = await emit(a, 'create', { name: 'Аня', laps: 1, drawSeconds: 60, difficulty: 'easy' });
@@ -87,10 +91,10 @@ async function main() {
     if (turn === 1) {
       // ── штрихи: від художника → іншим; від гравця й невалідні — нікому
       guessers.forEach((s) => draws.get(s).splice(0));
-      d.emit('draw', { t: 's', c: '#1d1d1f', w: 9, p: [10, 10] });
+      d.emit('draw', { t: 's', c: '#1d1d1f', w: 6, p: [10, 10] });
       d.emit('draw', { t: 'm', p: [20, 20, 30, 30] });
-      d.emit('draw', { t: 's', c: 'red', w: 9, p: [1, 1] }); // колір не з палітри
-      guessers[0].emit('draw', { t: 's', c: '#1d1d1f', w: 9, p: [5, 5] }); // не художник
+      d.emit('draw', { t: 's', c: 'red', w: 6, p: [1, 1] }); // колір не з палітри
+      guessers[0].emit('draw', { t: 's', c: '#1d1d1f', w: 6, p: [5, 5] }); // не художник
       await sleep(200);
       assert.deepStrictEqual(draws.get(guessers[1]).map((o) => o.t), ['s', 'm'], 'іншим — лише валідні штрихи художника');
       assert.strictEqual(draws.get(d).length, 0, 'художник свої штрихи назад не отримує');
@@ -99,6 +103,15 @@ async function main() {
       d.emit('draw', { t: 'u' });
       await sleep(100);
       assert.strictEqual((await emit(guessers[1], 'snapshot')).strokes.length, 0, 'назад — штрих прибрано');
+      // фігура, заливка, гумка; невідома фігура — ні
+      d.emit('draw', { t: 'g', k: 'rect', c: '#d7262e', w: 6, p: [100, 100, 300, 200] });
+      d.emit('draw', { t: 'f', c: '#f7c531', p: [200, 150] });
+      d.emit('draw', { t: 's', c: 'erase', w: 22, p: [150, 150] });
+      d.emit('draw', { t: 'g', k: 'star', c: '#d7262e', w: 6, p: [1, 1, 2, 2] });
+      await sleep(150);
+      assert.deepStrictEqual((await emit(guessers[1], 'snapshot')).strokes.map((x) => x.k || x.c), ['rect', 'fill', 'erase'], 'фігура, заливка, гумка');
+      d.emit('draw', { t: 'x' });
+      await sleep(100);
 
       // ── чат
       assert.ok((await emit(d, 'chat', `це ${answer}`)).error, 'художник не пише відповідь');
@@ -136,6 +149,21 @@ async function main() {
       assert.ok(!chats.get(guessers[1]).some((m) => m.text === 'легко ж було'), 'чат тих, хто вгадав, — не для всіх');
       assert.ok(chats.get(d).some((m) => m.text === 'легко ж було'));
       assert.ok(/^[A-Za-z ⚽]/.test(last.get(c).category.label), 'англійською — категорія англійською');
+      // частина відповіді — «майже» («олімп» для «Олімпійські ігри»)
+      const part = answer.split(' ')[0];
+      if (part.length >= 6) {
+        await sleep(750);
+        assert.ok((await emit(guessers[1], 'chat', part.slice(0, part.length - 2))).close, `«майже» для частини ${part}`);
+      }
+    }
+    if (turn === 3) assert.ok((await emit(guessers[0], 'giveUp')).error, 'здатися може лише художник');
+    if (turn === 2) {
+      // другий каже «не знаю» → хід закінчується (усі вгадали або пасували)
+      assert.ok((await emit(guessers[1], 'pass')).ok);
+      const rv = await nextState(a, (x) => x.turn === turn && x.phase === 'reveal');
+      assert.strictEqual(Object.keys(rv.guessed).length, 1);
+      assert.deepStrictEqual(rv.passed, [seatOf(guessers[1])]);
+      continue;
     }
     // другий вгадує → усі вгадали → відповідь
     await emit(guessers[1], 'chat', answer);
@@ -161,7 +189,38 @@ async function main() {
   const after = await nextState(a, (x) => x.turn === t0 + 1 || x.status === 'finished');
   assert.ok(after.turn === t0 + 1 || after.status === 'finished', 'художник вийшов — наступний хід');
 
-  [...socks, d4].forEach((s) => s.close());
+  // ── без таймера: дедлайну немає, очки за порядком (перший 100 + 20); художник може здатися
+  const [e1, e2, e3] = [bot(), bot(), bot()];
+  const r2 = await emit(e1, 'create', { name: 'Єва', laps: 1, drawSeconds: 0 });
+  assert.strictEqual(r2.ok, true);
+  await emit(e2, 'join', { code: r2.code, name: 'Женя' });
+  await emit(e3, 'join', { code: r2.code, name: 'Зоя' });
+  assert.strictEqual(last.get(e1).options.drawSeconds, 0);
+  await emit(e1, 'start');
+  for (let turn = 1; turn <= 2; turn++) {
+    const st0 = await nextState(e1, (x) => x.turn === turn && x.phase === 'choose');
+    const dr = [e1, e2, e3].find((x) => last.get(x).you === st0.drawer);
+    const others = [e1, e2, e3].filter((x) => x !== dr);
+    await nextState(dr, (x) => x.turn === turn && x.choices);
+    await emit(dr, 'choose', { key: last.get(dr).choices[0].key });
+    const live = await nextState(e1, (x) => x.turn === turn && x.phase === 'draw');
+    assert.strictEqual(live.deadline, null, 'без таймера — дедлайну немає');
+    assert.ok(live.startedAt, 'час початку малюнка є');
+    if (turn === 1) {
+      await sleep(750);
+      await emit(others[0], 'chat', live.testAnswer);
+      await sleep(750);
+      await emit(others[1], 'chat', live.testAnswer);
+      const rv = await nextState(e1, (x) => x.turn === turn && x.phase === 'reveal');
+      assert.deepStrictEqual(Object.values(rv.guessed).sort((x, y) => y - x), [120, 80], 'без таймера: 100 + 20 першому, далі 80');
+    } else {
+      assert.ok((await emit(dr, 'giveUp')).ok);
+      const rv = await nextState(e1, (x) => x.turn === turn && x.phase === 'reveal');
+      assert.ok(rv.notice && rv.answer, 'художник здався — відповідь показано');
+    }
+  }
+
+  [...socks, d4, e1, e2, e3].forEach((s) => s.close());
   console.log('УСІ ПЕРЕВІРКИ «ТАКТИЧНОГО ЕСКІЗУ» ПРОЙШЛИ');
 }
 

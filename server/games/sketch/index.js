@@ -2,7 +2,8 @@
 // Сторінка — public/sketch/, сокети — простір імен /sketch; штрихи — подія 'draw' (без розсилки всього стану).
 const { createRoomServer } = require('../../core/room-server');
 const { SketchRoom } = require('./room');
-const { T } = require('../../core/i18n');
+const { T, localize, langOf } = require('../../core/i18n');
+const { dictionary } = require('./words');
 
 const meta = {
   id: 'sketch',
@@ -15,6 +16,12 @@ const meta = {
 };
 
 function register({ app, io }) {
+  // Словник для підказок при введенні відповіді (усі можливі слова; браузер кешує)
+  app.get('/api/sketch/words', (req, res) => {
+    res.set('Cache-Control', 'public, max-age=3600');
+    res.json(localize(dictionary, langOf(req.query.lang)));
+  });
+
   createRoomServer({
     app,
     io,
@@ -24,6 +31,8 @@ function register({ app, io }) {
       start: (room, seat) => room.start(seat),
       choose: (room, seat, { key } = {}) => room.choose(seat, key),
       snapshot: (room) => room.snapshot(),
+      pass: (room, seat) => room.pass(seat),
+      giveUp: (room, seat) => room.giveUp(seat),
     },
     streams: {
       draw: (room, seat, op) => room.drawOp(seat, op),

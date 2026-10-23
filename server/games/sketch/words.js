@@ -51,7 +51,7 @@ const TERMS = [
   ['Фаєр', 'Flare', 'файер', 'піротехніка', 'pyro'],
   ['Фанатський шарф', 'Scarf', 'шарф'],
   ['Кутовий прапорець', 'Corner flag', 'прапорець'],
-  ['Лайнсмен', 'Linesman', 'бічний арбітр', 'assistant referee'],
+  ['Бічний арбітр', 'Linesman', 'лайнсмен', 'боковий арбітр', 'assistant referee'],
   ['Тренер', 'Coach', 'manager', 'головний тренер'],
   ['Лава запасних', 'Bench', 'лавка', 'substitutes bench', 'запасні'],
   ['Роздягальня', 'Dressing room', 'роздягалка', 'locker room'],
@@ -59,7 +59,7 @@ const TERMS = [
   ['Підкат', 'Slide tackle', 'tackle'],
   ['Навіс', 'Cross', 'центрування', 'подача'],
   ['Удар головою', 'Header', 'головою', 'гра головою'],
-  ['Ножиці', 'Bicycle kick', 'удар через себе', 'overhead kick', 'бісіклета', 'чилена'],
+  ['Удар через себе', 'Bicycle kick', 'ножиці', 'через себе', 'overhead kick', 'бісіклета'],
   ['Паненка', 'Panenka'],
   ['Рабона', 'Rabona'],
   ['Пас', 'Pass', 'передача'],
@@ -78,7 +78,7 @@ const TERMS = [
   ['Трансфер', 'Transfer'],
   ['Контракт', 'Contract'],
   ['Агент', 'Agent', 'футбольний агент'],
-  ['Зникний спрей', 'Vanishing spray', 'спрей', 'суддівський спрей'],
+  ['Спрей арбітра', 'Vanishing spray', 'спрей', 'суддівський спрей'],
   ['Футболка', 'Shirt', 'jersey', 'майка', 'форма', 'kit'],
   ['Симуляція', 'Dive', 'пірнання', 'diving', 'simulation'],
   ['Травма', 'Injury'],
@@ -97,7 +97,7 @@ const TERMS = [
   ['Манішка', 'Bib', 'маніжка', 'training bib'],
   ['Автограф', 'Autograph'],
   ['Золотий гол', 'Golden goal'],
-  ['Вкидання', 'Throw-in', 'аут', 'throw in'],
+  ['Аут', 'Throw-in', 'вкидання', 'вкидання мʼяча', 'throw in'],
   ['Удар від воріт', 'Goal kick'],
   ['Контратака', 'Counterattack', 'контра', 'counter attack', 'counter'],
   ['Пресинг', 'Pressing', 'press'],
@@ -108,7 +108,7 @@ const TERMS = [
   ['Фол', 'Foul', 'порушення'],
   ['Удар пʼятою', 'Backheel', 'пяточка', 'пʼяткою'],
   ['Парашут', 'Chip shot', 'парашутик', 'chip', 'lob', 'черпачок'],
-  ['Між ніг', 'Nutmeg', 'тунель', 'панна'],
+  ['Між ніг', 'Nutmeg', 'пробити між ніг', 'тунель', 'панна'],
   ['Нападник', 'Striker', 'форвард', 'forward', 'страйкер'],
   ['Захисник', 'Defender', 'бек'],
   ['Півзахисник', 'Midfielder', 'хавбек'],
@@ -122,20 +122,17 @@ const TERMS = [
   ['Гетри', 'Socks', 'getry'],
   ['Пляжний футбол', 'Beach soccer', 'beach football'],
   ['Футзал', 'Futsal', 'міні футбол'],
-  ['Набивання мʼяча', 'Keepy-uppy', 'жонглювання', 'набивання', 'juggling', 'keepie uppie', 'keepy uppy'],
+  ['Набивання мʼяча', 'Keepy-uppy', 'чеканка', 'чеканити', 'жонглювання', 'набивання', 'juggling', 'keepie uppie', 'keepy uppy'],
   ['Настільний футбол', 'Table football', 'кікер', 'foosball'],
   ['Милиці', 'Crutches'],
-  ['Автобус команди', 'Team bus'],
   ['Барабан', 'Drum', 'барабанщик'],
   ['Банер', 'Banner', 'транспарант', 'баннер'],
-  ['Тіфо', 'Tifo', 'хореографія', 'перформанс'],
-  ['Мексиканська хвиля', 'Mexican wave', 'хвиля', 'the wave'],
+  ['Перформанс на трибунах', 'Tifo', 'перформанс', 'тіфо', 'хореографія'],
+  ['Хвиля на трибунах', 'Stadium wave', 'хвиля', 'мексиканська хвиля', 'mexican wave', 'the wave'],
   ['Вувузела', 'Vuvuzela'],
   ['Талісман', 'Mascot'],
-  ['Крижана ванна', 'Ice bath', 'льодова ванна'],
   ['Скаут', 'Scout'],
   ['Академія', 'Academy', 'футбольна академія'],
-  ['Сніговий матч', 'Snow match', 'сніг', 'snow'],
   ['Прожектори', 'Floodlights', 'прожектор'],
   ['Кубок', 'Cup', 'трофей', 'trophy'],
 ];
@@ -186,7 +183,7 @@ const PLACES = [
   ['Сан-Мамес', 'San Mamés', 'san mames'],
   ['Селтік Парк', 'Celtic Park', 'паркгед', 'parkhead'],
   ['Йохан Кройф Арена', 'Johan Cruyff Arena', 'амстердам арена', 'amsterdam arena'],
-  ['Да Луж', 'Estádio da Luz', 'стадіон світла', 'da luz'],
+  ['Да Луж', 'Estádio da Luz', 'да луш', 'ештадіу да луж', 'стадіон світла', 'da luz', 'luz'],
 ];
 
 // Клуби: назва в базі → як показувати (uk, en) і синоніми. Решта — назва з бази і її англійський варіант.
@@ -223,18 +220,31 @@ const CLUB_FIX = {
   'Лестер Сіті': ['Лестер', 'Leicester City', 'leicester'],
 };
 
+// Рівень «Легкий» — без цих (рідше вживані або важкі для малюнка); клуби — лише клуби-категорії бази.
+const HARD = new Set([
+  'Рабона', 'Золотий гол', 'Перформанс на трибунах', 'Вувузела', 'Скаут', 'Академія', 'Тікі-така', 'Пресинг', 'Контратака',
+  'Компенсований час', 'Додатковий час', 'Удар від воріт', 'Жеребкування', 'Турнірна таблиця', 'Агент', 'Контракт', 'Трансфер',
+  'Дубль', 'Бомбардир', 'Симуляція', 'Спрей арбітра', 'Паненка', 'Автобус', 'Суха гра', 'Дербі', 'Удар пʼятою', 'Парашут',
+  'Між ніг', 'Удар з льоту', 'Півзахисник', 'Вінгер', 'Пресконференція', 'Коментатор', 'Футзал', 'Пляжний футбол', 'Сіууу',
+  'Ліга конференцій', 'Золота рукавичка', 'Премія Пушкаша', 'Суперкубок УЄФА', 'Клубний чемпіонат світу', 'Кубок Англії',
+  'Кубок Лібертадорес', 'Кубок африканських націй', 'Золотий хлопчик', 'Сигнал Ідуна Парк', 'Бомбонера', 'Парк де Пренс',
+  'Стад де Франс', 'Ацтека', 'Емірейтс', 'Етіхад', 'Стемфорд Брідж', 'Метрополітано', 'Стадіо Олімпіко', 'Месталья', 'Сан-Мамес',
+  'Селтік Парк', 'Йохан Кройф Арена', 'Да Луж', 'Олд Траффорд', 'Енфілд', 'Сан-Сіро', 'Альянц Арена', 'Маракана',
+]);
+
 function words(base) {
   return [...new Set(base.map(norm).filter(Boolean))];
 }
 
-const termWords = TERMS.map(([uk, en, ...alt], i) => ({ key: `t${i}`, cat: 'terms', uk, en, variants: words([uk, en, ...alt]), img: null }));
-const placeWords = PLACES.map(([uk, en, ...alt], i) => ({ key: `s${i}`, cat: 'places', uk, en, variants: words([uk, en, ...alt]), img: null }));
+const termWords = TERMS.map(([uk, en, ...alt], i) => ({ key: `t${i}`, cat: 'terms', uk, en, variants: words([uk, en, ...alt]), img: null, easy: !HARD.has(uk) }));
+const placeWords = PLACES.map(([uk, en, ...alt], i) => ({ key: `s${i}`, cat: 'places', uk, en, variants: words([uk, en, ...alt]), img: null, easy: !HARD.has(uk) }));
 
 // Клуби: усі клуби-категорії + клуби, де грало ≥ 20 гравців рівня «звичайний»; без ліг росії й білорусі.
 const clubWords = (() => {
   const count = new Map();
   for (const p of poolFor('all', 'normal')) for (const q of new Set(careerOf(p).clubs.map((x) => x.t))) count.set(q, (count.get(q) || 0) + 1);
-  const qids = new Set(categories.filter((c) => c.type === 'club' && c.qid).map((c) => c.qid));
+  const base = new Set(categories.filter((c) => c.type === 'club' && c.qid).map((c) => c.qid));
+  const qids = new Set(base);
   for (const [q, n] of count) if (n >= 20) qids.add(q);
   const seen = new Set();
   const out = [];
@@ -245,7 +255,7 @@ const clubWords = (() => {
     if (seen.has(name)) continue;
     seen.add(name);
     const [uk, en, ...alt] = CLUB_FIX[name] || [name, nameEn];
-    out.push({ key: `c${q}`, cat: 'clubs', uk, en, variants: words([uk, en, name, ...alt]), img });
+    out.push({ key: `c${q}`, cat: 'clubs', uk, en, variants: words([uk, en, name, ...alt]), img, easy: base.has(q) });
   }
   return out;
 })();
@@ -265,4 +275,15 @@ function playerWord(p) {
 }
 const playersFor = (difficulty) => poolFor('all', difficulty === 'easy' ? 'easy' : 'normal').map(playerWord);
 
-module.exports = { CATS, TERMS, PLACES, termWords, placeWords, clubWords, playersFor, norm };
+// Колода на гру: «Легкий» — найвідоміші футболісти, клуби бази, прості терміни й головні трофеї/стадіони; «Звичайний» — усе.
+function decksFor(difficulty) {
+  const easy = difficulty === 'easy';
+  const pick = (list) => (easy ? list.filter((w) => w.easy) : list);
+  return { players: playersFor(difficulty), clubs: pick(clubWords), terms: pick(termWords), places: pick(placeWords) };
+}
+
+// Словник для підказок при введенні відповіді: усі слова рівня «Звичайний» (він містить і «Легкий»).
+const dictionary = [...playersFor('normal'), ...clubWords, ...termWords, ...placeWords]
+  .map((w) => ({ c: w.cat, t: T(w.uk, w.en), v: w.variants }));
+
+module.exports = { CATS, TERMS, PLACES, termWords, placeWords, clubWords, playersFor, decksFor, dictionary, norm };

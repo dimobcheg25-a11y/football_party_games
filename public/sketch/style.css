@@ -90,7 +90,19 @@ body.sketching #chat-fab, body.sketching #chat-panel { display: none !important;
     linear-gradient(0deg, transparent calc(50% - 1px), rgba(120, 100, 70, 0.08) 50%, transparent calc(50% + 2px)),
     var(--paper);
 }
-.napkin.can-draw canvas { cursor: crosshair; }
+.napkin.can-draw canvas { cursor: none; }
+/* шар для фігури, поки її тягнуть (лінія, прямокутник, овал) — точно над полотном */
+.napkin canvas.preview { position: absolute; left: 18px; top: 18px; width: calc(100% - 36px); background: none; pointer-events: none; }
+/* курсор-пензлик: коло розміру й кольору пензля ще до першого штриха; гумка — пунктир, заливка — відро */
+.brush {
+  position: absolute; z-index: 5; width: var(--d); height: var(--d); translate: -50% -50%; border-radius: 50%; pointer-events: none;
+  background: color-mix(in srgb, var(--c) 35%, transparent); border: 2px solid var(--c);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.85), 0 0 0 2px rgba(0, 0, 0, 0.25);
+}
+.brush.tool-erase { background: rgba(255, 255, 255, 0.6); border: 2px dashed #6b6257; }
+.brush.tool-fill { width: 0; height: 0; border: 0; box-shadow: none; background: none; }
+.brush.tool-fill::after { content: "🪣"; position: absolute; left: -4px; top: -26px; font-size: 24px; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.4)); }
+.brush.tool-fill::before { content: ""; position: absolute; left: -5px; top: -5px; width: 10px; height: 10px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 2px #fff, 0 0 0 3px rgba(0, 0, 0, 0.3); }
 
 /* поверх полотна: вибір слова, «обирає…», відповідь */
 .napkin-over {
@@ -140,17 +152,27 @@ body.sketching #chat-fab, body.sketching #chat-panel { display: none !important;
   100% { transform: translateY(10%) rotate(var(--r)) scale(0.9); opacity: 0; }
 }
 
-/* інструменти художника */
-.tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px 14px; }
-.colors, .sizes { display: flex; gap: 6px; }
-.swatch, .size {
-  width: 34px; height: 34px; border-radius: 50%; cursor: pointer; display: grid; place-items: center; padding: 0;
-  border: 2px solid var(--line-strong); background: var(--c, var(--surface-2)); font-size: 16px;
+/* інструменти художника: інструмент, товщина, кольори, дії */
+.tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px 16px; }
+.tool-btns, .colors, .tool-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.colors { max-width: 470px; }
+.tool, .swatch { cursor: pointer; display: grid; place-items: center; padding: 0; border: 2px solid var(--line-strong); }
+.tool { width: 40px; height: 40px; border-radius: 10px; background: var(--surface-2); color: var(--text); font-size: 19px; }
+.swatch { width: 26px; height: 26px; border-radius: 50%; background: var(--c); }
+.tool.on, .swatch.on { outline: 3px solid var(--accent); outline-offset: 2px; border-color: transparent; }
+/* товщина: повзунок-клин (тонко → товсто) і кружечок справжнього розміру й кольору */
+.sizes { position: relative; display: flex; align-items: center; gap: 12px; cursor: pointer; }
+.sizes::before {
+  content: ""; position: absolute; left: 2px; width: 156px; top: 50%; height: 18px; translate: 0 -50%; pointer-events: none;
+  background: var(--surface-2); clip-path: polygon(0 44%, 100% 0, 100% 100%, 0 56%); border-radius: 2px;
 }
-.swatch.eraser { background: var(--paper); }
-.swatch.on, .size.on { outline: 3px solid var(--accent); outline-offset: 2px; border-color: transparent; }
-.size { background: var(--surface-2); }
-.size i { width: var(--w); height: var(--w); max-width: 26px; max-height: 26px; border-radius: 50%; background: var(--text); }
+.sizes input[type="range"] { position: relative; width: 160px; margin: 0; background: transparent; accent-color: var(--accent); cursor: pointer; }
+.size-dot {
+  display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; background: var(--paper); flex: none;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+.size-dot::after { content: ""; width: min(var(--d), 48px); height: min(var(--d), 48px); border-radius: 50%; background: var(--c); }
+.size-dot.erase::after { background: #fff; outline: 2px dashed #6b6257; }
 
 /* стрічка відповідей — чат кімнати */
 .feed-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px; display: grid; gap: 8px; }
@@ -159,7 +181,15 @@ body.sketching #chat-fab, body.sketching #chat-panel { display: none !important;
 .feed li b { color: var(--pc); }
 .feed li.mine { background: rgba(255, 255, 255, 0.04); }
 .feed li.sys { color: var(--accent); font-weight: 800; text-align: center; }
-.feed-form { display: flex; gap: 6px; }
+.feed-form { position: relative; display: flex; gap: 6px; }
+/* підказки слів — над полем (воно внизу картки) */
+.word-suggestions {
+  position: absolute; left: 0; right: 0; bottom: calc(100% + 6px); z-index: 10; margin: 0; padding: 6px; max-height: 260px;
+  background: var(--surface-solid); border: 1px solid var(--line-strong); border-radius: 12px; box-shadow: 0 -16px 40px rgba(0, 0, 0, 0.45);
+}
+.word-suggestions li { padding: 7px 10px; }
+.word-suggestions .s-icon { width: 22px; text-align: center; }
+.feed-card #pass-btn { width: 100%; }
 .feed-form input { flex: 1; min-width: 0; }
 .scoreboard b { font-family: 'Manrope', sans-serif; font-size: 16px; } /* цифри рукописним шрифтом погано читаються */
 .scoreboard li.drawer { border-color: color-mix(in srgb, var(--accent) 60%, transparent); }
@@ -177,11 +207,21 @@ body.sketching #chat-fab, body.sketching #chat-panel { display: none !important;
   .napkin-over h2 { font-size: 32px; }
   .pick-card { min-width: 0; flex: 1 1 30%; padding: 8px; font-size: 22px; }
   .pick-img { width: 56px; height: 56px; }
-  .reveal-img { width: 84px; height: 84px; }
+  /* відповідь на маленькій серветці — компактно, щоб уміщалась */
+  .napkin-over { place-items: start center; }
+  .reveal-card { gap: 2px; }
+  .reveal-img { width: 52px; height: 52px; border-width: 2px; margin-bottom: 2px; }
+  .reveal-card .round-results { margin-top: 4px; gap: 2px; }
+  .reveal-card .round-results li { padding: 3px 8px; font-size: 13px; }
+  .napkin-over .rule { margin-top: 6px; font-size: 12px; }
+  /* художнику кнопка відгуку закриває палітру — під час гри на телефоні її немає (є на головній і в лобі) */
+  body.sketching .fb-fab { display: none; }
   .word i { font-size: 26px; }
   .feed { height: 150px; }
   .feed-card { order: 0; }
-  .swatch, .size { width: 30px; height: 30px; }
+  .napkin canvas.preview { left: 10px; top: 10px; width: calc(100% - 20px); }
+  .tool { width: 36px; height: 36px; font-size: 17px; }
+  .swatch { width: 24px; height: 24px; }
   .coaster { width: 78px; }
   .coaster b { font-size: 26px; }
 }

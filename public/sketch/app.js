@@ -1,13 +1,15 @@
 // «Тактичний ескіз» — клієнт. Спільне (налаштування, вхід, лобі, чат, вихід) — /shared/room-client.js; тут — серветка-полотно,
-// інструменти художника, пропуски слова, стрічка відповідей (той самий чат кімнати), підсумок.
-// Штрихи: художник шле 'draw' ({ t: 's' початок | 'm' точки | 'u' назад | 'x' стерти }), інші отримують їх тією ж подією;
-// новий хід / перепідключення — повний малюнок дією snapshot. Полотно 1000×750, координати цілі.
+// інструменти художника (пензель, гумка, заливка, лінія, прямокутник, овал), пропуски слова, стрічка відповідей (той самий чат
+// кімнати) з підказками слів при введенні, підсумок.
+// Малюнок: художник шле 'draw' ({ t: 's' штрих | 'm' точки штриха | 'g' фігура | 'f' заливка | 'u' назад | 'x' стерти }), інші
+// отримують те саме; новий хід / перепідключення — повний малюнок дією snapshot. Полотно 1000×750, координати цілі;
+// заливку кожен робить у своєму полотні (у тому ж порядку — результат однаковий).
 (() => {
   const { DIFF: DIFF_LABELS } = RoomClient.LABELS;
   const { L } = window.I18n;
   const pl = (n, uk, en) => window.I18n.plural(n, uk, en);
   const POINTS = [['очко', 'очки', 'очок'], ['point', 'points']];
-  const ERASER = '#ffffff'; // «білий» у палітрі — гумка
+  const SHAPES = ['line', 'rect', 'oval'];
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   let state = null;
@@ -20,9 +22,22 @@
     fixSetup(setup) {
       if (!['easy', 'normal'].includes(setup.difficulty)) setup.difficulty = 'normal';
     },
+    hints: {
+      difficulty: {
+        easy: L('Найвідоміші футболісти (топ-400) і клуби, прості терміни, головні трофеї й стадіони.',
+          'The most famous footballers (top 400) and clubs, simple terms, the main trophies and stadiums.'),
+        normal: L('Футболісти до топ-800, більше клубів, терміни й стадіони для тих, хто дивиться футбол.',
+          'Footballers up to the top 800, more clubs, terms and stadiums for those who follow football.'),
+      },
+      drawSeconds: {
+        0: L('Без таймера: літери відкриваються на 45-й і 90-й секунді, очки — за порядком (100, 80, 60…). Не знаєш — «🏳️ Не знаю».',
+          'No timer: letters open at 45 and 90 seconds, points go by order (100, 80, 60…). Stuck? Press “🏳️ No idea”.'),
+      },
+    },
     createOptions: (s) => ({ difficulty: s.difficulty, laps: Number(s.laps), drawSeconds: Number(s.drawSeconds) }),
-    optionList: (o) => [L('Футболісти: ', 'Footballers: ') + DIFF_LABELS[o.difficulty],
-      `${o.laps} ${pl(o.laps, ['коло', 'кола', 'кіл'], ['lap', 'laps'])}`, L(`${o.drawSeconds} с на малюнок`, `${o.drawSeconds} s to draw`)],
+    optionList: (o) => [DIFF_LABELS[o.difficulty],
+      `${o.laps} ${pl(o.laps, ['коло', 'кола', 'кіл'], ['lap', 'laps'])}`,
+      o.drawSeconds ? L(`${o.drawSeconds} с на малюнок`, `${o.drawSeconds} s to draw`) : L('без таймера', 'no timer')],
     onState(s, prev) {
       state = s;
       mySeat = s.you;
@@ -34,10 +49,12 @@
     renderGame,
     renderFinal,
   });
-  const { $, emit, socket, toast, escapeHtml, seatName, seatStyle } = g;
+  const { $, emit, socket, toast, ask, escapeHtml, seatName, seatStyle } = g;
 
   const amDrawer = () => state?.status === 'playing' && state.drawer === mySeat;
   const canDraw = () => amDrawer() && state.phase === 'draw';
+  const iGuessed = () => state?.guessed?.[mySeat] != null;
+  const iPassed = () => !!state?.passed?.includes(mySeat);
 
   function playSounds(p, s) {
     if (!p || s.status !== 'playing') return;
@@ -54,47 +71,99 @@
 
   // ── полотно
   const canvas = $('#canvas');
-  const ctx = canvas.getContext('2d');
-  let strokes = [];
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  const preview = $('#preview');
+  const pctx = preview.getContext('2d');
+  const W = canvas.width;
+  const H = canvas.height;
+  let items = []; // елементи малюнка: штрих { c, w, p }, фігура { k, c, w, p }, заливка { k: 'fill', c, p }
   let shownTurn = -1;
   let syncing = false;
 
-  function paintStroke(st, from = 0) {
-    const p = st.p;
+  function style(c2d, it) {
+    c2d.globalCompositeOperation = it.c === state?.erase ? 'destination-out' : 'source-over';
+    c2d.strokeStyle = it.c === state?.erase ? '#000' : it.c;
+    c2d.fillStyle = c2d.strokeStyle;
+    c2d.lineWidth = it.w;
+    c2d.lineCap = 'round';
+    c2d.lineJoin = 'round';
+  }
+  function paintShape(c2d, it) {
+    const [x1, y1, x2, y2] = it.p;
+    c2d.beginPath();
+    if (it.k === 'line') { c2d.moveTo(x1, y1); c2d.lineTo(x2, y2); }
+    else if (it.k === 'rect') c2d.rect(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1));
+    else c2d.ellipse((x1 + x2) / 2, (y1 + y2) / 2, Math.abs(x2 - x1) / 2, Math.abs(y2 - y1) / 2, 0, 0, Math.PI * 2);
+    c2d.stroke();
+  }
+  function paint(it, from = 0) {
+    if (it.k === 'fill') return floodFill(it.p[0], it.p[1], it.c);
     ctx.save();
-    ctx.globalCompositeOperation = st.c === ERASER ? 'destination-out' : 'source-over';
-    ctx.strokeStyle = st.c;
-    ctx.fillStyle = st.c;
-    ctx.lineWidth = st.w;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    if (p.length === 2) {
+    style(ctx, it);
+    if (it.k) paintShape(ctx, it);
+    else if (it.p.length === 2) {
       ctx.beginPath();
-      ctx.arc(p[0], p[1], st.w / 2, 0, Math.PI * 2);
+      ctx.arc(it.p[0], it.p[1], it.w / 2, 0, Math.PI * 2);
       ctx.fill();
     } else {
       const start = Math.max(0, from - 2);
       ctx.beginPath();
-      ctx.moveTo(p[start], p[start + 1]);
-      for (let i = start + 2; i < p.length; i += 2) ctx.lineTo(p[i], p[i + 1]);
+      ctx.moveTo(it.p[start], it.p[start + 1]);
+      for (let i = start + 2; i < it.p.length; i += 2) ctx.lineTo(it.p[i], it.p[i + 1]);
       ctx.stroke();
     }
     ctx.restore();
   }
+
+  // Заливка області схожого кольору (порожнє полотно — прозоре); межу з напівпрозорими пікселями згладжування теж зафарбовуємо.
+  function floodFill(x0, y0, hex) {
+    const img = ctx.getImageData(0, 0, W, H);
+    const d = img.data;
+    const fr = parseInt(hex.slice(1, 3), 16), fg = parseInt(hex.slice(3, 5), 16), fb = parseInt(hex.slice(5, 7), 16);
+    const start = (Math.min(H - 1, y0) * W + Math.min(W - 1, x0)) * 4;
+    const [tr, tg, tb, ta] = [d[start], d[start + 1], d[start + 2], d[start + 3]];
+    if (ta === 255 && tr === fr && tg === fg && tb === fb) return;
+    const near = (i) => (ta < 40 ? d[i + 3] < 90 : Math.abs(d[i] - tr) + Math.abs(d[i + 1] - tg) + Math.abs(d[i + 2] - tb) + Math.abs(d[i + 3] - ta) < 120);
+    const mask = new Uint8Array(W * H);
+    const stack = [start / 4];
+    while (stack.length) {
+      let n = stack.pop();
+      let x = n % W;
+      const y = (n - x) / W;
+      while (x > 0 && !mask[n - 1] && near((n - 1) * 4)) { n--; x--; }
+      let up = false, down = false;
+      for (; x < W && !mask[n] && near(n * 4); n++, x++) {
+        mask[n] = 1;
+        if (y > 0) { const u = n - W; if (!mask[u] && near(u * 4)) { if (!up) { stack.push(u); up = true; } } else up = false; }
+        if (y < H - 1) { const v = n + W; if (!mask[v] && near(v * 4)) { if (!down) { stack.push(v); down = true; } } else down = false; }
+      }
+    }
+    const paintPx = (i) => { d[i] = fr; d[i + 1] = fg; d[i + 2] = fb; d[i + 3] = 255; };
+    for (let n = 0; n < mask.length; n++) {
+      if (!mask[n]) continue;
+      paintPx(n * 4);
+      // згладжування на межі: сусід напівпрозорий — теж фарбуємо (інакше біла облямівка)
+      for (const m of [n - 1, n + 1, n - W, n + W]) if (m >= 0 && m < mask.length && !mask[m] && d[m * 4 + 3] < 200) paintPx(m * 4);
+    }
+    ctx.putImageData(img, 0, 0);
+  }
+
   function repaint() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    strokes.forEach((st) => paintStroke(st));
+    ctx.clearRect(0, 0, W, H);
+    items.forEach((it) => paint(it));
   }
   function applyOp(op) {
-    if (op.t === 's') { strokes.push({ c: op.c, w: op.w, p: [...op.p] }); paintStroke(strokes[strokes.length - 1]); }
+    if (op.t === 's') { items.push({ c: op.c, w: op.w, p: [...op.p] }); paint(items[items.length - 1]); }
+    else if (op.t === 'g') { items.push({ k: op.k, c: op.c, w: op.w, p: [...op.p] }); paint(items[items.length - 1]); }
+    else if (op.t === 'f') { items.push({ k: 'fill', c: op.c, p: [...op.p] }); paint(items[items.length - 1]); }
     else if (op.t === 'm') {
-      const st = strokes[strokes.length - 1];
-      if (!st) return;
-      const from = st.p.length;
-      st.p.push(...op.p);
-      paintStroke(st, from);
-    } else if (op.t === 'u') { strokes.pop(); repaint(); }
-    else if (op.t === 'x') { strokes = []; repaint(); }
+      const it = items[items.length - 1];
+      if (!it || it.k) return;
+      const from = it.p.length;
+      it.p.push(...op.p);
+      paint(it, from);
+    } else if (op.t === 'u') { items.pop(); repaint(); }
+    else if (op.t === 'x') { items = []; repaint(); }
   }
 
   // Новий хід — чисте полотно; посеред ходу (вхід, перепідключення) — повний малюнок із сервера.
@@ -103,14 +172,14 @@
     const res = await emit('snapshot');
     syncing = false;
     if (!res.ok || res.turn !== state?.turn) return;
-    strokes = res.strokes.map((st) => ({ ...st, p: [...st.p] }));
+    items = res.strokes.map((it) => ({ ...it, p: [...it.p] }));
     repaint();
   }
   function syncCanvas(p, s) {
     if (s.status !== 'playing') return;
     if (s.turn !== shownTurn) {
       shownTurn = s.turn;
-      strokes = [];
+      items = [];
       repaint();
       if (p && p.turn === s.turn - 1 && s.phase === 'choose') return; // звичайний перехід ходу — малюнка ще немає
       sync();
@@ -123,9 +192,10 @@
   socket.on('connect', () => { if (state?.status === 'playing') sync(); });
 
   // ── малює художник
+  let tool = 'pen'; // pen | erase | fill | line | rect | oval
   let color = '#1d1d1f';
-  let size = 9;
-  let drawing = false;
+  let size = 6;
+  let drawing = null; // { kind: 'pen' } | { kind: 'shape', p0 }
   let buffer = [];
   let flushTimer = null;
   const send = (op) => socket.emit('draw', op);
@@ -138,41 +208,109 @@
   }
   function point(e) {
     const r = canvas.getBoundingClientRect();
-    return [Math.round(((e.clientX - r.left) / r.width) * canvas.width), Math.round(((e.clientY - r.top) / r.height) * canvas.height)];
+    const x = Math.round(((e.clientX - r.left) / r.width) * W);
+    const y = Math.round(((e.clientY - r.top) / r.height) * H);
+    return [Math.max(0, Math.min(W, x)), Math.max(0, Math.min(H, y))];
+  }
+  function act(op) {
+    applyOp(op);
+    send(op);
   }
   canvas.addEventListener('pointerdown', (e) => {
     if (!canDraw()) return;
     e.preventDefault();
     canvas.setPointerCapture(e.pointerId);
-    drawing = true;
     const p = point(e);
-    applyOp({ t: 's', c: color, w: size, p });
-    send({ t: 's', c: color, w: size, p });
+    if (tool === 'fill') return act({ t: 'f', c: color, p });
+    if (SHAPES.includes(tool)) { drawing = { kind: 'shape', p0: p }; return; }
+    drawing = { kind: 'pen' };
+    act({ t: 's', c: tool === 'erase' ? state.erase : color, w: size, p });
   });
   canvas.addEventListener('pointermove', (e) => {
+    moveBrush(e);
     if (!drawing) return;
-    const st = strokes[strokes.length - 1];
     const p = point(e);
-    if (st && Math.hypot(p[0] - st.p[st.p.length - 2], p[1] - st.p[st.p.length - 1]) < 2) return;
+    if (drawing.kind === 'shape') {
+      pctx.clearRect(0, 0, W, H);
+      pctx.save();
+      style(pctx, { c: color, w: size });
+      paintShape(pctx, { k: tool, p: [...drawing.p0, ...p] });
+      pctx.restore();
+      return;
+    }
+    const it = items[items.length - 1];
+    if (it && Math.hypot(p[0] - it.p[it.p.length - 2], p[1] - it.p[it.p.length - 1]) < 2) return;
     applyOp({ t: 'm', p });
     buffer.push(...p);
     if (buffer.length >= 300) flush();
     else if (!flushTimer) flushTimer = setTimeout(flush, 40);
   });
-  const stop = () => { if (drawing) { drawing = false; flush(); } };
+  function stop(e) {
+    if (!drawing) return;
+    if (drawing.kind === 'shape') {
+      pctx.clearRect(0, 0, W, H);
+      const p = point(e);
+      if (Math.hypot(p[0] - drawing.p0[0], p[1] - drawing.p0[1]) > 4) act({ t: 'g', k: tool, c: color, w: size, p: [...drawing.p0, ...p] });
+    } else flush();
+    drawing = null;
+  }
   canvas.addEventListener('pointerup', stop);
   canvas.addEventListener('pointercancel', stop);
 
-  function renderTools() {
-    $('#colors').innerHTML = state.palette.map((c) => `<button type="button" class="swatch ${c === color ? 'on' : ''} ${c === ERASER ? 'eraser' : ''}" data-c="${c}" style="--c:${c}" aria-label="${c === ERASER ? L('Гумка', 'Eraser') : c}" title="${c === ERASER ? L('Гумка', 'Eraser') : ''}">${c === ERASER ? '🧽' : ''}</button>`).join('');
-    $('#sizes').innerHTML = state.sizes.map((w) => `<button type="button" class="size ${w === size ? 'on' : ''}" data-w="${w}" aria-label="${w}"><i style="--w:${Math.min(w, 26)}px"></i></button>`).join('');
+  // Курсор-пензлик: коло розміру й кольору пензля (гумка — пунктир, заливка — відро) ще до першого штриха.
+  const brush = $('#brush');
+  function moveBrush(e) {
+    if (!canDraw() || e.pointerType === 'touch') { brush.classList.add('hidden'); return; }
+    const r = canvas.getBoundingClientRect();
+    const box = $('#napkin').getBoundingClientRect();
+    const d = Math.max(6, (size * r.width) / W);
+    brush.classList.remove('hidden');
+    brush.className = `brush tool-${tool}`;
+    brush.style.cssText = `left:${e.clientX - box.left}px;top:${e.clientY - box.top}px;--d:${tool === 'fill' ? 0 : d}px;--c:${color}`;
   }
-  $('#colors').addEventListener('click', (e) => { const b = e.target.closest('[data-c]'); if (b) { color = b.dataset.c; renderTools(); } });
-  $('#sizes').addEventListener('click', (e) => { const b = e.target.closest('[data-w]'); if (b) { size = Number(b.dataset.w); renderTools(); } });
-  $('#undo-btn').addEventListener('click', () => { if (canDraw() && strokes.length) { flush(); applyOp({ t: 'u' }); send({ t: 'u' }); } });
-  $('#clear-btn').addEventListener('click', () => { if (canDraw() && strokes.length) { flush(); applyOp({ t: 'x' }); send({ t: 'x' }); } });
+  canvas.addEventListener('pointerleave', () => brush.classList.add('hidden'));
+
+  const TOOLS = [
+    ['pen', '✏️', L('Пензель', 'Brush')], ['erase', '🧽', L('Гумка', 'Eraser')], ['fill', '🪣', L('Заливка', 'Fill')],
+    ['line', '／', L('Лінія', 'Line')], ['rect', '▭', L('Прямокутник', 'Rectangle')], ['oval', '◯', L('Овал', 'Oval')],
+  ];
+  function renderTools() {
+    $('#tool-btns').innerHTML = TOOLS.map(([id, icon, name]) => `<button type="button" class="tool ${id === tool ? 'on' : ''}" data-tool="${id}" title="${name}" aria-label="${name}">${icon}</button>`).join('');
+    $('#colors').innerHTML = state.palette.map((c) => `<button type="button" class="swatch ${c === color && tool !== 'erase' ? 'on' : ''}" data-c="${c}" style="--c:${c}" aria-label="${c}"></button>`).join('');
+    renderSize();
+  }
+  $('#tool-btns').addEventListener('click', (e) => { const b = e.target.closest('[data-tool]'); if (b) { tool = b.dataset.tool; renderTools(); } });
+  $('#colors').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-c]');
+    if (!b) return;
+    color = b.dataset.c;
+    if (tool === 'erase') tool = 'pen';
+    renderTools();
+  });
+  // Товщина — повзунком (не перемальовується зі станом, щоб не збивати перетягування); поруч — кружечок справжнього розміру й кольору.
+  const range = $('#size-range');
+  function renderSize() {
+    range.min = state.size.min;
+    range.max = state.size.max;
+    range.value = size;
+    const r = canvas.getBoundingClientRect();
+    const d = Math.max(3, (size * (r.width || W)) / W);
+    $('#size-dot').style.cssText = `--d:${d}px;--c:${color}`;
+    $('#size-dot').classList.toggle('erase', tool === 'erase');
+  }
+  range.addEventListener('input', () => { size = Number(range.value); renderSize(); });
+  $('#undo-btn').addEventListener('click', () => { if (canDraw() && items.length) { flush(); act({ t: 'u' }); } });
+  $('#clear-btn').addEventListener('click', () => { if (canDraw() && items.length) { flush(); act({ t: 'x' }); } });
+  $('#giveup-btn').addEventListener('click', async () => {
+    if (await ask(L('Здатися й показати відповідь?', 'Give up and show the answer?'), { note: L('Очок за цей хід не буде.', 'No points for this turn.'), ok: L('🏳️ Здатися', '🏳️ Give up'), danger: true })) g.act('giveUp');
+  });
   document.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && canDraw() && document.activeElement?.tagName !== 'INPUT') { e.preventDefault(); $('#undo-btn').click(); }
+    if (!canDraw() || document.activeElement?.tagName === 'INPUT' && document.activeElement !== range) return;
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); $('#undo-btn').click(); }
+    if (e.key === '[' || e.key === ']') { // товщина з клавіатури, як у графічних редакторах
+      size = Math.max(state.size.min, Math.min(state.size.max, size + (e.key === ']' ? 2 : -2)));
+      renderSize();
+    }
   });
 
   // ── гра
@@ -226,12 +364,15 @@
     $('#napkin').classList.toggle('can-draw', canDraw());
     $('#tools').classList.toggle('hidden', !canDraw());
     if (canDraw()) renderTools();
+    else brush.classList.add('hidden');
 
     const input = $('#feed-input');
-    const done = s.guessed[mySeat] != null;
     input.placeholder = amDrawer() ? L('Чат (без відповіді!)', 'Chat (no spoilers!)')
-      : done ? L('Чат для тих, хто вгадав', 'Chat for those who got it') : L('Твоя відповідь…', 'Your guess…');
-    $('#reactions').classList.toggle('hidden', false);
+      : iGuessed() ? L('Чат для тих, хто вгадав', 'Chat for those who got it') : L('Твоя відповідь…', 'Your guess…');
+    $('#pass-btn').classList.toggle('hidden', !(s.phase === 'draw' && !amDrawer() && !iGuessed()));
+    $('#pass-btn').disabled = iPassed();
+    $('#pass-btn').textContent = iPassed() ? L('🏳️ Чекаємо інших…', '🏳️ Waiting for others…') : L('🏳️ Не знаю', '🏳️ No idea');
+    if (amDrawer() || iGuessed()) renderSuggestions();
     renderScoreboard();
     tick();
   }
@@ -240,6 +381,7 @@
     const b = e.target.closest('.pick-card');
     if (b) g.act('choose', { key: b.dataset.key });
   });
+  $('#pass-btn').addEventListener('click', () => g.act('pass'));
 
   // «Підставка під пиво» з очками — фірмова анімація: летить на серветку, коли хтось вгадав.
   function showCoasters(p, s) {
@@ -264,16 +406,77 @@
       : `<li style="${seatStyle(m.seat)}" class="${m.seat === mySeat ? 'mine' : ''}"><b>${escapeHtml(m.seat === mySeat ? L('Ти', 'You') : m.name)}:</b> ${escapeHtml(m.text)}</li>`)).join('');
     feed.scrollTop = 1e6;
   }
-  $('#feed-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
+  async function say(text) {
     const input = $('#feed-input');
-    const text = input.value.trim();
     if (!text) return;
     const res = await emit('chat', text);
     if (res.error) return toast(res.error, 'bad');
     input.value = '';
+    renderSuggestions();
     if (res.correct) toast(L('✅ Вгадав!', '✅ You got it!'), 'good');
     else if (res.close) toast(L('🔥 Майже! Ще трохи', '🔥 So close!'), '');
+  }
+  $('#feed-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (active >= 0 && suggestions[active]) return say(suggestions[active].t);
+    say($('#feed-input').value.trim());
+  });
+
+  // Підказки при введенні: усі можливі відповіді (словник гри), спершу — з категорії цього ходу. Клік / Tab / ↓+Enter — обрати;
+  // просто Enter — надіслати як написано (у чаті можна писати й звичайні повідомлення).
+  let dict = [];
+  fetch(`/api/sketch/words?lang=${window.I18n.lang}`).then((r) => r.json()).then((list) => {
+    const norm = window.Players.normalize;
+    dict = list.map((w) => {
+      const variants = [norm(w.t), ...w.v];
+      return { ...w, variants, tokens: variants.flatMap((v) => v.split(' ')) };
+    });
+  }).catch(() => {});
+  let suggestions = [];
+  let active = -1;
+  function searchWords(query) {
+    const q = window.Players.normalize(query);
+    if (q.length < 2) return [];
+    const parts = q.split(' ');
+    const cat = state?.category?.id;
+    const scored = [];
+    for (const w of dict) {
+      if (!parts.every((part) => w.tokens.some((t) => t.startsWith(part)))) continue;
+      let score = 0;
+      if (w.variants.some((v) => v === q)) score += 100;
+      if (w.variants.some((v) => v.startsWith(q))) score += 20;
+      if (w.c === cat) score += 50;
+      scored.push({ w, score });
+    }
+    scored.sort((a, b) => b.score - a.score || a.w.t.length - b.w.t.length);
+    const seen = new Set();
+    return scored.map((x) => x.w).filter((w) => !seen.has(w.t) && seen.add(w.t)).slice(0, 6);
+  }
+  const ICONS = { players: '⚽', clubs: '🛡️', terms: '📖', places: '🏆' };
+  function renderSuggestions() {
+    const input = $('#feed-input');
+    const list = $('#word-suggestions');
+    const off = !state || state.phase !== 'draw' || amDrawer() || iGuessed();
+    suggestions = off ? [] : searchWords(input.value);
+    if (active >= suggestions.length) active = -1;
+    const shamed = off ? '' : window.Players.shame(input.value); // росіяни — сірі, вибрати не можна
+    list.innerHTML = suggestions.map((w, i) => `<li data-i="${i}" class="${i === active ? 'active' : ''}"><span class="s-icon">${ICONS[w.c] || ''}</span><span class="s-main">${escapeHtml(w.t)}</span></li>`).join('') + shamed;
+  }
+  const input = $('#feed-input');
+  input.addEventListener('input', () => { active = -1; renderSuggestions(); });
+  input.addEventListener('keydown', (e) => {
+    if (!suggestions.length) return;
+    if (e.key === 'ArrowDown') { active = Math.min(active + 1, suggestions.length - 1); renderSuggestions(); e.preventDefault(); }
+    if (e.key === 'ArrowUp') { active = Math.max(active - 1, -1); renderSuggestions(); e.preventDefault(); }
+    if (e.key === 'Tab') { say(suggestions[Math.max(active, 0)].t); e.preventDefault(); }
+    if (e.key === 'Escape') { suggestions = []; $('#word-suggestions').innerHTML = ''; }
+  });
+  input.addEventListener('blur', () => setTimeout(() => { $('#word-suggestions').innerHTML = ''; }, 200));
+  input.addEventListener('focus', renderSuggestions);
+  $('#word-suggestions').addEventListener('mousedown', (e) => e.preventDefault()); // фокус лишається в полі
+  $('#word-suggestions').addEventListener('click', (e) => {
+    const li = e.target.closest('li[data-i]');
+    if (li) say(suggestions[Number(li.dataset.i)].t);
   });
 
   // ── таблиця
@@ -283,7 +486,8 @@
     const seats = s.seats.map((x, i) => (x ? i : -1)).filter((i) => i >= 0).sort((a, b) => s.scores[b] - s.scores[a] || a - b);
     $('#scoreboard').innerHTML = seats.map((i) => {
       const got = s.guessed[i];
-      const mark = i === s.drawer && s.status === 'playing' ? '<span class="st">✏️</span>' : got != null ? `<span class="gain">✓ +${got}</span>` : '';
+      const mark = i === s.drawer && s.status === 'playing' ? '<span class="st">✏️</span>'
+        : got != null ? `<span class="gain">✓ +${got}</span>` : s.passed?.includes(i) ? '<span class="st">🏳️</span>' : '';
       const bump = shownScores[i] != null && s.scores[i] > shownScores[i] ? 'bump' : '';
       return `<li data-seat="${i}" style="${seatStyle(i)}" class="${i === mySeat ? 'me' : ''} ${s.seats[i].connected ? '' : 'offline'} ${i === s.drawer ? 'drawer' : ''}">
         <span class="dot-p"></span><span class="nm">${escapeHtml(seatName(i))}</span>${mark}<b class="${bump}">${s.scores[i]}</b></li>`;
@@ -291,10 +495,17 @@
     shownScores = Object.fromEntries(seats.map((i) => [i, s.scores[i]]));
   }
 
-  // ── таймер
+  // ── таймер (без таймера — скільки вже малюють)
   function tick() {
     const el = $('#timer');
-    if (!state || state.status !== 'playing' || !state.deadline) { el.textContent = ''; return; }
+    if (!state || state.status !== 'playing') { el.textContent = ''; return; }
+    if (state.phase === 'draw' && !state.deadline && state.startedAt) {
+      const sec = Math.max(0, Math.floor((g.serverNow() - state.startedAt) / 1000));
+      el.textContent = `∞ ${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+      el.classList.remove('low');
+      return;
+    }
+    if (!state.deadline) { el.textContent = ''; return; }
     const left = Math.max(0, Math.ceil((state.deadline - g.serverNow()) / 1000));
     el.textContent = state.phase === 'reveal' ? L(`далі через ${left} с`, `next in ${left}s`)
       : state.phase === 'choose' ? L(`вибір · ${left} с`, `choosing · ${left}s`) : `⏱ ${left}`;
@@ -319,5 +530,4 @@
     $('#again-btn').classList.toggle('hidden', !isHost);
     $('#again-wait').textContent = isHost ? '' : L(`${s.seats[s.host]?.name || 'Господар'} може почати ще одну гру.`, `${s.seats[s.host]?.name || 'The host'} can start another game.`);
   }
-
 })();

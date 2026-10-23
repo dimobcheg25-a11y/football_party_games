@@ -52,7 +52,7 @@
 
       <div id="setup-options">
         <div class="field">
-          <span class="field-label" data-en="Footballers">Футболісти</span>
+          <span class="field-label" data-en="Difficulty">Складність</span>
           <div class="chips" data-opt="difficulty" role="radiogroup" aria-label="Складність" data-en-aria-label="Difficulty">
             <button type="button" class="chip" data-val="easy" data-en="🟢 Easy">🟢 Легкий</button>
             <button type="button" class="chip" data-val="normal" data-en="🟡 Normal">🟡 Звичайний</button>
@@ -75,7 +75,9 @@
             <button type="button" class="chip" data-val="60" data-en="60 s">60 с</button>
             <button type="button" class="chip" data-val="80" data-en="80 s">80 с</button>
             <button type="button" class="chip" data-val="100" data-en="100 s">100 с</button>
+            <button type="button" class="chip" data-val="0" title="Без таймера" data-en-title="No timer">∞</button>
           </div>
+          <p class="hint" id="drawSeconds-hint"></p>
         </div>
       </div>
 
@@ -91,7 +93,8 @@
         <li data-en-html="Everyone else writes guesses in the chat. The right answer is hidden from others — they only see that you got it. For a footballer the surname is enough; any language is fine.">Решта пишуть відповіді в чат. Правильну відповідь інші не бачать — лише що ти вгадав. Для футболіста досить прізвища; можна будь-якою мовою.</li>
         <li data-en-html="&lt;b&gt;Not allowed:&lt;/b&gt; writing letters or words and drawing national flags. Only a drawing!"><b>Не можна:</b> писати літери чи слова й малювати прапори країн. Лише малюнок!</li>
         <li data-en-html="Gaps show how many letters; at half and three quarters of the time a letter opens.">Пропуски показують, скільки літер; на половині й на ¾ часу відкривається літера.</li>
-        <li data-en-html="Points: a guess is worth 100 → 20 depending on the time left, the first one +20. The artist gets +25 for everyone who guessed.">Очки: вгадав — від 100 до 20 залежно від того, скільки лишилось часу, найшвидшому +20. Художнику — +25 за кожного, хто вгадав.</li>
+        <li data-en-html="Points: a guess is worth 100 → 20 depending on the time left (no timer — by order: 100, 80, 60…), the first one +20. The artist gets +25 for everyone who guessed.">Очки: вгадав — від 100 до 20 залежно від того, скільки лишилось часу (без таймера — за порядком: 100, 80, 60…), найшвидшому +20. Художнику — +25 за кожного, хто вгадав.</li>
+        <li data-en-html="Don’t know? Press &lt;b&gt;“🏳️ No idea”&lt;/b&gt; — the turn ends once everyone has guessed or given up. The artist can give up too.">Не знаєш — тисни <b>«🏳️ Не знаю»</b>: хід закінчиться, коли всі вгадали або здалися. Художник теж може здатися.</li>
       </ul>
     </section>
   </main>
@@ -126,14 +129,23 @@
         <div class="word-bar" id="word-bar"></div>
         <div class="napkin" id="napkin">
           <canvas id="canvas" width="1000" height="750" aria-label="Малюнок" data-en-aria-label="Drawing"></canvas>
+          <canvas id="preview" class="preview" width="1000" height="750" aria-hidden="true"></canvas>
+          <div class="brush hidden" id="brush" aria-hidden="true"></div>
           <div class="napkin-over hidden" id="over"></div>
           <div class="coasters" id="coasters" aria-hidden="true"></div>
         </div>
         <div class="tools hidden" id="tools">
+          <div class="tool-btns" id="tool-btns"></div>
+          <label class="sizes" title="Розмір пензля ([ і ] на клавіатурі)" data-en-title="Brush size ([ and ] on the keyboard)">
+            <input type="range" id="size-range" min="2" max="48" value="6" aria-label="Розмір пензля" data-en-aria-label="Brush size" />
+            <span class="size-dot" id="size-dot"></span>
+          </label>
           <div class="colors" id="colors"></div>
-          <div class="sizes" id="sizes"></div>
-          <button type="button" class="btn btn-secondary btn-sm" id="undo-btn" data-en="↶ Undo">↶ Назад</button>
-          <button type="button" class="btn btn-secondary btn-sm" id="clear-btn" data-en="🗑 Clear">🗑 Стерти все</button>
+          <div class="tool-actions">
+            <button type="button" class="btn btn-secondary btn-sm" id="undo-btn" data-en="↶ Undo">↶ Назад</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="clear-btn" data-en="🗑 Clear">🗑 Стерти все</button>
+            <button type="button" class="btn btn-secondary btn-sm btn-giveup" id="giveup-btn" data-en="🏳️ Give up">🏳️ Здатися</button>
+          </div>
         </div>
       </section>
 
@@ -145,9 +157,11 @@
         <section class="feed-card">
           <ul class="feed" id="feed"></ul>
           <form class="feed-form" id="feed-form">
+            <ul class="suggestions word-suggestions" id="word-suggestions"></ul>
             <input id="feed-input" maxlength="100" autocomplete="off" placeholder="Твоя відповідь…" data-en-placeholder="Your guess…" />
             <button class="btn btn-primary btn-sm" aria-label="Надіслати" data-en-aria-label="Send">↑</button>
           </form>
+          <button type="button" class="btn btn-secondary btn-sm btn-giveup hidden" id="pass-btn" data-en="🏳️ No idea">🏳️ Не знаю</button>
         </section>
         <div class="reactions" id="reactions"></div>
       </aside>

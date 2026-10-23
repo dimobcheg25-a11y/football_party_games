@@ -92,6 +92,82 @@ async function choosePlayer(page, input, query) {
   await page.click(`${input} ~ .suggestions li[data-i="0"], .suggestions li[data-i="0"]`);
 }
 
+// «Тактичний ескіз» на телефоні (--mobile): сенсорний екран проти ПК, одне коло — телефон і малює (справжні дотики), і вгадує.
+async function sketchPhone(browser) {
+  const ctx = await browser.newContext({ viewport: PHONE, deviceScaleFactor: 1, hasTouch: true, isMobile: true });
+  const phone = await ctx.newPage();
+  phone.on('pageerror', (e) => errors.push(`[sketch-phone] ${e.message}`));
+  await phone.goto(`${URL}/sketch/`);
+  await phone.fill('#name-input', 'Телефон');
+  await phone.tap('[data-opt="laps"] [data-val="1"]');
+  await phone.tap('#create-btn');
+  await phone.waitForSelector('#lobby-code:not(:empty)');
+  const code = await phone.textContent('#lobby-code');
+  const pc = await person(browser, 'sketch-pc');
+  await pc.goto(`${URL}/sketch/?room=${code}`);
+  await pc.fill('#name-input', 'ПК');
+  await pc.click('#join-btn');
+  await phone.waitForSelector('#start-btn:not([disabled])');
+  await phone.tap('#start-btn');
+  const cdp = await ctx.newCDPSession(phone);
+  const touch = async (points) => {
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [points[0]] });
+    for (const p of points.slice(1)) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [p] });
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  };
+  for (let turn = 0; turn < 2; turn++) {
+    await phone.waitForSelector('.pick-card, #over .wait', { timeout: 15000 }).catch(async (e) => { await shot(phone, 'sketch-phone-fail', { full: true }); throw e; });
+    const phoneDraws = !!(await phone.$('.pick-card'));
+    const drawer = phoneDraws ? phone : pc;
+    const guesser = phoneDraws ? pc : phone;
+    if (phoneDraws) await shot(phone, 'sketch-phone-choose', { full: true });
+    await (phoneDraws ? phone.tap('.pick-card') : pc.click('.pick-card'));
+    await drawer.waitForSelector('#tools:not(.hidden)');
+    if (phoneDraws) {
+      // координати полотна — щоразу заново: після тапу по інструменту сторінка прокручується
+      const at = async (list) => {
+        await phone.locator('#canvas').scrollIntoViewIfNeeded();
+        const b = await phone.locator('#canvas').boundingBox();
+        return list.map(([fx, fy]) => ({ x: b.x + b.width * fx, y: b.y + b.height * fy }));
+      };
+      await touch(await at([[0.2, 0.3], [0.35, 0.5], [0.5, 0.3], [0.65, 0.5], [0.8, 0.3]]));
+      const pick = async (sel, on) => { // тап поки сторінка прокручується може влучити поруч — перевіряємо, що вибрано
+        for (let k = 0; k < 3 && !(await phone.$(on)); k++) { await phone.locator(sel).scrollIntoViewIfNeeded(); await phone.tap(sel); }
+      };
+      await pick('[data-tool="oval"]', '.tool.on[data-tool="oval"]');
+      await touch(await at([[0.3, 0.45], [0.5, 0.7], [0.7, 0.95]]));
+      await pick('.swatch[data-c="#1e8a3c"]', '.swatch.on[data-c="#1e8a3c"]');
+      await pick('[data-tool="fill"]', '.tool.on[data-tool="fill"]');
+      const [inside] = await at([[0.5, 0.7]]);
+      await phone.touchscreen.tap(inside.x, inside.y);
+      await shot(phone, 'sketch-phone-draw', { full: true });
+    } else {
+      const b = await pc.locator('#canvas').boundingBox();
+      await pc.mouse.move(b.x + b.width * 0.3, b.y + b.height * 0.5);
+      await pc.mouse.down();
+      await pc.mouse.move(b.x + b.width * 0.7, b.y + b.height * 0.5, { steps: 6 });
+      await pc.mouse.up();
+    }
+    const raw = (await drawer.textContent('#word-bar .word')).trim();
+    const word = raw.replace(/\s+/g, '');
+    if (!phoneDraws) {
+      await phone.tap('#feed-input');
+      await phone.fill('#feed-input', raw.slice(0, Math.max(3, raw.length - 3)));
+      await phone.waitForSelector('#word-suggestions li');
+      await shot(phone, 'sketch-phone-guess', { full: true });
+      await phone.locator('#word-suggestions li[data-i]', { hasText: raw }).first().tap();
+    } else {
+      await guesser.fill('#feed-input', word);
+      await guesser.press('#feed-input', 'Enter');
+    }
+    await phone.waitForSelector('.reveal-card', { timeout: 15000 }).catch(async (e) => { await shot(phone, 'sketch-phone-fail', { full: true }); throw new Error(`немає відповіді (хід ${turn}, телефон малює: ${phoneDraws}, слово ${word})`); });
+    if (!phoneDraws) await shot(phone, 'sketch-phone-reveal', { full: true });
+    await phone.waitForSelector('.reveal-card', { state: 'detached', timeout: 15000 }).catch(() => {});
+  }
+  await ctx.close();
+  await pc.context().close();
+}
+
 const scenarios = {
   async hub(browser) {
     const p = await person(browser, 'hub');
@@ -198,11 +274,31 @@ const scenarios = {
     await drawer.mouse.down();
     await drawer.mouse.move(...at(0.22, 0.28), { steps: 4 });
     await drawer.mouse.up();
+    // прямокутник, заливка всередині, потім пензель — курсор-коло над серветкою
+    await drawer.click('[data-tool="rect"]');
+    await drawer.mouse.move(...at(0.6, 0.12));
+    await drawer.mouse.down();
+    await drawer.mouse.move(...at(0.9, 0.35), { steps: 5 });
+    await drawer.mouse.up();
+    await drawer.click('[data-tool="fill"]');
+    await drawer.click('.swatch[data-c="#f7c531"]');
+    await drawer.click('[data-tool="fill"]');
+    await drawer.mouse.click(...at(0.75, 0.24));
+    await drawer.click('[data-tool="pen"]');
+    const slider = await drawer.locator('#size-range').boundingBox(); // товщина — тягнемо повзунок праворуч
+    await drawer.mouse.move(slider.x + slider.width * 0.12, slider.y + slider.height / 2);
+    await drawer.mouse.down();
+    await drawer.mouse.move(slider.x + slider.width * 0.8, slider.y + slider.height / 2, { steps: 5 });
+    await drawer.mouse.up();
+    const box2 = await drawer.locator('#canvas').boundingBox(); // сторінка могла прокрутитись
+    await drawer.mouse.move(box2.x + box2.width * 0.5, box2.y + box2.height * 0.6, { steps: 3 });
     const word = (await drawer.textContent('#word-bar .word')).replace(/\s+/g, '');
     await shot(drawer, 'sketch-drawer');
     await guest.fill('#feed-input', 'пенальті?');
     await guest.press('#feed-input', 'Enter');
     await guest.waitForTimeout(800);
+    await guest.fill('#feed-input', word.slice(0, 3));
+    await guest.waitForSelector('#word-suggestions li');
     await shot(guest, 'sketch-guess');
     await guest.fill('#feed-input', word);
     await guest.press('#feed-input', 'Enter');
@@ -210,6 +306,7 @@ const scenarios = {
     await shot(guest, 'sketch-coaster');
     await phoneShot(browser, 'sketch', '/sketch/');
     for (const x of all) await x.context().close();
+    if (mobile) await sketchPhone(browser);
   },
 
   async guess(browser) {

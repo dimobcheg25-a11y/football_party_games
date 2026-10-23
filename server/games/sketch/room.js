@@ -1,17 +1,19 @@
 // Партія «Тактичного ескізу»: гравці по черзі малюють загадане (футболіст, клуб, термін, трофей/стадіон), решта пише відповіді в чат.
 // Хід: choose (художник обирає одне з трьох слів однієї категорії; категорії йдуть по колу — однаково часто) → draw (малюнок
 // наживо, пропуски з літерами, що відкриваються на ½ і ¾ часу) → reveal (відповідь, очки) → наступний художник. Кіл — 1/2/3.
-// Очки: хто вгадав — 100→20 за часом, що лишився, першому +20; художнику — +25 за кожного, хто вгадав.
+// Очки: хто вгадав — 100→20 за часом, що лишився (без таймера — за порядком: 100, 80, 60…), першому +20; художнику — +25 за кожного.
+// Без таймера хід закінчується, коли всі вгадали або сказали «не знаю», чи художник здався (кнопки є і з таймером).
 // Слово бачить лише художник і ті, хто вже вгадав (privateState); правильну відповідь у чаті не бачить ніхто (screenChat),
 // чат тих, хто вгадав, — лише між ними й художником. Штрихи — окремою подією 'draw' (index.js), повний малюнок — дією snapshot.
 const { BaseRoom } = require('../../core/base-room');
 const { T } = require('../../core/i18n');
-const { CATS, termWords, placeWords, clubWords, playersFor, norm } = require('./words');
+const { CATS, decksFor, norm } = require('./words');
 
 const MAX_PLAYERS = 10;
 const MIN_PLAYERS = 2;
 const ALLOWED_LAPS = [1, 2, 3];
-const ALLOWED_TIMES = [60, 80, 100];
+const ALLOWED_TIMES = [60, 80, 100, 0]; // 0 — без обмеження часу
+const OPEN_AFTER = [45, 90]; // без таймера літери відкриваються на цих секундах
 const CHOOSE_MS = Number(process.env.SKETCH_CHOOSE_MS) || 15000;
 const REVEAL_MS = Number(process.env.SKETCH_REVEAL_MS) || 6000;
 const GUESS_MAX = 100;
@@ -19,10 +21,18 @@ const GUESS_MIN = 20;
 const FIRST_BONUS = 20;
 const DRAWER_EACH = 25;
 // Малюнок: полотно 1000×750 (координати цілі), кольори й товщини — лише з наборів; межі — щоб не роздути кімнату.
+// Елементи малюнка: штрих { c, w, p: [x, y, …] } (c = ERASE — гумка), фігура { k: line|rect|oval, c, w, p: [x1, y1, x2, y2] },
+// заливка { k: 'fill', c, p: [x, y] } — кожен клієнт заливає у своєму полотні, у тому ж порядку.
 const W = 1000;
 const H = 750;
-const PALETTE = ['#1d1d1f', '#1f4fd8', '#d7262e', '#1e8a3c', '#f2a93b', '#7a4a21', '#8a8f98', '#ffffff'];
-const SIZES = [4, 9, 18, 36];
+const PALETTE = [
+  '#1d1d1f', '#5b5f66', '#a3a8b0', '#ffffff', '#d7262e', '#8e1b20', '#f26b2a', '#f7c531', '#f2a93b',
+  '#7ac943', '#1e8a3c', '#4fb3ff', '#1f4fd8', '#1b2a6b', '#8a4fd8', '#f07aa8', '#7a4a21', '#f1c7a1',
+];
+const ERASE = 'erase';
+const SIZE = { min: 2, max: 48 }; // товщина пензля — будь-яка в цих межах (повзунок)
+const okSize = (w) => Number.isInteger(w) && w >= SIZE.min && w <= SIZE.max;
+const SHAPES = ['line', 'rect', 'oval'];
 const MAX_POINTS = 40000;
 const MAX_STROKES = 1500;
 
@@ -47,15 +57,22 @@ function distance(a, b) {
   return prev[b.length];
 }
 function judge(text, word) {
-  const t = norm(text).replace(/ /g, '');
-  if (!t) return 'miss';
-  let best = 3;
+  const t = norm(text);
+  const flat = t.replace(/ /g, '');
+  if (!flat) return 'miss';
+  const words = t.split(' ');
+  let close = false;
   for (const v of word.variants) {
     const x = v.replace(/ /g, '');
-    if (x === t) return 'correct';
-    if (x.length >= 4) best = Math.min(best, distance(t, x) <= (x.length >= 9 ? 2 : 1) ? 1 : 3);
+    if (x === flat) return 'correct';
+    const vw = v.split(' ');
+    // відповідь цілком у короткому повідомленні («це ж мессі»), але не список імен навздогад
+    if (x.length >= 4 && words.length <= vw.length + 2 && ` ${t} `.includes(` ${v} `)) return 'correct';
+    if (x.length >= 4 && distance(flat, x) <= (x.length >= 9 ? 2 : 1)) close = true;
+    // частина відповіді: початок слова («олімп» → «олімпійські ігри») або спільне слово («ігри», «ліонель»)
+    if (flat.length >= 4 && (x.startsWith(flat) || vw.some((w) => w.length >= 4 && (w.startsWith(flat) || words.includes(w))))) close = true;
   }
-  return best === 1 ? 'close' : 'miss';
+  return close ? 'close' : 'miss';
 }
 // Чи є відповідь у тексті (художник не може її написати; від 4 літер, щоб «гол» не блокував «голова»).
 function mentions(text, word) {
@@ -74,7 +91,7 @@ class SketchRoom extends BaseRoom {
     super(code, onChange, MAX_PLAYERS);
     this.options = {
       laps: ALLOWED_LAPS.includes(Number(opts.laps)) ? Number(opts.laps) : 2,
-      drawSeconds: ALLOWED_TIMES.includes(Number(opts.drawSeconds)) ? Number(opts.drawSeconds) : 80,
+      drawSeconds: ALLOWED_TIMES.includes(Number(opts.drawSeconds ?? 80)) ? Number(opts.drawSeconds ?? 80) : 80,
       difficulty: opts.difficulty === 'easy' ? 'easy' : 'normal',
     };
     this.status = 'waiting'; // waiting | playing | finished
@@ -96,6 +113,7 @@ class SketchRoom extends BaseRoom {
     this.strokes = [];
     this.points = 0;
     this.guessed = new Map(); // seat → очки
+    this.passed = new Set(); // сказали «не знаю»
     this.drawerGain = 0;
     this.deadline = null;
     this.startedAt = null;
@@ -145,12 +163,7 @@ class SketchRoom extends BaseRoom {
     if (this.status === 'playing') return { error: T('Гра вже йде', 'The game is already on') };
     if (seat !== this.host()) return { error: T('Почати гру може той, хто її створив', 'Only the host can start the game') };
     if (this.presentSeats().length < MIN_PLAYERS) return { error: T(`Потрібно щонайменше ${MIN_PLAYERS} гравці`, `At least ${MIN_PLAYERS} players needed`) };
-    this.decks = {
-      players: shuffle(playersFor(this.options.difficulty)),
-      clubs: shuffle(clubWords),
-      terms: shuffle(termWords),
-      places: shuffle(placeWords),
-    };
+    this.decks = Object.fromEntries(Object.entries(decksFor(this.options.difficulty)).map(([k, list]) => [k, shuffle(list)]));
     this.catQueue = [];
     this.scores = Array(this.capacity).fill(0);
     this.history = [];
@@ -167,7 +180,8 @@ class SketchRoom extends BaseRoom {
     if (!this.catQueue.length) this.catQueue = shuffle(Object.keys(CATS));
     const cat = this.catQueue.shift();
     const deck = this.decks[cat];
-    return deck.splice(0, 3);
+    if (deck.length < 3) this.decks[cat] = deck.concat(shuffle(decksFor(this.options.difficulty)[cat])); // довга гра — по другому колу
+    return this.decks[cat].splice(0, 3);
   }
 
   nextTurn() {
@@ -206,20 +220,29 @@ class SketchRoom extends BaseRoom {
     this.phase = 'draw';
     this.startedAt = Date.now();
     const ms = this.options.drawSeconds * 1000;
-    this.deadline = this.startedAt + ms;
-    this.timer = setTimeout(() => this.endTurn(), ms);
-    for (const f of [0.5, 0.75]) this.hintTimers.push(setTimeout(() => this.changed(), ms * f + 50));
+    if (ms) {
+      this.deadline = this.startedAt + ms;
+      this.timer = setTimeout(() => this.endTurn(), ms);
+      for (const f of [0.5, 0.75]) this.hintTimers.push(setTimeout(() => this.changed(), ms * f + 50));
+    } else {
+      this.deadline = null;
+      for (const sec of OPEN_AFTER) this.hintTimers.push(setTimeout(() => this.changed(), sec * 1000 + 50));
+    }
     this.touch();
     this.changed();
     return { ok: true };
   }
 
-  // Скільки літер відкрито: на ½ часу — одна, на ¾ — ще одна (у словах від 6 літер); короткі слова — без підказок.
+  // Скільки літер відкрито: на ½ часу — одна, на ¾ — ще одна (у словах від 6 літер); без таймера — на 45-й і 90-й секунді.
+  // Короткі слова — без підказок.
   openCount(text) {
     const letters = [...text].filter(isLetter).length;
     if (this.phase !== 'draw' || letters < 4) return 0;
-    const f = (Date.now() - this.startedAt) / (this.options.drawSeconds * 1000);
-    return (f >= 0.5 ? 1 : 0) + (f >= 0.75 && letters >= 6 ? 1 : 0);
+    const elapsed = Date.now() - this.startedAt;
+    const [first, second] = this.options.drawSeconds
+      ? [elapsed >= this.options.drawSeconds * 500, elapsed >= this.options.drawSeconds * 750]
+      : OPEN_AFTER.map((sec) => elapsed >= sec * 1000);
+    return (first ? 1 : 0) + (second && letters >= 6 ? 1 : 0);
   }
 
   hint() {
@@ -231,23 +254,35 @@ class SketchRoom extends BaseRoom {
   // Штрих від художника → те саме іншим (index.js, streams). Невалідне — null (нікому не йде).
   drawOp(seat, op) {
     if (this.status !== 'playing' || this.phase !== 'draw' || seat !== this.drawer || !op) return null;
-    const pts = (list) => {
-      if (!Array.isArray(list) || list.length % 2 || list.length > 400) return null;
-      const out = list.map((v, i) => Math.max(0, Math.min(i % 2 ? H : W, Math.round(Number(v) || 0))));
-      return out;
+    const pts = (list, n) => {
+      if (!Array.isArray(list) || list.length % 2 || list.length > 400 || (n && list.length !== n)) return null;
+      return list.map((v, i) => Math.max(0, Math.min(i % 2 ? H : W, Math.round(Number(v) || 0))));
     };
-    if (op.t === 's') {
+    const add = (t, item) => {
+      if (this.strokes.length >= MAX_STROKES || this.points + item.p.length > MAX_POINTS) return null;
+      this.strokes.push(item);
+      this.points += item.p.length;
+      return { turn: this.turnNo, t, ...item };
+    };
+    if (op.t === 's') { // штрих пензлем або гумкою
       const p = pts(op.p);
-      if (!p || !p.length || !PALETTE.includes(op.c) || !SIZES.includes(op.w) || this.strokes.length >= MAX_STROKES) return null;
-      if (this.points + p.length > MAX_POINTS) return null;
-      this.strokes.push({ c: op.c, w: op.w, p });
-      this.points += p.length;
-      return { turn: this.turnNo, t: 's', c: op.c, w: op.w, p };
+      if (!p || !p.length || !(PALETTE.includes(op.c) || op.c === ERASE) || !okSize(op.w)) return null;
+      return add('s', { c: op.c, w: op.w, p });
     }
-    if (op.t === 'm') {
+    if (op.t === 'g') { // фігура
+      const p = pts(op.p, 4);
+      if (!p || !SHAPES.includes(op.k) || !PALETTE.includes(op.c) || !okSize(op.w)) return null;
+      return add('g', { k: op.k, c: op.c, w: op.w, p });
+    }
+    if (op.t === 'f') { // заливка
+      const p = pts(op.p, 2);
+      if (!p || !PALETTE.includes(op.c)) return null;
+      return add('f', { k: 'fill', c: op.c, p });
+    }
+    if (op.t === 'm') { // продовження штриха
       const p = pts(op.p);
       const last = this.strokes[this.strokes.length - 1];
-      if (!p || !p.length || !last || this.points + p.length > MAX_POINTS) return null;
+      if (!p || !p.length || !last || last.k || this.points + p.length > MAX_POINTS) return null;
       last.p.push(...p);
       this.points += p.length;
       return { turn: this.turnNo, t: 'm', p };
@@ -263,6 +298,25 @@ class SketchRoom extends BaseRoom {
       return { turn: this.turnNo, t: 'x' };
     }
     return null;
+  }
+
+  // «Не знаю» — гравець більше не вгадує цей хід (хід закінчиться, коли всі вгадали або пасували).
+  pass(seat) {
+    if (this.status !== 'playing' || this.phase !== 'draw') return { error: T('Зараз не можна', 'Not right now') };
+    if (seat === this.drawer || this.guessed.has(seat)) return { ok: true };
+    this.passed.add(seat);
+    this.touch();
+    this.checkProgress();
+    this.changed();
+    return { ok: true };
+  }
+
+  // Художник здається — показуємо відповідь, без очок.
+  giveUp(seat) {
+    if (this.status !== 'playing' || this.phase !== 'draw') return { error: T('Зараз не можна', 'Not right now') };
+    if (seat !== this.drawer) return { error: T('Здатися може лише художник', 'Only the artist can give up') };
+    this.endTurn(T('Художник здався', 'The artist gave up'));
+    return { ok: true };
   }
 
   snapshot() {
@@ -289,8 +343,10 @@ class SketchRoom extends BaseRoom {
 
   score(seat) {
     const ms = this.options.drawSeconds * 1000;
-    const left = Math.max(0, this.deadline - Date.now()) / ms;
-    let points = Math.round((GUESS_MIN + (GUESS_MAX - GUESS_MIN) * left) / 5) * 5;
+    let points;
+    if (ms) points = Math.round((GUESS_MIN + (GUESS_MAX - GUESS_MIN) * (Math.max(0, this.deadline - Date.now()) / ms)) / 5) * 5;
+    else points = Math.max(GUESS_MIN, GUESS_MAX - 20 * this.guessed.size); // без таймера — за порядком
+    this.passed.delete(seat);
     if (!this.guessed.size) points += FIRST_BONUS;
     this.guessed.set(seat, points);
     this.scores[seat] += points;
@@ -307,7 +363,7 @@ class SketchRoom extends BaseRoom {
   checkProgress() {
     if (this.phase !== 'draw') return;
     const guessers = this.online().filter((i) => i !== this.drawer);
-    if (guessers.length && guessers.every((i) => this.guessed.has(i))) this.endTurn();
+    if (guessers.length && guessers.every((i) => this.guessed.has(i) || this.passed.has(i))) this.endTurn();
   }
 
   endTurn(reason = null) {
@@ -354,15 +410,18 @@ class SketchRoom extends BaseRoom {
         : this.phase === 'choose' && this.choices[0] ? { id: this.choices[0].cat, ...CATS[this.choices[0].cat] } : null,
       hint: this.phase === 'draw' ? this.hint() : null,
       guessed: Object.fromEntries(this.guessed),
+      passed: [...this.passed],
       drawerGain: this.drawerGain,
       scores: this.scores,
       deadline: this.deadline,
+      startedAt: this.phase === 'draw' ? this.startedAt : null,
       drawSeconds: this.options.drawSeconds,
       serverNow: Date.now(),
       notice: this.phase === 'reveal' ? this.notice || null : null,
       answer: this.phase === 'reveal' ? this.publicWord() : null,
       palette: PALETTE,
-      sizes: SIZES,
+      size: SIZE,
+      erase: ERASE,
       history: this.status === 'finished' ? this.history : [],
     };
     if (process.env.SKETCH_TEST_ANSWER === '1') {
@@ -382,4 +441,4 @@ class SketchRoom extends BaseRoom {
   }
 }
 
-module.exports = { SketchRoom, judge, mentions, pattern, PALETTE, SIZES, ALLOWED_LAPS, ALLOWED_TIMES };
+module.exports = { SketchRoom, judge, mentions, pattern, PALETTE, SIZE, ERASE, ALLOWED_LAPS, ALLOWED_TIMES };
