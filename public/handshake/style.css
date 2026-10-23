@@ -1,0 +1,137 @@
+/* Правило рукостискань. Лобі, таблиця, підсумок — з /path/style.css; тут — комутатор з ланцюжком.
+
+   ── Оформлення гри: старий телефонний комутатор. Темна горіхова панель, латунні таблички й гнізда, гравці — над гніздами,
+   ланка — червоний кабель з биркою клубу й років; заголовки — Old Standard TT; акцент — латунь, вогник лампи — бурштин.
+   Фірмова анімація — кабель «встромляється» в нове гніздо, лампа спалахує (+ звук plug). */
+:root {
+  --bg: #120b07; --bg-2: #2a1a10;
+  --surface: rgba(40, 25, 16, 0.92); --surface-solid: #2a1b11; --surface-2: #3a2616;
+  --line: rgba(230, 195, 130, 0.14); --line-strong: rgba(230, 195, 130, 0.3);
+  --text: #f5ead8; --muted: #bfa88a;
+  --accent: #d4a94f; --accent-ink: #241703;
+  --radius: 10px;
+  --display: 'Old Standard TT', 'Manrope', serif;
+  --brass: #c9a14a; --brass-2: #8a6a26; --cable: #c63a2b; --lamp: #ffb43a; --bakelite: #15100c;
+}
+.pitch-bg {
+  background:
+    radial-gradient(ellipse 50% 40% at 50% -6%, rgba(255, 200, 120, 0.18), transparent 70%), /* лампа над пультом */
+    repeating-linear-gradient(92deg, transparent 0 7px, rgba(0, 0, 0, 0.06) 7px 9px, transparent 9px 23px), /* волокна горіха */
+    linear-gradient(180deg, var(--bg-2), var(--bg));
+}
+.round-info b, .room-code, .final h2, .rules-card h3 { font-family: var(--display); font-weight: 700; letter-spacing: 0.02em; }
+.round-info b { font-size: 21px; }
+.final h2 { font-size: 32px; }
+.timer { font-family: 'Manrope', sans-serif; color: var(--accent); }
+
+/* логотип — латунна табличка з рядом гнізд */
+.logo.board-logo { gap: 12px; }
+.logo-jacks { display: inline-flex; gap: 16px; padding: 8px 16px; border-radius: 8px; background: var(--bakelite); box-shadow: inset 0 0 0 2px var(--brass-2); }
+.logo-jacks i { width: 18px; height: 18px; border-radius: 50%; background: radial-gradient(circle, #000 0 35%, var(--brass) 40% 70%, var(--brass-2) 75%); }
+.logo-jacks i.on { box-shadow: 0 0 0 3px var(--cable), 0 0 14px var(--lamp); }
+.logo-text { display: grid; justify-items: center; gap: 0.1em; font-family: var(--display); font-weight: 700; font-size: 0.4em; letter-spacing: 0.32em; padding-left: 0.32em; color: var(--muted); }
+.logo-text b {
+  font-size: 2em; letter-spacing: 0.03em; padding: 0.05em 0.35em; margin: 0; transform: none; border-radius: 4px;
+  color: #2a1b06; background: linear-gradient(180deg, #e6c470, var(--brass) 55%, var(--brass-2));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+/* ── пульт */
+.board-game { max-width: 1000px; }
+.board-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.switchboard {
+  display: grid; gap: 0; padding: 14px 16px; border-radius: 14px; background: var(--bakelite);
+  box-shadow: inset 0 0 0 2px var(--brass-2), inset 0 0 40px rgba(0, 0, 0, 0.6), 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+.chain { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.jack {
+  position: relative; display: grid; grid-template-columns: 78px 64px 1fr; align-items: center; gap: 12px; padding: 8px 0;
+}
+/* латунна табличка з лампою й номером */
+.plate {
+  display: grid; justify-items: center; gap: 3px; padding: 5px 4px; border-radius: 4px; color: #2a1b06;
+  background: linear-gradient(180deg, #e6c470, var(--brass) 55%, var(--brass-2)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+.plate small { font-family: var(--display); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+.lamp { width: 12px; height: 12px; border-radius: 50%; background: #4a2c0c; box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6); }
+.jack:not(.finish) .lamp, .jack.finish.on .lamp { background: var(--lamp); box-shadow: 0 0 10px var(--lamp); }
+.j-photo {
+  width: 64px; height: 64px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: var(--surface-2);
+  border: 3px solid var(--brass); font-family: var(--display); color: var(--muted); box-shadow: 0 0 0 3px #000; position: relative; z-index: 1;
+}
+.j-photo img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.j-name { font-weight: 800; font-size: 17px; overflow-wrap: anywhere; }
+.jack.finish:not(.on) { opacity: 0.6; }
+.jack.finish:not(.on) .j-photo { border-color: var(--brass-2); }
+/* кабель від попереднього гнізда + бирка клубу */
+.jack .cable {
+  position: absolute; left: 119px; top: -12px; height: 62px; width: 6px; z-index: 0; border-radius: 3px; background: var(--cable);
+  box-shadow: inset -2px 0 0 rgba(0, 0, 0, 0.25); transform-origin: top;
+}
+.cable-tag {
+  grid-column: 1 / -1; justify-self: start; margin-left: 140px; display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 10px; border-radius: 4px; background: #efe3c6; color: #2b1d0e; font-size: 13px; transform: rotate(-1deg);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+.cable-tag img { width: 18px; height: 18px; object-fit: contain; }
+.cable-tag small { color: #6b5638; font-weight: 700; }
+.jack.fresh .cable { animation: plug-in 0.35s ease-out both; }
+.jack.fresh .cable-tag { animation: tag-swing 0.6s ease-out both; }
+.jack.fresh .lamp { animation: lamp-on 0.7s ease-out both; }
+@keyframes plug-in { from { transform: scaleY(0); } to { transform: none; } }
+@keyframes tag-swing { 0% { transform: rotate(-14deg); opacity: 0; } 60% { transform: rotate(4deg); opacity: 1; } 100% { transform: rotate(-1deg); } }
+@keyframes lamp-on { 0%, 30% { background: #4a2c0c; box-shadow: none; } 45% { background: #fff3c4; box-shadow: 0 0 24px var(--lamp); } }
+
+/* «вільне гніздо» — введення наступної ланки */
+.jack-input { margin: 6px 0 6px 0; padding: 10px; border-radius: 10px; border: 1px dashed var(--line-strong); background: rgba(255, 255, 255, 0.03); }
+.answer-box.jack-input { margin-top: 6px; }
+.jack-input .answer-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.lamps { display: flex; align-items: center; gap: 6px; margin-right: auto; font-size: 13px; font-weight: 700; color: var(--muted); }
+.lamps span { margin-right: 4px; }
+.lamps b { color: var(--text); }
+.lamps i { width: 13px; height: 13px; border-radius: 50%; background: var(--lamp); box-shadow: 0 0 8px var(--lamp); }
+.lamps i.burnt { background: #3a2410; box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6); }
+.hint-list { list-style: none; margin: 0; padding: 0; }
+.hint-list:empty { display: none; }
+.hint-list li { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 8px; font-size: 14px; background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.hint-list img { width: 22px; height: 22px; object-fit: contain; }
+.hint-list b { color: var(--accent); }
+.switchboard.done .jack-input { display: none; }
+
+/* підсумок раунду: ланцюжок одним рядком */
+.best { display: grid; gap: 8px; padding: 12px 14px; border-radius: var(--radius); background: color-mix(in srgb, var(--accent) 10%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); }
+.best > small { font-family: var(--display); font-weight: 700; font-size: 16px; color: var(--accent); }
+.chain-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.cl-player { display: inline-flex; align-items: center; gap: 6px; font-weight: 800; font-size: 14px; }
+.cl-photo { width: 40px; height: 40px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: var(--surface-2); border: 2px solid var(--brass); font-size: 12px; }
+.cl-photo img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.cl-link { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; color: var(--cable); filter: brightness(1.4); }
+.cl-link::before { content: "—"; }
+.cl-link::after { content: "→"; }
+.cl-link img { width: 16px; height: 16px; object-fit: contain; }
+.round-results li { display: grid; gap: 6px; }
+.rr-head { display: flex; align-items: center; gap: 8px; }
+.rr-head b { margin-left: auto; font-size: 13px; color: var(--muted); }
+.reveal-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+.board-col .reveal { order: 0; margin-bottom: 0; }
+.history li.fh { align-items: center; }
+.history li.fh .chain-line { flex: 1; }
+.ask-sheet { border: 2px solid var(--brass-2); }
+.ask-sheet .ask-text { font-family: var(--display); font-weight: 700; font-size: 21px; }
+
+@media (max-width: 760px) {
+  body:has(#screen-game:not(.hidden)) .fb-fab { display: none; }
+  .board-game.solo .side-col { display: none; }
+}
+@media (max-width: 560px) {
+  .switchboard { padding: 10px; }
+  .jack { grid-template-columns: 54px 52px 1fr; gap: 8px; }
+  .j-photo { width: 52px; height: 52px; }
+  .j-name { font-size: 15px; }
+  .plate small { font-size: 10px; }
+  .jack .cable { left: 85px; height: 56px; }
+  .cable-tag { margin-left: 100px; font-size: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .jack.fresh .cable, .jack.fresh .cable-tag, .jack.fresh .lamp { animation: none; }
+}

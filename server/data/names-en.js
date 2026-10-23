@@ -59,11 +59,19 @@ const TEAM_FIX = {
 };
 
 const countryEn = (uk) => COUNTRIES[uk] || uk;
+// Повні офіційні назви з Вікідати — до звичних: «Real Madrid Club de Fútbol» → «Real Madrid», «Ascoli Calcio 1898» → «Ascoli»,
+// «Botafogo Futebol Clube» → «Botafogo». Якщо лишається одне коротке слово («United Football Club») — повна назва.
+const LONG_TAIL = /\s+(?:Football Club|Futebol Clube|Club de Fútbol|Fútbol Club|Futbol Club|Calcio)(?:\s+\d{4})?$/;
+const LONG_HEAD = /^(?:Football Club|Calcio)\s+/;
+function shortTeam(name) {
+  const short = name.replace(LONG_TAIL, '').replace(LONG_HEAD, '');
+  return short.length >= 4 && !/^(United|City|Club|Sport)$/.test(short) ? short : name;
+}
 // Назва клубу/збірної англійською за qid; збірна — назва країни.
 function teamEn(qid, team) {
   if (TEAM_FIX[qid]) return TEAM_FIX[qid];
   if (team?.national) return countryEn(team.name);
-  return TEAMS[qid] || team?.name || '';
+  return TEAMS[qid] ? shortTeam(TEAMS[qid]) : team?.name || '';
 }
 
 module.exports = { COUNTRIES, countryEn, teamEn };

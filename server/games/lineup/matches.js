@@ -149,6 +149,9 @@ function slotOf(p, m, national, key, extra = {}) {
   };
 }
 
+// Той самий тренер у різних джерелах — «Alex Ferguson» і «Sir Alex Ferguson», з гравцем бази й без: ключ — англійське ім'я без титулу.
+const coachKeyOf = (c, pl) => normalize(String(pl ? pl.name : c.name).replace(/^Sir\s+/i, ''));
+
 function teamOf(t, m, k) {
   const qid = t.qid || UEFA_QIDS[t.uefaTeam] || null;
   const our = qid ? team(qid) : null;
@@ -167,7 +170,7 @@ function teamOf(t, m, k) {
     const nameUk = pl ? pl.uk || pl.name : fio(t.coach.uk) || t.coach.name;
     const nameEn = pl ? pl.name : t.coach.name;
     coach = {
-      key: `${k}-c`, coach: true, pid: pl?.id || null, coachKey: normalize(t.coach.name), name: T(nameUk, nameEn), photo: pl?.photo || null,
+      key: `${k}-c`, coach: true, pid: pl?.id || null, coachKey: coachKeyOf(t.coach, pl), name: T(nameUk, nameEn), photo: pl?.photo || null,
       flag: t.coach.flag ? flagImg(t.coach.flag) : null, age: born && year(m) ? year(m) - born : null,
       letters: T(String(letters(nameUk)), String(letters(nameEn))), first: T(surname(nameUk)[0] || '?', surname(nameEn)[0] || '?'), missing: false,
     };

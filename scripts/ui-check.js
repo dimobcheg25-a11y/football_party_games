@@ -33,7 +33,7 @@ const PHONE = { width: 390, height: 780 };
 async function startServer() {
   const server = spawn(process.execPath, [path.join(ROOT, 'server', 'index.js')], {
     cwd: ROOT,
-    env: { ...process.env, PORT, GUESS_REVEAL_MS: '300000', FIXED_ORDER: '1', FOURS_TEST_ANSWER: '1', FOURS_REVEAL_MS: '300000' }, // FIXED_ORDER — у «Перехресті» першим ходить господар
+    env: { ...process.env, PORT, GUESS_REVEAL_MS: '300000', FIXED_ORDER: '1', FOURS_TEST_ANSWER: '1', FOURS_REVEAL_MS: '300000', HANDSHAKE_TEST_ANSWER: '1', HANDSHAKE_REVEAL_MS: '300000' }, // FIXED_ORDER — у «Перехресті» першим ходить господар
     stdio: ['ignore', 'pipe', 'inherit'],
   });
   await new Promise((res) => server.stdout.on('data', (d) => d.toString().includes('запущено') && res()));
@@ -347,6 +347,50 @@ const scenarios = {
       await m.waitForSelector('#capsules .capsule');
       for (let i = 1; i <= 3; i++) await m.click(`#capsules .capsule:nth-child(${i})`);
       await shot(m, 'fours-phone-game', { full: true });
+      await m.context().close();
+    }
+  },
+
+  // Правило рукостискань: господар — у браузері, другий гравець — бот (від нього найкоротший ланцюжок, щоб назвати правильних).
+  async handshake(browser) {
+    const { io } = require('socket.io-client');
+    const { playerById } = require('../server/data');
+    const p = await person(browser, 'handshake');
+    await p.goto(`${URL}/handshake/`);
+    await shot(p, 'handshake-home', { full: true });
+    await p.fill('#name-input', 'Хост');
+    await p.click('[data-opt="difficulty"] [data-val="normal"]');
+    await p.click('#create-btn');
+    await p.waitForSelector('#screen-lobby:not(.hidden) #lobby-code:not(:empty)');
+    const code = await p.textContent('#lobby-code');
+    const bot = io(`${URL}/handshake`);
+    await new Promise((res) => bot.emit('join', { code, name: 'Бот' }, res));
+    const playing = new Promise((res) => bot.on('state', (s) => s.status === 'playing' && res(s)));
+    await p.click('#start-btn');
+    const st = await playing;
+    await p.waitForSelector('#chain .jack');
+    await choosePlayer(p, '#link-input', playerById.get(st.testAnswer[1]).uk);
+    await p.waitForSelector('#chain .jack:nth-child(2)');
+    await p.click('#hint-btn');
+    await p.waitForSelector('#hint-list li');
+    await shot(p, 'handshake-play', { full: true });
+    await choosePlayer(p, '#link-input', playerById.get(st.testAnswer[2]).uk);
+    await p.waitForSelector('.jack.finish.on');
+    await new Promise((res) => bot.emit('giveUp', null, res));
+    await p.waitForSelector('#reveal:not(.hidden) .best');
+    await shot(p, 'handshake-reveal', { full: true });
+    bot.close();
+    await p.context().close();
+    if (mobile) {
+      const m = await person(browser, 'handshake-phone', PHONE);
+      await m.goto(`${URL}/handshake/`);
+      await shot(m, 'handshake-phone', { full: true });
+      await m.fill('#name-input', 'Тел');
+      await m.click('#solo-btn');
+      await m.waitForSelector('#chain .jack');
+      await m.fill('#link-input', 'шевч');
+      await m.waitForSelector('#suggestions li[data-i="0"]');
+      await shot(m, 'handshake-phone-game', { full: true });
       await m.context().close();
     }
   },

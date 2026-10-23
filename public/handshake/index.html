@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title data-en="Handshake Rule — Football party games">Правило рукостискань</title>
+  <meta name="description" content="Правило рукостискань — з'єднай двох футболістів ланцюжком одноклубників. Соло або з друзями." data-en-content="Handshake Rule — connect two footballers through a chain of club teammates. Solo or with friends." />
+  <meta property="og:site_name" content="Football party games" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://football-party-games.onrender.com/handshake/" />
+  <meta property="og:title" content="Правило рукостискань — Football party games" data-en-content="Handshake Rule — Football party games" />
+  <meta property="og:description" content="Правило рукостискань — з'єднай двох футболістів ланцюжком одноклубників. Соло або з друзями." data-en-content="Handshake Rule — connect two footballers through a chain of club teammates. Solo or with friends." />
+  <meta property="og:locale" content="uk_UA" />
+  <meta property="og:locale:alternate" content="en_US" />
+  <meta name="application-name" content="Football party games" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="theme-color" content="#1a110b" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Old+Standard+TT:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/shared/theme.css" />
+  <link rel="stylesheet" href="/shared/ui.css" />
+  <link rel="stylesheet" href="/path/style.css" />
+  <link rel="stylesheet" href="/handshake/style.css" />
+</head>
+<body>
+  <div class="pitch-bg" aria-hidden="true"></div>
+
+  <div class="sound-ctl">
+    <button id="mute-btn" class="round-btn" aria-label="Звук" data-en-aria-label="Sound">🔊</button>
+  </div>
+
+  <!-- ── табличка сайту: завжди видно, веде на головну -->
+  <a class="home-link" href="/" aria-label="Усі ігри — на головну" data-en-aria-label="All games — home"><span class="home-arrow" aria-hidden="true">‹</span><span class="home-text"><span data-en="Football">Футбольні</span> <b data-en="games">ігри</b></span></a>
+
+  <!-- ── Головний екран: налаштування -->
+  <main id="screen-home" class="screen">
+    <header class="hero">
+      <div class="logo board-logo" aria-label="Правило рукостискань" data-en-aria-label="Handshake Rule">
+        <span class="logo-jacks" aria-hidden="true"><i></i><i class="on"></i><i></i><i class="on"></i></span>
+        <span class="logo-text" data-en-html="THE HANDSHAKE &lt;b&gt;RULE&lt;/b&gt;">ПРАВИЛО <b>РУКОСТИСКАНЬ</b></span>
+      </div>
+      <p class="tagline" data-en="Connect two footballers through those who played together at one club. Who knows the dressing rooms best?">З'єднай двох футболістів через тих, хто грав разом в одному клубі. Хто краще знає роздягальні?</p>
+    </header>
+
+    <section class="card setup">
+      <p id="invite-note" class="invite-note hidden"></p>
+      <button id="resume-btn" class="btn btn-secondary resume hidden"></button>
+
+      <label class="field" for="name-input">
+        <span class="field-label" data-en="Your name">Твоє ім'я</span>
+        <input id="name-input" maxlength="20" placeholder="Наприклад, Пеле" autocomplete="nickname" />
+      </label>
+
+      <div id="setup-options">
+        <div class="field">
+          <span class="field-label" data-en="Difficulty">Складність</span>
+          <div class="chips" data-opt="difficulty" role="radiogroup" aria-label="Складність" data-en-aria-label="Difficulty">
+            <button type="button" class="chip" data-val="easy" data-en="🟢 Easy">🟢 Легкий</button>
+            <button type="button" class="chip" data-val="normal" data-en="🟡 Normal">🟡 Звичайний</button>
+            <button type="button" class="chip" data-val="fan" data-en="🟣 Fan">🟣 Фанат</button>
+          </div>
+          <p class="hint" id="difficulty-hint"></p>
+        </div>
+
+        <div class="field">
+          <span class="field-label" data-en="Mistakes">Помилок</span>
+          <div class="chips" data-opt="mistakes" role="radiogroup" aria-label="Помилок" data-en-aria-label="Mistakes">
+            <button type="button" class="chip" data-val="3">3</button>
+            <button type="button" class="chip" data-val="0" data-en="∞ no limit">∞ без обмеження</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="field-label" data-en="Rounds">Раундів</span>
+          <div class="chips" data-opt="rounds" role="radiogroup" aria-label="Раундів" data-en-aria-label="Rounds">
+            <button type="button" class="chip" data-val="3">3</button>
+            <button type="button" class="chip" data-val="5">5</button>
+            <button type="button" class="chip" data-val="10">10</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="field-label" data-en="Time per round">Час на раунд</span>
+          <div class="chips" data-opt="turnSeconds" role="radiogroup" aria-label="Час на раунд" data-en-aria-label="Time per round">
+            <button type="button" class="chip" data-val="120" data-en="2 min">2 хв</button>
+            <button type="button" class="chip" data-val="180" data-en="3 min">3 хв</button>
+            <button type="button" class="chip" data-val="300" data-en="5 min">5 хв</button>
+            <button type="button" class="chip" data-val="0">∞</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="start-buttons" id="start-buttons">
+        <button id="solo-btn" class="btn btn-secondary btn-lg" data-en="Play solo">Грати соло</button>
+        <button id="create-btn" class="btn btn-primary btn-lg" data-en="Room with friends">Кімната з друзями</button>
+      </div>
+      <button id="join-btn" class="btn btn-primary btn-lg hidden" data-en="Join the game">Приєднатися до гри</button>
+      <p id="home-error" class="error"></p>
+    </section>
+
+    <section class="card rules-card">
+      <h3 data-en="How to play">Як грати</h3>
+      <ul class="rules-list">
+        <li data-en-html="You get a &lt;b&gt;start&lt;/b&gt; and a &lt;b&gt;finish&lt;/b&gt; — two footballers. Name someone who played together with the start at one club, in the same years, then a teammate of that player — and so on.">Дано <b>старт</b> і <b>фініш</b> — двох футболістів. Назви того, хто грав разом зі стартовим в одному клубі в ті самі роки, потім — одноклубника цього гравця, і так далі.</li>
+        <li data-en-html="The chain is complete when you name someone who played with the finish. National teams don’t count — clubs only; loan spells count for the club the player was loaned to.">Ланцюжок готовий, щойно назвеш того, хто грав разом із фінішним. Збірні не рахуються — лише клуби; оренда — за клуб, куди віддали.</li>
+        <li data-en-html="A link can’t be removed. Named someone who didn’t play with the last one in the chain — a mistake.">Ланку прибрати не можна. Назвав того, хто з останнім у ланцюжку разом не грав, — помилка.</li>
+        <li><span data-en="Points:">Очки:</span> <span id="points-rule"></span></li>
+        <li data-en-html="💡 Hint — which club the next link of the shortest chain goes through.">💡 Підказка — через який клуб іде наступна ланка найкоротшого ланцюжка.</li>
+        <li data-en-html="In a room everyone connects the same pair at their own pace. Others’ progress shows only as the number of links.">У кімнаті всі з'єднують ту саму пару, кожен у своєму темпі. Чужий прогрес видно лише кількістю ланок.</li>
+      </ul>
+    </section>
+  </main>
+
+  <!-- ── Лобі кімнати -->
+  <main id="screen-lobby" class="screen hidden">
+    <section class="card lobby">
+      <p class="field-label" data-en="Room">Кімната</p>
+      <div class="room-code" id="lobby-code"></div>
+      <div class="share-row">
+        <button id="copy-link" class="btn btn-primary" data-en="Copy invite link">Скопіювати запрошення</button>
+      </div>
+      <div class="opt-chips" id="lobby-options"></div>
+      <ul class="lobby-players" id="lobby-players"></ul>
+      <button id="start-btn" class="btn btn-primary btn-lg hidden" data-en="Start game">Почати гру</button>
+      <p id="lobby-wait" class="hint"></p>
+      <button class="btn btn-secondary btn-sm btn-leave" data-action="leave" data-en="🚪 Leave room">🚪 Вийти з кімнати</button>
+    </section>
+  </main>
+
+  <!-- ── Гра -->
+  <main id="screen-game" class="screen screen-game board-game hidden">
+    <div class="game-top">
+      <div class="round-info" id="round-info"></div>
+      <div class="timer" id="timer"></div>
+      <button class="btn btn-secondary btn-sm btn-leave" data-action="leave" data-en="🚪 Leave game">🚪 Вийти з гри</button>
+    </div>
+
+    <div class="game-layout">
+      <section class="board-col">
+        <div class="switchboard" id="switchboard">
+          <ol class="chain" id="chain"></ol>
+          <div class="answer-box jack-input" id="answer-box">
+            <div class="search">
+              <input id="link-input" placeholder="Хто грав з ним разом? Почни вводити прізвище…" data-en-placeholder="Who played with him? Start typing a surname…" autocomplete="off" />
+              <ul class="suggestions" id="suggestions"></ul>
+            </div>
+            <ul class="hint-list" id="hint-list"></ul>
+            <div class="answer-actions">
+              <div class="lamps" id="lamps"></div>
+              <button id="hint-btn" class="btn btn-secondary btn-sm"></button>
+              <button id="giveup-btn" class="btn btn-secondary btn-sm btn-giveup" data-en="🏳️ Give up">🏳️ Здатися</button>
+            </div>
+            <p class="hint" id="answer-hint"></p>
+          </div>
+          <div class="finish-jack" id="finish"></div>
+        </div>
+        <div class="reveal hidden" id="reveal"></div>
+      </section>
+
+      <aside class="side-col">
+        <section class="table-card">
+          <h3 class="table-title" id="table-title" data-en="Standings">Таблиця</h3>
+          <ol class="scoreboard" id="scoreboard"></ol>
+        </section>
+        <div class="reactions" id="reactions"></div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- ── Підсумок серії -->
+  <main id="screen-final" class="screen hidden">
+    <section class="card final">
+      <h2 id="final-title"></h2>
+      <ol class="standings" id="final-standings"></ol>
+      <h3 class="field-label" data-en="Shortest chains">Найкоротші ланцюжки</h3>
+      <ol class="history" id="final-history"></ol>
+      <div class="result-actions">
+        <button id="again-btn" class="btn btn-primary btn-lg" data-en="Play again">Ще одна гра</button>
+        <p id="again-wait" class="hint"></p>
+        <button class="btn btn-ghost" data-action="leave" data-en="Home">На головну</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Чат (лише в кімнаті) -->
+  <button id="chat-fab" class="chat-fab hidden" aria-label="Чат" data-en-aria-label="Chat">💬<span id="chat-badge" class="chat-badge hidden"></span></button>
+  <section id="chat-panel" class="chat-panel hidden" aria-label="Чат кімнати" data-en-aria-label="Room chat">
+    <div class="chat-head"><b data-en="Chat">Чат</b><button class="icon-btn" id="chat-close" aria-label="Закрити" data-en-aria-label="Close">✕</button></div>
+    <ul class="chat-list" id="chat-list"></ul>
+    <form class="chat-form" id="chat-form">
+      <input id="chat-input" maxlength="200" placeholder="Повідомлення…" data-en-placeholder="Message…" autocomplete="off" />
+      <button class="btn btn-primary btn-sm">↑</button>
+    </form>
+  </section>
+
+  <div id="toast" class="toast" role="status"></div>
+
+  <script src="/shared/i18n.js"></script>
+  <script src="/shared/feedback.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/shared/presence.js"></script>
+  <script src="/shared/players.js"></script>
+  <script src="/shared/sounds.js"></script>
+  <script src="/shared/room-client.js"></script>
+  <script src="/handshake/app.js"></script>
+</body>
+</html>

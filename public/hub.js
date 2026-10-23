@@ -27,6 +27,8 @@ const ART = {
   sketch: `<span class="a-napkin"><span class="a-paper"><svg viewBox="0 0 120 80" aria-hidden="true"><g fill="none" stroke="#1f4fd8" stroke-width="3" stroke-linecap="round"><circle cx="30" cy="22" r="6"/><circle cx="30" cy="58" r="6"/><path d="M38 24 Q62 12 82 30" stroke-dasharray="5 5"/><path d="M76 24 l7 6 -9 3"/></g><g stroke="#d7262e" stroke-width="3.5" stroke-linecap="round"><path d="M86 48 l12 12 M98 48 l-12 12"/></g><circle cx="58" cy="62" r="5" fill="#1d1d1f"/></svg></span></span>`,
   // жеребкування: чотири кульки кольорів груп у скляному кошику
   fours: `<span class="a-bowl"><i style="--b:#e9c450"></i><i style="--b:#5fc48c"></i><i style="--b:#5aa2ef"></i><i style="--b:#b385f0"></i></span>`,
+  // комутатор: два гнізда з'єднані червоним кабелем
+  handshake: `<span class="a-board">${[0, 1, 0, 0, 0, 0, 1, 0].map((on) => `<i class="${on ? 'on' : ''}"></i>`).join('')}<svg viewBox="0 0 160 86" aria-hidden="true"><path d="M58 25 C70 80 100 80 110 61" fill="none" stroke="#c63a2b" stroke-width="5" stroke-linecap="round"/></svg></span>`,
   duel: `<span class="a-bout"><i class="r">${L('Червоний', 'Red')}</i><b>VS</b><i class="b">${L('Синій', 'Blue')}</i></span>`,
 };
 

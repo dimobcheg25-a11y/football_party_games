@@ -115,6 +115,12 @@ window.Sound = (() => {
       tone(420, { start: 0.32, dur: 0.12, type: 'sine', vol: 0.14, slideTo: 760 });
       tone(1568, { start: 0.42, dur: 0.4, type: 'sine', vol: 0.07 });
     },
+    // комутатор: штекер клацає в гніздо й лінія коротко дзижчить ('Правило рукостискань' — нова ланка)
+    plug() {
+      tone(2200, { dur: 0.02, type: 'square', vol: 0.07, slideTo: 800 });
+      tone(160, { start: 0.01, dur: 0.07, type: 'sine', vol: 0.16, slideTo: 90 });
+      tone(440, { start: 0.1, dur: 0.18, type: 'sawtooth', vol: 0.025 });
+    },
     pop() {
       tone(600, { dur: 0.09, vol: 0.1, slideTo: 1100 });
     },
