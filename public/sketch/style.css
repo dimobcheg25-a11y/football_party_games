@@ -51,21 +51,15 @@ input::placeholder { color: var(--muted); }
   .sketch-game .game-top { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) 300px; }
 }
 .draw-col { display: grid; gap: 10px; min-width: 0; }
-body.sketching #chat-fab, body.sketching #chat-panel { display: none !important; } /* під час гри чат — стрічка поруч */
+body.sketching #chat-fab, body.sketching #chat-panel { display: none !important; }
+.napkin canvas { overscroll-behavior: contain; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; } /* під час гри чат — стрічка поруч */
 
-/* слово: категорія + пропуски (клітинки-літери) */
+/* над серветкою: категорія + слово (художнику й тим, хто вгадав) або «Що це?» */
 .word-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 16px; min-height: 44px; }
 .word-bar .cat { font-size: 13px; font-weight: 800; padding: 4px 11px; border-radius: 99px; background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); white-space: nowrap; }
-.word { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 18px; }
-.word .w { display: inline-flex; gap: 4px; }
-.word i {
-  display: inline-grid; place-items: end center; width: 0.85em; height: 1.15em; font-style: normal;
-  font: 700 32px/1 var(--display); color: var(--text); border-bottom: 3px solid var(--line-strong);
-}
-.word i.o { border-bottom-color: transparent; width: auto; }
+.word.guess { font: 700 34px/1 var(--display); color: var(--muted); }
 .word.known { display: block; font: 700 38px/1 var(--display); color: var(--accent); letter-spacing: 0.03em; text-align: center;
   text-decoration: underline wavy var(--accent); text-decoration-thickness: 2px; text-underline-offset: 6px; }
-.word-bar .count { color: var(--muted); font-weight: 700; }
 
 /* серветка: тиснена рамка, згини, слід від келиха; полотно 4:3 */
 .napkin {
@@ -122,6 +116,7 @@ body.sketching #chat-fab, body.sketching #chat-panel { display: none !important;
   font: 700 28px/1.05 var(--display); transition: transform 0.12s;
 }
 .pick-card:hover { transform: rotate(-1.5deg) translateY(-2px); }
+.pick-cat { font: 800 11px/1.2 'Manrope', sans-serif; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.04em; }
 .pick-card:nth-child(2):hover { transform: rotate(1.5deg) translateY(-2px); }
 .pick-img, .reveal-img { display: grid; place-items: center; width: 84px; height: 84px; border-radius: 50%; overflow: hidden; background: var(--paper-2); }
 .pick-img img, .reveal-img img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
@@ -216,7 +211,6 @@ body.sketching #chat-fab, body.sketching #chat-panel { display: none !important;
   .napkin-over .rule { margin-top: 6px; font-size: 12px; }
   /* художнику кнопка відгуку закриває палітру — під час гри на телефоні її немає (є на головній і в лобі) */
   body.sketching .fb-fab { display: none; }
-  .word i { font-size: 26px; }
   .feed { height: 150px; }
   .feed-card { order: 0; }
   .napkin canvas.preview { left: 10px; top: 10px; width: calc(100% - 20px); }
@@ -224,6 +218,10 @@ body.sketching #chat-fab, body.sketching #chat-panel { display: none !important;
   .swatch { width: 24px; height: 24px; }
   .coaster { width: 78px; }
   .coaster b { font-size: 26px; }
+}
+/* сенсорні екрани: коло пензля не ходить за пальцем, а «слід від келиха» в куті легко сплутати з ним — прибираємо обидва */
+@media (pointer: coarse), (max-width: 760px) {
+  .napkin::after, .brush { display: none !important; }
 }
 @media (prefers-reduced-motion: reduce) {
   .coaster { animation: none; display: none; }

@@ -39,7 +39,8 @@ function bot(lang) {
   return s;
 }
 // Літера в слові замінена — для «майже».
-const typo = (w) => { const i = Math.floor(w.length / 2); return w.slice(0, i) + (w[i] === 'о' ? 'а' : 'о') + w.slice(i + 1); };
+// (остання літера: зміна посередині могла б лишити цілим синонім-слово — «Манчестео Юнайтед» = «Юнайтед», правильно)
+const typo = (w) => w.slice(0, -1) + (w.slice(-1) === 'о' ? 'а' : 'о');
 
 async function main() {
   await new Promise((res) => server.stdout.on('data', (d) => d.toString().includes('запущено') && res()));
@@ -66,7 +67,6 @@ async function main() {
   const sockOf = (seat) => socks.find((s) => seatOf(s) === seat);
 
   const drawn = new Set();
-  const cats = [];
   for (let turn = 1; turn <= 3; turn++) {
     const states = await Promise.all(socks.map((s) => nextState(s, (x) => x.turn === turn && x.phase === 'choose')));
     const drawer = states[0].drawer;
@@ -77,8 +77,7 @@ async function main() {
     // вибір: три слова однієї категорії — лише художнику
     const mine = last.get(d);
     assert.strictEqual(mine.choices.length, 3);
-    assert.strictEqual(new Set(mine.choices.map((w) => w.cat)).size, 1, 'три слова однієї категорії');
-    cats.push(mine.choices[0].cat);
+    assert.strictEqual(new Set(mine.choices.map((w) => w.cat)).size, 3, 'по слову з кожної категорії');
     guessers.forEach((s) => assert.strictEqual(last.get(s).choices, null, 'іншим вибору не видно'));
     assert.ok((await emit(guessers[0], 'choose', { key: mine.choices[0].key })).error, 'обирає лише художник');
     assert.ok((await emit(d, 'choose', { key: mine.choices[1].key })).ok);
@@ -86,7 +85,7 @@ async function main() {
     const answer = last.get(d).testAnswer;
     assert.ok(last.get(d).word?.text, 'художник бачить слово (своєю мовою)');
     guessers.forEach((s) => assert.strictEqual(last.get(s).word, null, 'гравці слова не бачать'));
-    assert.ok(/_/.test(last.get(guessers[0]).hint), 'пропуски замість літер');
+    assert.ok(!('hint' in last.get(guessers[0])) && !JSON.stringify({ ...last.get(guessers[0]), testAnswer: null }).includes(`"${answer}"`), 'ні літер, ні їх кількості, ні слова');
 
     if (turn === 1) {
       // ── штрихи: від художника → іншим; від гравця й невалідні — нікому
@@ -165,13 +164,13 @@ async function main() {
       assert.deepStrictEqual(rv.passed, [seatOf(guessers[1])]);
       continue;
     }
-    // другий вгадує → усі вгадали → відповідь
-    await emit(guessers[1], 'chat', answer);
+    // другий вгадує → усі вгадали → відповідь (пауза — чат не частіше ніж раз на 0,7 с)
+    await sleep(750);
+    assert.ok((await emit(guessers[1], 'chat', answer)).correct);
     const rv = await nextState(a, (x) => x.turn === turn && x.phase === 'reveal');
     assert.strictEqual(rv.answer.text, answer);
     assert.strictEqual(Object.keys(rv.guessed).length, 2);
   }
-  assert.strictEqual(new Set(cats).size, 3, 'категорії ходів різні (по колу)');
   const fin = await nextState(a, (x) => x.status === 'finished');
   assert.strictEqual(fin.history.length, 3);
   assert.deepStrictEqual(fin.scores.slice(0, 3).map((x) => x > 0), [true, true, true]);
@@ -184,9 +183,10 @@ async function main() {
   const late = await nextState(d4, (x) => x.status === 'playing');
   assert.ok(late.next.includes(late.you) || late.drawer === late.you, 'пізній гравець малюватиме в цьому колі');
   const drawerSock = [...socks, d4].find((s) => last.get(s)?.drawer === last.get(s)?.you);
-  const t0 = last.get(a).turn;
+  const watcher = [...socks, d4].find((s) => s !== drawerSock); // чекаємо на того, хто лишається в кімнаті
+  const t0 = last.get(watcher).turn;
   await emit(drawerSock, 'leave');
-  const after = await nextState(a, (x) => x.turn === t0 + 1 || x.status === 'finished');
+  const after = await nextState(watcher, (x) => x.turn === t0 + 1 || x.status === 'finished');
   assert.ok(after.turn === t0 + 1 || after.status === 'finished', 'художник вийшов — наступний хід');
 
   // ── без таймера: дедлайну немає, очки за порядком (перший 100 + 20); художник може здатися

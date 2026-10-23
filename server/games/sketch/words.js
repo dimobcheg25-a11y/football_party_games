@@ -1,5 +1,6 @@
-// Що загадується в «Тактичному ескізі»: 4 категорії з однаковою частотою — футболісти (poolFor, не складніше за «звичайний»),
-// клуби (з бази: категорії-клуби + клуби, де грало ≥20 гравців рівня «звичайний»), футбольні терміни й трофеї/стадіони (вручну).
+// Що загадується в «Тактичному ескізі»: 3 категорії з однаковою частотою — футболісти (poolFor, не складніше за «звичайний»),
+// клуби (з бази: категорії-клуби + клуби, де грало ≥20 гравців рівня «звичайний»), футбольні терміни й трофеї (вручну, одна категорія:
+// трофеїв замало на окрему — повторювались би). Стадіонів немає — їх нецікаво вгадувати.
 // Збірних немає — прапор намалювати надто легко. Слово: { key, cat, uk, en, variants: [нормалізовані відповіді], img }.
 // Відповідь приймається будь-якою мовою: назва, синоніми, для гравців — і прізвище.
 const { normalize, categories } = require('../../data');
@@ -10,8 +11,7 @@ const { T } = require('../../core/i18n');
 const CATS = {
   players: { icon: '⚽', label: T('Футболіст', 'Footballer') },
   clubs: { icon: '🛡️', label: T('Клуб', 'Club') },
-  terms: { icon: '📖', label: T('Футбольний термін', 'Football term') },
-  places: { icon: '🏆', label: T('Трофей або стадіон', 'Trophy or stadium') },
+  terms: { icon: '📖', label: T('Термін або трофей', 'Term or trophy') },
 };
 
 // Порівняння відповіді: без регістру, діакритики, апострофів; «фк»/«fc» на початку не важать.
@@ -137,8 +137,8 @@ const TERMS = [
   ['Кубок', 'Cup', 'трофей', 'trophy'],
 ];
 
-// Трофеї й стадіони (кого не можна — росії тут немає)
-const PLACES = [
+// Трофеї
+const TROPHIES = [
   ['Кубок світу', 'World Cup', 'чемпіонат світу', 'чс', 'мундіаль', 'world cup trophy', 'кубок чемпіонату світу'],
   ['Ліга чемпіонів', 'Champions League', 'лч', 'кубок ліги чемпіонів', 'ucl', 'вухатий'],
   ['Ліга Європи', 'Europa League', 'лє', 'кубок уєфа', 'uefa cup'],
@@ -157,33 +157,6 @@ const PLACES = [
   ['Кубок Лібертадорес', 'Copa Libertadores', 'лібертадорес', 'libertadores'],
   ['Кубок африканських націй', 'Africa Cup of Nations', 'afcon', 'кан'],
   ['Золотий хлопчик', 'Golden Boy'],
-  ['Камп Ноу', 'Camp Nou', 'ноу камп', 'nou camp'],
-  ['Сантьяго Бернабеу', 'Santiago Bernabéu', 'бернабеу', 'bernabeu'],
-  ['Олд Траффорд', 'Old Trafford', 'театр мрій', 'theatre of dreams'],
-  ['Енфілд', 'Anfield'],
-  ['Вемблі', 'Wembley'],
-  ['Сан-Сіро', 'San Siro', 'джузеппе меацца', 'giuseppe meazza'],
-  ['Альянц Арена', 'Allianz Arena'],
-  ['Сигнал Ідуна Парк', 'Signal Iduna Park', 'вестфаленштадіон', 'westfalenstadion', 'жовта стіна', 'yellow wall'],
-  ['Маракана', 'Maracanã', 'maracana'],
-  ['Бомбонера', 'La Bombonera', 'ла бомбонера', 'bombonera'],
-  ['НСК «Олімпійський»', 'NSC Olimpiyskiy', 'олімпійський', 'нск олімпійський', 'olimpiyskiy', 'olympic stadium kyiv'],
-  ['Донбас Арена', 'Donbas Arena'],
-  ['Стадіон «Металіст»', 'Metalist Stadium', 'стадіон металіст', 'оск металіст'],
-  ['Арена Львів', 'Arena Lviv'],
-  ['Парк де Пренс', 'Parc des Princes'],
-  ['Стад де Франс', 'Stade de France'],
-  ['Ацтека', 'Estadio Azteca', 'азтека', 'azteca'],
-  ['Емірейтс', 'Emirates Stadium', 'emirates'],
-  ['Етіхад', 'Etihad Stadium', 'etihad'],
-  ['Стемфорд Брідж', 'Stamford Bridge'],
-  ['Метрополітано', 'Metropolitano', 'ванда метрополітано', 'wanda metropolitano'],
-  ['Стадіо Олімпіко', 'Stadio Olimpico', 'олімпіко', 'olimpico'],
-  ['Месталья', 'Mestalla', 'местая'],
-  ['Сан-Мамес', 'San Mamés', 'san mames'],
-  ['Селтік Парк', 'Celtic Park', 'паркгед', 'parkhead'],
-  ['Йохан Кройф Арена', 'Johan Cruyff Arena', 'амстердам арена', 'amsterdam arena'],
-  ['Да Луж', 'Estádio da Luz', 'да луш', 'ештадіу да луж', 'стадіон світла', 'da luz', 'luz'],
 ];
 
 // Клуби: назва в базі → як показувати (uk, en) і синоніми. Решта — назва з бази і її англійський варіант.
@@ -227,9 +200,7 @@ const HARD = new Set([
   'Дубль', 'Бомбардир', 'Симуляція', 'Спрей арбітра', 'Паненка', 'Автобус', 'Суха гра', 'Дербі', 'Удар пʼятою', 'Парашут',
   'Між ніг', 'Удар з льоту', 'Півзахисник', 'Вінгер', 'Пресконференція', 'Коментатор', 'Футзал', 'Пляжний футбол', 'Сіууу',
   'Ліга конференцій', 'Золота рукавичка', 'Премія Пушкаша', 'Суперкубок УЄФА', 'Клубний чемпіонат світу', 'Кубок Англії',
-  'Кубок Лібертадорес', 'Кубок африканських націй', 'Золотий хлопчик', 'Сигнал Ідуна Парк', 'Бомбонера', 'Парк де Пренс',
-  'Стад де Франс', 'Ацтека', 'Емірейтс', 'Етіхад', 'Стемфорд Брідж', 'Метрополітано', 'Стадіо Олімпіко', 'Месталья', 'Сан-Мамес',
-  'Селтік Парк', 'Йохан Кройф Арена', 'Да Луж', 'Олд Траффорд', 'Енфілд', 'Сан-Сіро', 'Альянц Арена', 'Маракана',
+  'Кубок Лібертадорес', 'Кубок африканських націй', 'Золотий хлопчик',
 ]);
 
 function words(base) {
@@ -237,7 +208,7 @@ function words(base) {
 }
 
 const termWords = TERMS.map(([uk, en, ...alt], i) => ({ key: `t${i}`, cat: 'terms', uk, en, variants: words([uk, en, ...alt]), img: null, easy: !HARD.has(uk) }));
-const placeWords = PLACES.map(([uk, en, ...alt], i) => ({ key: `s${i}`, cat: 'places', uk, en, variants: words([uk, en, ...alt]), img: null, easy: !HARD.has(uk) }));
+const trophyWords = TROPHIES.map(([uk, en, ...alt], i) => ({ key: `s${i}`, cat: 'terms', uk, en, variants: words([uk, en, ...alt]), img: null, easy: !HARD.has(uk) }));
 
 // Клуби: усі клуби-категорії + клуби, де грало ≥ 20 гравців рівня «звичайний»; без ліг росії й білорусі.
 const clubWords = (() => {
@@ -275,15 +246,15 @@ function playerWord(p) {
 }
 const playersFor = (difficulty) => poolFor('all', difficulty === 'easy' ? 'easy' : 'normal').map(playerWord);
 
-// Колода на гру: «Легкий» — найвідоміші футболісти, клуби бази, прості терміни й головні трофеї/стадіони; «Звичайний» — усе.
+// Колода на гру: «Легкий» — найвідоміші футболісти, клуби бази, прості терміни й головні трофеї; «Звичайний» — усе.
 function decksFor(difficulty) {
   const easy = difficulty === 'easy';
   const pick = (list) => (easy ? list.filter((w) => w.easy) : list);
-  return { players: playersFor(difficulty), clubs: pick(clubWords), terms: pick(termWords), places: pick(placeWords) };
+  return { players: playersFor(difficulty), clubs: pick(clubWords), terms: pick([...termWords, ...trophyWords]) };
 }
 
 // Словник для підказок при введенні відповіді: усі слова рівня «Звичайний» (він містить і «Легкий»).
-const dictionary = [...playersFor('normal'), ...clubWords, ...termWords, ...placeWords]
+const dictionary = [...playersFor('normal'), ...clubWords, ...termWords, ...trophyWords]
   .map((w) => ({ c: w.cat, t: T(w.uk, w.en), v: w.variants }));
 
-module.exports = { CATS, TERMS, PLACES, termWords, placeWords, clubWords, playersFor, decksFor, dictionary, norm };
+module.exports = { CATS, TERMS, TROPHIES, termWords, trophyWords, clubWords, playersFor, decksFor, dictionary, norm };

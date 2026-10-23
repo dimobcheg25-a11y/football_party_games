@@ -24,14 +24,14 @@
     },
     hints: {
       difficulty: {
-        easy: L('Найвідоміші футболісти (топ-400) і клуби, прості терміни, головні трофеї й стадіони.',
-          'The most famous footballers (top 400) and clubs, simple terms, the main trophies and stadiums.'),
-        normal: L('Футболісти до топ-800, більше клубів, терміни й стадіони для тих, хто дивиться футбол.',
-          'Footballers up to the top 800, more clubs, terms and stadiums for those who follow football.'),
+        easy: L('Найвідоміші футболісти (топ-400) і клуби, прості терміни й головні трофеї.',
+          'The most famous footballers (top 400) and clubs, simple terms and the main trophies.'),
+        normal: L('Футболісти до топ-800, більше клубів, терміни й трофеї для тих, хто дивиться футбол.',
+          'Footballers up to the top 800, more clubs, terms and trophies for those who follow football.'),
       },
       drawSeconds: {
-        0: L('Без таймера: літери відкриваються на 45-й і 90-й секунді, очки — за порядком (100, 80, 60…). Не знаєш — «🏳️ Не знаю».',
-          'No timer: letters open at 45 and 90 seconds, points go by order (100, 80, 60…). Stuck? Press “🏳️ No idea”.'),
+        0: L('Без таймера: очки — за порядком (100, 80, 60…). Не знаєш — «🏳️ Не знаю».',
+          'No timer: points go by order (100, 80, 60…). Stuck? Press “🏳️ No idea”.'),
       },
     },
     createOptions: (s) => ({ difficulty: s.difficulty, laps: Number(s.laps), drawSeconds: Number(s.drawSeconds) }),
@@ -269,6 +269,8 @@
     brush.style.cssText = `left:${e.clientX - box.left}px;top:${e.clientY - box.top}px;--d:${tool === 'fill' ? 0 : d}px;--c:${color}`;
   }
   canvas.addEventListener('pointerleave', () => brush.classList.add('hidden'));
+  // Телефон: дотик до полотна не прокручує й не масштабує сторінку, поки малюєш (touch-action підтримують не всі браузери).
+  for (const ev of ['touchstart', 'touchmove']) canvas.addEventListener(ev, (e) => { if (canDraw()) e.preventDefault(); }, { passive: false });
 
   const TOOLS = [
     ['pen', '✏️', L('Пензель', 'Brush')], ['erase', '🧽', L('Гумка', 'Eraser')], ['fill', '🪣', L('Заливка', 'Fill')],
@@ -314,24 +316,18 @@
   });
 
   // ── гра
-  function wordHtml(text) {
-    // пропуски: кожна літера — клітинка; слова — групами (переносяться цілими)
-    return text.split(' ').map((w) => `<span class="w">${[...w].map((ch) => (ch === '_' ? '<i></i>' : `<i class="o">${escapeHtml(ch)}</i>`)).join('')}</span>`).join('');
-  }
-  const letters = (t) => [...t].filter((ch) => ch === '_' || /[\p{L}\p{N}]/u.test(ch)).length;
 
   function renderGame() {
     const s = state;
     const drawerName = seatName(s.drawer);
     $('#round-info').innerHTML = `<b>${L(`Коло ${s.lap}/${s.laps}`, `Lap ${s.lap}/${s.laps}`)}</b><span>${amDrawer() ? L('✏️ Малюєш ти', '✏️ You are drawing') : L(`✏️ Малює ${escapeHtml(drawerName)}`, `✏️ ${escapeHtml(drawerName)} is drawing`)}</span>`;
 
-    // слово / пропуски
+    // категорія; слово — лише художнику, тим, хто вгадав, і після ходу (ні літер, ні їх кількості гравцям не показуємо)
     const cat = s.category ? `<span class="cat">${s.category.icon} ${escapeHtml(s.category.label)}</span>` : '';
     let word = '';
-    if (s.phase === 'draw') {
-      word = s.word ? `<span class="word known">${escapeHtml(s.word.text)}</span>`
-        : `<span class="word">${wordHtml(s.hint)}</span><small class="count">${letters(s.hint)}</small>`;
-    } else if (s.phase === 'reveal' && s.answer) word = `<span class="word known">${escapeHtml(s.answer.text)}</span>`;
+    if (s.phase === 'draw' && s.word) word = `<span class="word known">${escapeHtml(s.word.text)}</span>`;
+    else if (s.phase === 'draw') word = `<span class="word guess">${L('Що це?', 'What is it?')}</span>`;
+    else if (s.phase === 'reveal' && s.answer) word = `<span class="word known">${escapeHtml(s.answer.text)}</span>`;
     $('#word-bar').innerHTML = cat + word;
 
     // поверх серветки: вибір слова, очікування, відповідь
@@ -341,6 +337,7 @@
       html = amDrawer() && s.choices
         ? `<div class="pick"><h3>${L('Що малюватимеш?', 'What will you draw?')}</h3>
             <div class="pick-list">${s.choices.map((w) => `<button type="button" class="pick-card" data-key="${escapeHtml(w.key)}">
+              <small class="pick-cat">${w.catIcon} ${escapeHtml(w.catLabel)}</small>
               ${w.img ? `<span class="pick-img ${w.cat}"><img src="${escapeHtml(w.img)}" alt="" /></span>` : ''}<b>${escapeHtml(w.text)}</b></button>`).join('')}</div>
             <p class="rule">${L('🚫 Без літер і слів, без прапорів — лише малюнок.', '🚫 No letters or words, no flags — just a drawing.')}</p></div>`
         : `<div class="wait">${L(`<b>${escapeHtml(drawerName)}</b> обирає, що малювати…`, `<b>${escapeHtml(drawerName)}</b> is choosing what to draw…`)}</div>`;
@@ -452,7 +449,7 @@
     const seen = new Set();
     return scored.map((x) => x.w).filter((w) => !seen.has(w.t) && seen.add(w.t)).slice(0, 6);
   }
-  const ICONS = { players: '⚽', clubs: '🛡️', terms: '📖', places: '🏆' };
+  const ICONS = { players: '⚽', clubs: '🛡️', terms: '📖' };
   function renderSuggestions() {
     const input = $('#feed-input');
     const list = $('#word-suggestions');
