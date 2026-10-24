@@ -148,12 +148,16 @@ input::placeholder { color: color-mix(in srgb, var(--muted) 70%, transparent); }
 .token.drop { animation: chip-drop .45s cubic-bezier(.3, 1.5, .5, 1) both; }
 @keyframes chip-drop { from { transform: translateY(-46px) scale(1.25); opacity: 0; } to { transform: none; opacity: 1; } }
 
-/* відповідь: програшні фішки згрібає лопатка, виграшна клітинка спалахує, виграші злітають */
-.felt.revealed .slot.lose { opacity: .5; filter: saturate(.5); }
-.felt.revealed .slot.lose .token { animation: chip-sweep .7s ease-in .35s both; }
+/* відповідь: програшні фішки лопатка підсуває вбік і вони тьмяніють (лишаються видно, хто де програв),
+   виграшна клітинка спалахує, виграші злітають */
+.felt.revealed .slot.lose { opacity: .75; filter: saturate(.6); }
+.felt.revealed .slot.lose .token { animation: chip-sweep .6s ease-in .35s both; }
 .felt.revealed .slot.lose .token:nth-child(2) { animation-delay: .42s; }
 .felt.revealed .slot.lose .token:nth-child(3) { animation-delay: .49s; }
-@keyframes chip-sweep { to { transform: translate(60px, -30px) rotate(140deg) scale(.6); opacity: 0; } }
+@keyframes chip-sweep { 40% { transform: translate(14px, -6px) rotate(40deg); } to { transform: rotate(20deg) scale(.82); opacity: .65; filter: grayscale(.85); } }
+.s-mine { font-size: 12px; font-weight: 800; padding: 1px 8px; border-radius: 99px; background: rgba(0, 0, 0, .4); color: var(--muted); }
+.s-mine.good { color: var(--accent); }
+.s-mine.bad { color: #ff9a9a; }
 .felt.revealed .slot.win { background: rgba(232, 193, 98, .2); box-shadow: 0 0 0 3px var(--accent), 0 0 34px color-mix(in srgb, var(--accent) 60%, transparent); animation: win-glow 1s ease-out .6s both; z-index: 1; }
 .felt.revealed .slot.win .token { animation: chip-bounce .5s ease-out .9s both; }
 @keyframes win-glow { 0% { filter: brightness(1); } 30% { filter: brightness(1.8); } 100% { filter: none; } }
@@ -173,6 +177,7 @@ input::placeholder { color: color-mix(in srgb, var(--muted) 70%, transparent); }
 .marker small { font-size: 12px; color: var(--muted); font-weight: 700; }
 .marker.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
 .marker .token { --sz: 34px; }
+.marker small.m-pay { color: var(--accent); }
 
 /* відповідь */
 .reveal-box { display: grid; gap: 6px; justify-items: center; text-align: center; padding: 16px; background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--radius); }
@@ -185,6 +190,20 @@ input::placeholder { color: color-mix(in srgb, var(--muted) 70%, transparent); }
 .verdict { margin: 0; font-size: 30px; }
 .verdict.good { color: var(--accent); }
 .verdict.bad { color: #ff7a7a; }
+.breakdown { list-style: none; margin: 8px 0 2px; padding: 0; display: grid; gap: 6px; width: 100%; max-width: 620px; text-align: left; }
+.breakdown li { display: grid; grid-template-columns: auto minmax(70px, auto) 1fr auto; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 10px; background: rgba(0, 0, 0, .25); border-left: 3px solid var(--pc); }
+.breakdown li.me { background: color-mix(in srgb, var(--accent) 10%, rgba(0, 0, 0, .25)); }
+.bd-name { font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bd-bets { display: flex; flex-wrap: wrap; gap: 4px; }
+.bd-bet { font-size: 12.5px; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: rgba(0, 0, 0, .3); color: var(--muted); }
+.bd-bet b { color: var(--text); }
+.bd-bet.won { color: var(--text); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 60%, transparent); }
+.bd-bet.won b { color: var(--accent); }
+.bd-bet.lost b { color: #ff9a9a; }
+.bd-net { font: 22px/1 var(--display); font-weight: 400; }
+.bd-net.good { color: var(--accent); }
+.bd-net.bad { color: #ff7a7a; }
+@media (max-width: 520px) { .breakdown li { grid-template-columns: auto 1fr auto; } .bd-bets { grid-column: 1 / -1; } }
 .q-note { margin: 0; max-width: 62ch; font-size: 13px; color: var(--muted); }
 .reveal-box .btn-lg { min-width: 240px; margin-top: 4px; }
 
@@ -205,7 +224,7 @@ input::placeholder { color: color-mix(in srgb, var(--muted) 70%, transparent); }
 
 @media (prefers-reduced-motion: reduce) {
   .logo-chip, .token.drop, .felt.revealed .slot.lose .token, .felt.revealed .slot.win, .felt.revealed .slot.win .token, .payout { animation: none; }
-  .felt.revealed .slot.lose .token { opacity: 0; }
+  .felt.revealed .slot.lose .token { opacity: .65; filter: grayscale(.85); }
 }
 
 @media (max-width: 760px) {

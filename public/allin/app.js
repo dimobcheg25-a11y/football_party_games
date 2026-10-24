@@ -97,6 +97,17 @@
   let soloExtra = 0;
 
   const bank = () => state.banks[mySeat] || 0;
+  const slotLabel = (i) => (state.slots[i].value == null ? L('«менше за всіх»', '“lower than all”') : num(state.slots[i].value));
+  // Що принесе маркер, якщо виграє клітинка, на якій він стоїть: (10 + докладене) × коефіцієнт.
+  const payOf = (b) => (state.rules.free + b.extra) * state.slots[b.slot].odds * state.mult;
+  // Підсумок гравця, якщо виграє клітинка i (як на сервері): маркери на ній × коеф. + бонус автору − усі докладені.
+  function outcome(seat, bets, i) {
+    const s = state;
+    const list = (bets || []).filter((b) => b.slot >= 0);
+    const win = list.filter((b) => b.slot === i).reduce((t, b) => t + payOf(b), 0);
+    const bonus = s.slots[i].authors.includes(seat) ? s.rules.bonus * s.mult : 0;
+    return win + bonus - list.reduce((t, b) => t + b.extra, 0);
+  }
   // роздача — це питання про конкретного гравця (номер роздачі в новій грі повторюється)
   const handKey = () => `${state.code}:${state.round}:${state.question?.id}:${state.question?.player.id}`;
   const online = () => state.seats.filter((x) => x && x.connected).length;
@@ -277,14 +288,17 @@
       }
       const odds = slot.odds * s.mult;
       const cls = [reveal && s.win === i ? 'win' : reveal ? 'lose' : '', !reveal && myBets[sel]?.slot === i ? 'sel' : '', slot.value == null ? 'low' : ''].join(' ');
-      const authors = slot.names.map((n, k) => `<span class="author" style="${seatStyle(slot.authors[k])}">${escapeHtml(n)}</span>`).join('');
+      const authors = slot.authors.map((a, k) => `<span class="author" style="${seatStyle(a)}">${escapeHtml(s.seats[a] ? seatName(a) : slot.names[k])}</span>`).join('');
       const gain = reveal && s.win === i ? Object.entries(s.results).filter(([, r]) => r.win + r.bonus > 0)
         .map(([seat, r]) => `<span class="payout" style="${seatStyle(Number(seat))}">+${fmt(r.win + r.bonus)}</span>`).join('') : '';
+      // поки ставимо: скільки буде в мене після роздачі, якщо виграє саме ця клітинка
+      const mine = !reveal && (bets[mySeat] || []).some((b) => b.slot >= 0) ? outcome(mySeat, bets[mySeat], i) : null;
       return `<button type="button" class="slot ${cls}" data-slot="${i}" ${reveal || s.ready.includes(mySeat) ? 'disabled' : ''}>
           <span class="s-odds">×${odds}</span>
           <b class="s-val">${slot.value == null ? L('Менше за всіх', 'Lower than all') : escapeHtml(num(slot.value))}</b>
           <span class="s-authors">${authors}</span>
           <span class="s-chips">${chips.join('')}</span>
+          ${mine != null ? `<small class="s-mine ${mine > 0 ? 'good' : mine < 0 ? 'bad' : ''}" title="${L('Твій підсумок, якщо виграє ця клітинка', 'Your result if this one wins')}">${L('тобі', 'you')} ${signed(mine)}</small>` : ''}
           ${gain ? `<span class="s-payouts">${gain}</span>` : ''}
         </button>`;
     }).join('');
@@ -319,11 +333,14 @@
       el.innerHTML = `<p class="hint center">${L('Ставки зроблено — чекаємо інших…', 'Bets locked — waiting for others…')} · ${waiting}</p>`;
       return;
     }
-    const slotText = (b) => (b.slot === -1 ? L('не поставлено', 'not placed') : s.slots[b.slot].value == null ? L('менше за всіх', 'lower than all') : num(s.slots[b.slot].value));
+    const slotText = (b) => (b.slot === -1 ? L('не поставлено', 'not placed') : slotLabel(b.slot));
     const other = myBets[1 - sel].extra;
-    el.innerHTML = `<p class="hint center">${L('Тисни на оцінку, щоб поставити маркер. Свій чи чужий — неважливо.', 'Tap a guess to place a marker. Yours or someone else’s — it doesn’t matter.')}</p>
+    const k = 3 * s.mult;
+    const ex = s.rules.free * k;
+    el.innerHTML = `<p class="hint center">${L('Тисни на оцінку, щоб поставити маркер. Свій чи чужий — неважливо.', 'Tap a guess to place a marker. Yours or someone else’s — it doesn’t matter.')}<br>
+        ${L(`Виграє найбільша оцінка, що не більша за відповідь. ×${k} — фішки на маркері множаться на ${k}: ${s.rules.free} → ${ex}.`, `The highest guess not above the answer wins. ×${k} means the chips on your marker are multiplied by ${k}: ${s.rules.free} → ${ex}.`)}</p>
       <div class="markers">${myBets.map((b, m) => `<button type="button" class="marker ${m === sel ? 'active' : ''}" data-m="${m}" style="${seatStyle(mySeat)}">
-          <i class="token mine"><em>${s.rules.free + b.extra}</em></i><span><b>${L('Маркер', 'Marker')} ${m + 1}</b><small>${escapeHtml(slotText(b))}${b.extra ? ` · +${fmt(b.extra)}` : ''}</small></span></button>`).join('')}</div>
+          <i class="token mine"><em>${s.rules.free + b.extra}</em></i><span><b>${L('Маркер', 'Marker')} ${m + 1}</b><small>${escapeHtml(slotText(b))}${b.extra ? ` · +${fmt(b.extra)}` : ''}</small>${b.slot >= 0 ? `<small class="m-pay">${L(`виграє → ${fmt(payOf(b))}`, `wins → ${fmt(payOf(b))}`)}</small>` : ''}</span></button>`).join('')}</div>
       <div class="stake" id="bet-stake"></div>
       <button type="button" class="btn btn-primary btn-lg" id="done-btn" ${myBets.some((b) => b.slot >= 0) ? '' : 'disabled'}>${L('Ставки зроблено', 'Bets done')}</button>
       <p class="hint center">${L(`У стосі: ${chipsText(bank() - myBets[0].extra - myBets[1].extra)}`, `In your stack: ${chipsText(bank() - myBets[0].extra - myBets[1].extra)}`)} · ${waiting}</p>`;
@@ -359,9 +376,30 @@
       <b class="ans-num">${escapeHtml(num(a.value))} <span>${escapeHtml(unitOf(a.value, s.question.unit, s.question.forms))}</span></b>
       ${a.detail ? `<small class="ans-detail">${escapeHtml(a.detail)}</small>` : ''}
       ${verdict}
+      ${s.solo ? '' : breakdownHtml()}
       <p class="q-note">${escapeHtml(s.question.note)}</p>
       <button id="next-btn" class="btn btn-primary btn-lg">${s.round >= s.rounds ? L('Підсумки', 'Results') : L('Наступна роздача →', 'Next hand →')}</button>`;
     $('#next-btn').addEventListener('click', () => emit('next'));
+  }
+  // Розклад роздачі для всіх: кожен маркер — куди, скільки й що приніс (виграш мінус докладене), бонус автору, разом.
+  function breakdownHtml() {
+    const s = state;
+    const seats = Object.keys(s.results).map(Number).sort((a, b) => s.results[b].net - s.results[a].net || a - b);
+    const rows = seats.map((seat) => {
+      const r = s.results[seat];
+      const parts = (s.bets[seat] || []).filter((b) => b.slot >= 0).map((b) => {
+        const stake = fmt(s.rules.free + b.extra);
+        const on = `${stake} ${L('на', 'on')} ${escapeHtml(slotLabel(b.slot))}`;
+        if (b.slot !== s.win) return `<span class="bd-bet lost">${on} — ${L('програв', 'lost')} <b>${signed(-b.extra)}</b></span>`;
+        const pay = payOf(b);
+        return `<span class="bd-bet won">${on} × ${s.slots[b.slot].odds * s.mult} = ${fmt(pay)} <b>${signed(pay - b.extra)}</b></span>`;
+      });
+      if (r.bonus) parts.push(`<span class="bd-bet won">${L('автор оцінки', 'guess author')} <b>${signed(r.bonus)}</b></span>`);
+      return `<li style="${seatStyle(seat)}" class="${seat === mySeat ? 'me' : ''}"><span class="dot-p"></span><span class="bd-name">${escapeHtml(seatName(seat))}</span>
+        <span class="bd-bets">${parts.join('') || `<span class="bd-bet">${L('без ставок', 'no bets')}</span>`}</span>
+        <b class="bd-net ${r.net > 0 ? 'good' : r.net < 0 ? 'bad' : ''}">${signed(r.net)}</b></li>`;
+    });
+    return `<ul class="breakdown">${rows.join('')}</ul>`;
   }
   function updateReveal() {
     const b = $('#next-btn');

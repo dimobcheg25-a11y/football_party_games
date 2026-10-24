@@ -89,7 +89,7 @@ async function main() {
   assert.ok(st.myChain[1].link.club && st.myChain[1].link.years, 'ланка підписана клубом і роками');
   console.log('✓ соло: найкоротший ланцюжок —', st.myChain.map((x) => x.player.uk).join(' → '), '— 100');
 
-  // помилка, повтор, підказка → 100 − 10 − 15
+  // помилка, повтор, підказки → 100 − 10 − 15 − 25
   ({ st } = await act(solo, 'next', null, (x) => x.round === 2 && x.phase === 'guess'));
   const best2 = st.testAnswer;
   ({ res, st } = await act(solo, 'add', { playerId: stranger(st.start.id, st.finish.id) }, (x) => x.myMistakes === 1));
@@ -99,16 +99,23 @@ async function main() {
   ({ st } = await act(solo, 'hint', null, (x) => x.myHints.length === 1));
   assert.ok(st.myHints[0].club, 'підказка — клуб');
   assert.ok((await emit(solo, 'hint')).error, 'друга підказка для тієї ж ланки — ні');
+  assert.strictEqual(st.myPotential, 75, 'дійдеш найкоротшим — 100 − 10 − 15');
+  ({ st } = await act(solo, 'hint', { kind: 'letter' }, (x) => x.myHints.length === 2));
+  const next = g.playerById.get(best2[1]);
+  const words = next.uk.split(/\s+/);
+  assert.strictEqual(st.myHints[1].letter, (words.length > 1 ? words.slice(1).join(' ') : words[0])[0].toUpperCase(), 'літера — прізвища наступного на найкоротшому шляху');
+  assert.ok((await emit(solo, 'hint', { kind: 'letter' })).error, 'другу літеру для тієї ж ланки — ні');
+  assert.strictEqual(st.myPotential, 50, 'після літери — ще −25');
   st = await walk(solo, best2);
   st = st.myResult ? st : await nextState(solo, (x) => x.myResult);
-  assert.strictEqual(st.myResult.points, 75, '100 − 10 за помилку − 15 за підказку');
-  console.log('✓ соло: помилка й підказка — 75');
+  assert.strictEqual(st.myResult.points, 50, '100 − 10 за помилку − 15 за клуб − 25 за літеру');
+  console.log('✓ соло: помилка, підказки клуб і літера — 50');
 
   // зайва ланка: одноклубник старту, від якого до фінішу стільки ж кроків
   ({ st } = await act(solo, 'next', null, (x) => x.round === 3 && x.phase === 'guess'));
   const toFinish = g.distances(st.finish.id);
   const detour = [...g.links.get(st.start.id).keys()].find((y) => toFinish.get(y) === st.steps);
-  let total = 175;
+  let total = 150;
   if (detour) {
     ({ st } = await act(solo, 'add', { playerId: detour }, (x) => x.myChain.length === 2));
     st = await walk(solo, g.shortestPath(detour, st.finish.id)); // від detour, який уже в ланцюжку

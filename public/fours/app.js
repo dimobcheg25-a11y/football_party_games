@@ -6,6 +6,7 @@
   const pl = (n, uk, en) => window.I18n.plural(n, uk, en);
   const POINTS = [['очко', 'очки', 'очок'], ['point', 'points']];
   const EMOJI = ['🟨', '🟩', '🟦', '🟪'];
+  const LINKS = ['A', 'B', 'C', 'D'];
   const DIFFS = ['easy', 'normal', 'fan'];
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -32,8 +33,8 @@
       },
     },
     onSetup() {
-      $('#points-rule').textContent = L('25 за кожну групу, −5 за помилку; усі чотири без помилок — +10; у кімнаті першому, хто розв\'язав, — ще +10.',
-        '25 per group, −5 per mistake; all four without a mistake — +10; in a room the first to solve it gets another +10.');
+      $('#points-rule').textContent = L('25 за кожну групу, −5 за помилку, підказки — −5, −10, −15…; усі чотири без помилок — +10; у кімнаті першому, хто розв\'язав, — ще +10.',
+        '25 per group, −5 per mistake, hints −5, −10, −15…; all four without a mistake — +10; in a room the first to solve it gets another +10.');
       renderDaily();
     },
     createOptions: (s) => ({ difficulty: s.difficulty, rounds: Number(s.rounds), mistakes: Number(s.mistakes), turnSeconds: Number(s.turnSeconds) }),
@@ -65,6 +66,7 @@
     const sameRound = p.round === s.round;
     if (sameRound && s.myFound.length > p.myFound.length) window.Sound.play(s.myFound.length === 4 ? 'win' : 'capsule');
     else if (sameRound && s.myMistakes > p.myMistakes) window.Sound.play('miss');
+    else if (sameRound && s.myHintCost > p.myHintCost) window.Sound.play('pop');
     if (s.phase === 'guess' && (p.phase !== 'guess' || !sameRound)) window.Sound.play('whistle');
   }
 
@@ -136,13 +138,18 @@
     const taken = new Set(s.myFound.flatMap((x) => x.players.map((p) => p.id)));
     const byId = new Map(s.board.map((p) => [p.id, p]));
     const left = order.filter((id) => !taken.has(id) && byId.has(id));
+    // підказки: гравці однієї групи — з однаковою літерою (не колір групи — він видав би рівень)
+    const linkOf = new Map();
+    (s.myHints || []).forEach(({ k, ids }) => ids.forEach((id) => linkOf.set(id, k)));
     for (const id of [...selected]) if (taken.has(id)) selected.delete(id);
     const showCaps = !reveal && !(mine.done && left.length === 0);
     $('#capsules').classList.toggle('hidden', !showCaps || reveal);
     $('#capsules').classList.toggle('locked', over);
     $('#capsules').innerHTML = left.map((id) => {
       const p = byId.get(id);
-      return `<button type="button" class="capsule ${selected.has(id) ? 'on' : ''}" data-id="${escapeHtml(id)}" ${over ? 'disabled' : ''}>
+      const link = linkOf.get(id);
+      return `<button type="button" class="capsule ${selected.has(id) ? 'on' : ''} ${link != null ? `linked l${link}` : ''}" data-id="${escapeHtml(id)}" ${over ? 'disabled' : ''}>
+        ${link != null ? `<b class="cap-link" title="${L('Підказка: в одній групі', 'Hint: same group')}">${LINKS[link]}</b>` : ''}
         <span class="cap-photo">${photoHtml(p)}</span><span class="cap-name">${escapeHtml(pname(p))}</span></button>`;
     }).join('');
 
@@ -156,6 +163,15 @@
     $('#clear-btn').disabled = over || !selected.size;
     $('#shuffle-btn').disabled = over;
     $('#giveup-btn').disabled = over;
+    const hb = $('#hint-btn');
+    hb.disabled = over || !s.nextHint;
+    hb.textContent = s.nextHint ? `💡 ${L('Підказка', 'Hint')} −${s.nextHint}` : `💡 ${L('Підказка', 'Hint')}`;
+    hb.title = s.nextHint ? L('Позначить двох гравців з однієї групи', 'Marks two players from the same group')
+      : L('Остання група — підказка не потрібна', 'Last group — no hint needed');
+    // скільки зараз: знайдені групи − помилки − підказки (+10, якщо досі без помилок і знайдеш усі)
+    const now = Math.max(0, mine.found.length * s.points.group - mine.mistakes * s.points.mistake - (s.myHintCost || 0));
+    $('#score-now').innerHTML = over ? '' : L(`Зараз у тебе <b>${now}</b> · група +${s.points.group}${mine.mistakes ? '' : ` · усі без помилок — ще +${s.points.perfect}`}${s.myHintCost ? ` · підказки −${s.myHintCost}` : ''}`,
+      `You have <b>${now}</b> now · group +${s.points.group}${mine.mistakes ? '' : ` · all without a mistake — another +${s.points.perfect}`}${s.myHintCost ? ` · hints −${s.myHintCost}` : ''}`);
     const r = s.myResult;
     $('#play-hint').textContent = r
       ? (r.found === 4 ? L(`✓ Усі чотири! +${r.points}. Чекаємо інших…`, `✓ All four! +${r.points}. Waiting for others…`)
@@ -169,7 +185,7 @@
       const seats = s.seats.map((x, i) => (x ? i : -1)).filter((i) => i >= 0);
       const results = seats.map((i) => {
         const res = s.progress[i]?.result;
-        return `<li style="${seatStyle(i)}"><span class="dot-p"></span>${escapeHtml(seatName(i))}<b>${res ? `${res.found}/4 · ${L('помилок', 'mistakes')} ${res.mistakes} · +${res.points}${res.first ? ' ⚡' : ''}${res.perfect ? ' ✨' : ''}` : '—'}</b></li>`;
+        return `<li style="${seatStyle(i)}"><span class="dot-p"></span>${escapeHtml(seatName(i))}<b>${res ? `${res.found}/4 · ${L('помилок', 'mistakes')} ${res.mistakes}${res.hints ? ` · 💡${res.hints}` : ''} · +${res.points}${res.first ? ' ⚡' : ''}${res.perfect ? ' ✨' : ''}` : '—'}</b></li>`;
       }).join('');
       const iVoted = s.nextVotes.includes(mySeat);
       rv.innerHTML = `${s.solo ? '' : `<ul class="round-results">${results}</ul>`}
@@ -223,6 +239,10 @@
         });
       }
     }
+  });
+  $('#hint-btn').addEventListener('click', async () => {
+    const res = await emit('hint');
+    if (res.error) toast(res.error, 'bad');
   });
   $('#giveup-btn').addEventListener('click', async () => {
     if (await ask(L('Здатися в цій головоломці?', 'Give up this puzzle?'), { note: L('Очки — лише за вже знайдені групи.', 'You keep points only for groups already found.'), ok: L('🏳️ Здатися', '🏳️ Give up'), danger: true })) emit('giveUp');

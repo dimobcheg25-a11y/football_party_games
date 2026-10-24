@@ -102,15 +102,27 @@ async function main() {
   // здатися
   ({ st } = await act(solo, 'next', null, (x) => x.round === 3 && x.phase === 'guess'));
   ({ st } = await act(solo, 'check', { ids: st.testAnswer[2] }, (x) => x.myFound.length === 1));
+  // підказки: пара з однієї незнайденої групи, наступна — з іншої й дорожча
+  assert.strictEqual(st.nextHint, 5, 'перша підказка — 5');
+  ({ st } = await act(solo, 'hint', null, (x) => x.myHints.length === 1));
+  const groupOf = (id) => st.testAnswer.findIndex((g) => g.includes(id));
+  const [h1] = st.myHints;
+  assert.strictEqual(h1.ids.length, 2, 'підказка — двоє');
+  assert.ok(groupOf(h1.ids[0]) === groupOf(h1.ids[1]) && groupOf(h1.ids[0]) !== 2, 'двоє з однієї незнайденої групи');
+  assert.strictEqual(st.nextHint, 10, 'друга — 10');
+  ({ st } = await act(solo, 'hint', null, (x) => x.myHints.length === 2));
+  assert.notStrictEqual(groupOf(st.myHints[1].ids[0]), groupOf(h1.ids[0]), 'друга — з іншої групи');
+  assert.strictEqual(st.myHintCost, 15);
   ({ st } = await act(solo, 'giveUp', null, (x) => x.phase === 'reveal'));
-  assert.strictEqual(st.myResult.points, 25);
+  assert.strictEqual(st.myResult.points, 25 - 15, '1 група й підказки 5 + 10 — 10');
+  assert.strictEqual(st.myResult.hints, 2);
   ({ st } = await act(solo, 'next', null, (x) => x.status === 'finished'));
   assert.strictEqual(st.history.length, 3);
-  assert.strictEqual(st.scores[0], 140);
+  assert.strictEqual(st.scores[0], 125);
   const keys = st.history.flatMap((h) => h.groups.map((g) => g.label));
   assert.strictEqual(new Set(keys).size, 12, 'групи в серії не повторюються');
   solo.close();
-  console.log('✓ соло: здатися, серія з 3, рахунок 140');
+  console.log('✓ соло: підказки 5 → 10, здатися, серія з 3, рахунок 125');
 
   // ── «Головоломка дня»: однакова для двох гравців
   const d = [io(GAME), io(GAME)];

@@ -24,6 +24,7 @@ function register({ app, io }) {
       start: (room, seat) => room.start(seat),
       check: (room, seat, { ids } = {}) => room.check(seat, ids),
       giveUp: (room, seat) => room.giveUp(seat),
+      hint: (room, seat) => room.hint(seat),
       next: (room, seat) => room.next(seat),
     },
     roomInfo: (room) => ({ solo: room.solo, options: room.options }),

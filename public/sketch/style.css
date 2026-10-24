@@ -227,3 +227,6 @@ body.sketching #chat-fab, body.sketching #chat-panel { display: none !important;
   .coaster { animation: none; display: none; }
   .pick-card { transition: none; }
 }
+
+/* «вгадаєш зараз — +N»: бурштинова цифра біля «Що це?» — тане з часом */
+.worth { padding: 2px 10px; border-radius: 99px; font-size: 13px; font-weight: 800; color: var(--accent-ink); background: var(--accent); white-space: nowrap; }

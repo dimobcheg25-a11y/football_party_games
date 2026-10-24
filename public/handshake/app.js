@@ -29,8 +29,8 @@
       },
     },
     onSetup() {
-      $('#points-rule').textContent = L('100 за найкоротший ланцюжок; −20 за кожну зайву ланку, −10 за помилку, −15 за підказку (дійшов — щонайменше 10); у кімнаті першому, хто дійшов найкоротшим, — ще +10.',
-        '100 for the shortest chain; −20 per extra link, −10 per mistake, −15 per hint (at least 10 if you get there); in a room the first to finish with the shortest chain gets another +10.');
+      $('#points-rule').textContent = L('100 за найкоротший ланцюжок; −20 за кожну зайву ланку, −10 за помилку, −15 за підказку клубу, −25 за першу літеру (дійшов — щонайменше 10); у кімнаті першому, хто дійшов найкоротшим, — ще +10.',
+        '100 for the shortest chain; −20 per extra link, −10 per mistake, −15 per club hint, −25 per initial (at least 10 if you get there); in a room the first to finish with the shortest chain gets another +10.');
     },
     createOptions: (s) => ({ difficulty: s.difficulty, rounds: Number(s.rounds), mistakes: Number(s.mistakes), turnSeconds: Number(s.turnSeconds) }),
     optionList: (o) => [DIFF_LABELS[o.difficulty],
@@ -105,11 +105,18 @@
       ? `<span>${L('Помилки', 'Mistakes')}</span>${Array.from({ length: max }, (_, i) => `<i class="${i < s.myMistakes ? 'burnt' : ''}"></i>`).join('')}`
       : `<span>${L('Помилок', 'Mistakes')}: <b>${s.myMistakes}</b></span>`;
     const last = chain[chain.length - 1].player.id;
-    const hinted = s.myHints.find((h) => h.after === last);
+    const hinted = s.myHints.find((h) => h.after === last && (h.kind || 'club') === 'club');
+    const lettered = s.myHints.find((h) => h.after === last && h.kind === 'letter');
     $('#hint-btn').textContent = L(`💡 Через який клуб? −${s.points.hint}`, `💡 Which club? −${s.points.hint}`);
     $('#hint-btn').disabled = over || !!hinted;
-    $('#hint-list').innerHTML = hinted
-      ? `<li>${hinted.img ? `<img src="${hinted.img}" alt="" />` : ''}${L(`Наступна ланка — через <b>${escapeHtml(hinted.club)}</b>`, `Next link — through <b>${escapeHtml(hinted.club)}</b>`)}</li>` : '';
+    $('#letter-btn').textContent = L(`🔤 Перша літера прізвища −${s.points.letter}`, `🔤 Surname initial −${s.points.letter}`);
+    $('#letter-btn').disabled = over || !!lettered;
+    $('#hint-list').innerHTML = (hinted
+      ? `<li>${hinted.img ? `<img src="${hinted.img}" alt="" />` : ''}${L(`Наступна ланка — через <b>${escapeHtml(hinted.club)}</b>`, `Next link — through <b>${escapeHtml(hinted.club)}</b>`)}</li>` : '')
+      + (lettered ? `<li><span class="hint-letter">${escapeHtml(lettered.letter)}</span>${L(`Прізвище наступної ланки — на <b>${escapeHtml(lettered.letter)}</b>`, `The next link’s surname starts with <b>${escapeHtml(lettered.letter)}</b>`)}</li>` : '');
+    // скільки буде, якщо дійти звідси найкоротшим шляхом — змінюється після помилки, підказки, зайвої ланки
+    $('#score-now').innerHTML = !over && s.myPotential != null
+      ? L(`Дійдеш звідси найкоротшим шляхом — <b>+${s.myPotential}</b>`, `Reach the finish by the shortest way from here — <b>+${s.myPotential}</b>`) : '';
     $('#giveup-btn').disabled = over;
     $('#answer-hint').textContent = r
       ? (r.done ? L(`✓ З'єднано за ${r.links} ${pl(r.links, ...STEPS)}: +${r.points}. Чекаємо інших…`, `✓ Connected in ${r.links} ${pl(r.links, ...STEPS)}: +${r.points}. Waiting for others…`)
@@ -139,7 +146,8 @@
     tick();
   }
 
-  $('#hint-btn').addEventListener('click', () => g.act('hint'));
+  $('#hint-btn').addEventListener('click', () => g.act('hint', { kind: 'club' }));
+  $('#letter-btn').addEventListener('click', () => g.act('hint', { kind: 'letter' }));
   $('#giveup-btn').addEventListener('click', async () => {
     if (await ask(L('Здатися в цьому раунді?', 'Give up this round?'), { note: L('Очок за нього не буде.', 'You will get no points for it.'), ok: L('🏳️ Здатися', '🏳️ Give up'), danger: true })) emit('giveUp');
   });

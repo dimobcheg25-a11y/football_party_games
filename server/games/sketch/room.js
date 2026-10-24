@@ -18,6 +18,7 @@ const REVEAL_MS = Number(process.env.SKETCH_REVEAL_MS) || 6000;
 const GUESS_MAX = 100;
 const GUESS_MIN = 20;
 const FIRST_BONUS = 20;
+const GUESS_STEP = 20; // без таймера: кожен наступний, хто вгадав, — на 20 менше
 const DRAWER_EACH = 25;
 // Малюнок: полотно 1000×750 (координати цілі), кольори й товщини — лише з наборів; межі — щоб не роздути кімнату.
 // Елементи малюнка: штрих { c, w, p: [x, y, …] } (c = ERASE — гумка), фігура { k: line|rect|oval, c, w, p: [x1, y1, x2, y2] },
@@ -306,7 +307,7 @@ class SketchRoom extends BaseRoom {
     const ms = this.options.drawSeconds * 1000;
     let points;
     if (ms) points = Math.round((GUESS_MIN + (GUESS_MAX - GUESS_MIN) * (Math.max(0, this.deadline - Date.now()) / ms)) / 5) * 5;
-    else points = Math.max(GUESS_MIN, GUESS_MAX - 20 * this.guessed.size); // без таймера — за порядком
+    else points = Math.max(GUESS_MIN, GUESS_MAX - GUESS_STEP * this.guessed.size); // без таймера — за порядком
     this.passed.delete(seat);
     if (!this.guessed.size) points += FIRST_BONUS;
     this.guessed.set(seat, points);
@@ -374,6 +375,7 @@ class SketchRoom extends BaseRoom {
       deadline: this.deadline,
       startedAt: this.phase === 'draw' ? this.startedAt : null,
       drawSeconds: this.options.drawSeconds,
+      points: { max: GUESS_MAX, min: GUESS_MIN, first: FIRST_BONUS, step: GUESS_STEP }, // для «вгадаєш зараз — +N» у клієнті
       serverNow: Date.now(),
       notice: this.phase === 'reveal' ? this.notice || null : null,
       answer: this.phase === 'reveal' ? this.publicWord() : null,

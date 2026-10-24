@@ -326,9 +326,10 @@
     const cat = s.category ? `<span class="cat">${s.category.icon} ${escapeHtml(s.category.label)}</span>` : '';
     let word = '';
     if (s.phase === 'draw' && s.word) word = `<span class="word known">${escapeHtml(s.word.text)}</span>`;
-    else if (s.phase === 'draw') word = `<span class="word guess">${L('Що це?', 'What is it?')}</span>`;
+    else if (s.phase === 'draw') word = `<span class="word guess">${L('Що це?', 'What is it?')}</span>${amDrawer() ? '' : '<span class="worth" id="worth"></span>'}`;
     else if (s.phase === 'reveal' && s.answer) word = `<span class="word known">${escapeHtml(s.answer.text)}</span>`;
     $('#word-bar').innerHTML = cat + word;
+    updateWorth();
 
     // поверх серветки: вибір слова, очікування, відповідь
     const over = $('#over');
@@ -492,8 +493,24 @@
     shownScores = Object.fromEntries(seats.map((i) => [i, s.scores[i]]));
   }
 
+  // Скільки дасть правильна відповідь зараз (як score() на сервері): з таймером — тане з часом, без — за порядком.
+  function updateWorth() {
+    const el = $('#worth');
+    const s = state;
+    if (!el || !s || s.phase !== 'draw' || !s.points) return;
+    const done = Object.keys(s.guessed).length;
+    const ms = s.drawSeconds * 1000;
+    let pts = ms && s.deadline
+      ? Math.round((s.points.min + (s.points.max - s.points.min) * (Math.max(0, s.deadline - g.serverNow()) / ms)) / 5) * 5
+      : Math.max(s.points.min, s.points.max - s.points.step * done);
+    if (!done) pts += s.points.first;
+    el.textContent = L(`вгадаєш зараз — +${pts}`, `guess now — +${pts}`);
+    el.title = done ? '' : L(`разом з +${s.points.first} першому`, `incl. +${s.points.first} for being first`);
+  }
+
   // ── таймер (без таймера — скільки вже малюють)
   function tick() {
+    updateWorth();
     const el = $('#timer');
     if (!state || state.status !== 'playing') { el.textContent = ''; return; }
     if (state.phase === 'draw' && !state.deadline && state.startedAt) {

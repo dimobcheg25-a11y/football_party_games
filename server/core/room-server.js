@@ -109,11 +109,19 @@ function createRoomServer({ app, io, id, createRoom, actions, streams = {}, room
     // Усі ігрові дії: перевіряємо кімнату і місце гравця на сервері.
     for (const [event, handler] of Object.entries(actions)) {
       socket.on(event, (payload, cb) => {
+        // emit('hint', cb) — без даних; null / не об'єкт → {} (деструктуризація `{ kind } = {}` на null падає)
+        if (typeof payload === 'function') [payload, cb] = [{}, payload];
+        if (payload == null || typeof payload !== 'object') payload = {};
         const room = currentRoom();
         if (!room) return reply(cb, { error: NOT_IN_ROOM });
         const seat = room.seatOf(socket.data.token);
         if (seat === -1) return reply(cb, { error: NOT_PLAYER });
-        reply(cb, handler(room, seat, payload, socket.lang));
+        try {
+          reply(cb, handler(room, seat, payload, socket.lang));
+        } catch (e) {
+          console.error(`[${id}] ${event}:`, e); // одна зламана дія не кладе весь сервер
+          reply(cb, { error: T('Щось пішло не так', 'Something went wrong') });
+        }
       });
     }
 

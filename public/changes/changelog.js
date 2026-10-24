@@ -3,6 +3,15 @@
 // Після кожного помітного для гравців коміту — дописати сюди пункт (дата — день деплою).
 window.CHANGELOG = [
   {
+    date: '2026-10-24',
+    items: [
+      { game: 'allin', uk: 'Поки ставиш, на кожній клітинці видно, з чим ти закінчиш роздачу, якщо виграє саме вона («тобі +60»), а на маркері — скільки він принесе. Після відповіді — розклад для всіх: хто, на що, скільки виграв і програв. Програшні фішки більше не зникають, а лишаються тьмяними.', en: 'While betting, every space shows what you’ll end the hand with if that one wins (“you +60”), and each marker shows what it pays. After the answer there is a breakdown for everyone: who bet on what, and how much they won or lost. Losing chips no longer vanish — they stay, dimmed.' },
+      { game: 'fours', uk: 'Підказка: позначає двох гравців з однієї групи (далі — третього до відомої пари). Можна брати кілька разів, кожна наступна дорожча: −5, −10, −15… Під полем видно, скільки очок у тебе зараз.', en: 'A hint: it marks two players from the same group (later — a third one to a known pair). You can use it more than once, each next one costs more: −5, −10, −15… Below the board you can see your points so far.' },
+      { game: 'handshake', uk: 'Нова підказка — перша літера прізвища наступного гравця в ланцюжку (−25, дорожча за підказку клубу). І завжди видно, скільки очок отримаєш, якщо дійдеш звідси найкоротшим шляхом.', en: 'A new hint — the first letter of the next player’s surname (−25, pricier than the club hint). And you can always see how many points you’ll get if you finish by the shortest way from here.' },
+      { game: 'sketch', uk: 'Біля «Що це?» видно, скільки очок дасть правильна відповідь просто зараз — число тане з кожною секундою.', en: 'Next to “What is it?” you can see how many points a right answer gives right now — the number melts away every second.' },
+    ],
+  },
+  {
     date: '2026-10-23',
     items: [
       { game: 'fours', uk: '«Ще одна гра» з однією головоломкою тепер показує нову дошку, а не картки з попередньої.', en: '“Play again” with a single puzzle now shows a fresh board instead of the cards from the previous one.' },

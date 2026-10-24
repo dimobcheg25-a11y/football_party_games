@@ -96,6 +96,9 @@
 .hint-list li { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 8px; font-size: 14px; background: color-mix(in srgb, var(--accent) 14%, transparent); }
 .hint-list img { width: 22px; height: 22px; object-fit: contain; }
 .hint-list b { color: var(--accent); }
+.hint-letter { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 4px; font: 700 15px/1 var(--display); color: var(--accent-ink); background: var(--accent); }
+.score-now { margin: 0; font-size: 13px; color: var(--muted); }
+.score-now b { color: var(--accent); font-size: 15px; }
 .switchboard.done .jack-input { display: none; }
 
 /* підсумок раунду: ланцюжок одним рядком */

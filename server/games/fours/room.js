@@ -1,5 +1,6 @@
 // Партія «Чотири четвірки»: серія головоломок. У кожній — 16 футболістів, яких треба розкласти на 4 групи по 4.
-// Кожен розв'язує ту саму головоломку у своєму темпі; помилок — 4 (або без обмеження). Чужий прогрес — лише кольори
+// Кожен розв'язує ту саму головоломку у своєму темпі; помилок — 4 (або без обмеження). Підказка — підсвічує двох
+// з однієї незнайденої групи (далі — третього до вже відомої пари), кожна наступна дорожча. Чужий прогрес — лише кольори
 // знайдених груп і кількість помилок. Соло — кімната на одного; «Головоломка дня» — соло з однією головоломкою за датою.
 const { BaseRoom } = require('../../core/base-room');
 const { makePuzzle, LEVELS } = require('./groups');
@@ -9,6 +10,7 @@ const GROUP_POINTS = 25;
 const MISTAKE_PENALTY = 5;
 const PERFECT_BONUS = 10; // усі 4 групи без жодної помилки
 const FIRST_BONUS = 10; // у кімнаті — хто першим знайшов усі 4
+const HINT_STEP = 5; // підказка «двоє з однієї групи»: перша −5, друга −10, третя −15…
 const ALLOWED_MISTAKES = [4, 0]; // 0 — без обмеження
 const ALLOWED_TIMERS = [0, 120, 180, 300];
 const ALLOWED_ROUNDS = [1, 3, 5];
@@ -55,6 +57,7 @@ class FoursRoom extends BaseRoom {
     this.mistakes = new Map(); // seat → кількість
     this.tries = new Map(); // seat → [{ key, colors: [4 кольори], correct }]
     this.gaveUp = new Set();
+    this.hints = new Map(); // seat → { links: Map(група → [id]), count, cost }
     this.results = new Map(); // seat → { found, mistakes, points, first } — хто вже закінчив
     this.firstDone = false;
     this.nextVotes = new Set();
@@ -85,7 +88,7 @@ class FoursRoom extends BaseRoom {
 
   leave(seat) {
     this.seats[seat] = null;
-    for (const m of [this.found, this.mistakes, this.tries, this.results]) m.delete(seat);
+    for (const m of [this.found, this.mistakes, this.tries, this.hints, this.results]) m.delete(seat);
     this.gaveUp.delete(seat);
     this.touch();
     if (this.status === 'playing') this.checkProgress();
@@ -146,7 +149,8 @@ class FoursRoom extends BaseRoom {
     if (this.results.has(seat)) return;
     const found = (this.found.get(seat) || []).length;
     const mistakes = this.mistakes.get(seat) || 0;
-    let points = Math.max(0, found * GROUP_POINTS - mistakes * MISTAKE_PENALTY);
+    const { count: hints, cost } = this.hintsOf(seat);
+    let points = Math.max(0, found * GROUP_POINTS - mistakes * MISTAKE_PENALTY - cost);
     const perfect = found === 4 && mistakes === 0;
     if (perfect) points += PERFECT_BONUS;
     const first = !this.solo && found === 4 && !this.firstDone;
@@ -155,7 +159,7 @@ class FoursRoom extends BaseRoom {
       points += FIRST_BONUS;
     }
     this.scores[seat] += points;
-    this.results.set(seat, { found, mistakes, points, perfect, first });
+    this.results.set(seat, { found, mistakes, hints, points, perfect, first });
   }
 
   check(seat, ids) {
@@ -190,6 +194,39 @@ class FoursRoom extends BaseRoom {
     this.checkProgress();
     this.changed();
     return { ok: true, correct, oneAway };
+  }
+
+  hintsOf(seat) {
+    return this.hints.get(seat) || { links: new Map(), count: 0, cost: 0 };
+  }
+
+  // Група для наступної підказки: серед незнайдених, де відомо менше трьох, — з найменшою кількістю відомих
+  // (спершу пара в кожній групі, потім третій), за рівних — простіша. Остання незнайдена група й так очевидна.
+  hintTarget(seat) {
+    const mine = this.found.get(seat) || [];
+    const open = this.puzzle.groups.map((_, i) => i).filter((i) => !mine.includes(i));
+    if (open.length <= 1) return -1;
+    const { links } = this.hintsOf(seat);
+    const known = (i) => (links.get(i) || []).length;
+    return open.filter((i) => known(i) < 3).sort((a, b) => known(a) - known(b) || a - b)[0] ?? -1;
+  }
+
+  hint(seat) {
+    if (this.status !== 'playing' || this.phase !== 'guess') return { error: T('Зараз не можна', 'Not right now') };
+    if (this.done(seat)) return { error: T('Ця головоломка для тебе вже закінчилась', 'This puzzle is already over for you') };
+    const gi = this.hintTarget(seat);
+    if (gi === -1) return { error: T('Підказок більше немає', 'No more hints') };
+    const h = this.hintsOf(seat);
+    const known = h.links.get(gi) || [];
+    const rest = this.puzzle.groups[gi].players.map((p) => p.id).filter((id) => !known.includes(id));
+    for (let k = known.length ? 1 : 2; k > 0; k--) known.push(rest.splice(Math.floor(Math.random() * rest.length), 1)[0]);
+    h.links.set(gi, known);
+    h.count += 1;
+    h.cost += h.count * HINT_STEP;
+    this.hints.set(seat, h);
+    this.touch();
+    this.changed();
+    return { ok: true };
   }
 
   giveUp(seat) {
@@ -250,6 +287,7 @@ class FoursRoom extends BaseRoom {
       progress[i] = {
         found: this.found.get(i) || [],
         mistakes: this.mistakes.get(i) || 0,
+        hints: this.hintsOf(i).count,
         done: this.phase === 'guess' ? this.done(i) : true,
         result: this.results.get(i) || null,
       };
@@ -259,7 +297,7 @@ class FoursRoom extends BaseRoom {
       solo: this.solo,
       options: this.options,
       daily: this.options.daily ? { date: this.date, no: dailyNumber(this.date) } : null,
-      points: { group: GROUP_POINTS, mistake: MISTAKE_PENALTY, perfect: PERFECT_BONUS, first: FIRST_BONUS },
+      points: { group: GROUP_POINTS, mistake: MISTAKE_PENALTY, perfect: PERFECT_BONUS, first: FIRST_BONUS, hint: HINT_STEP },
       capacity: this.capacity,
       seats: this.publicSeats(),
       host: this.host(),
@@ -287,10 +325,15 @@ class FoursRoom extends BaseRoom {
     return {
       myFound: (this.found.get(seat) || []).map((i) => publicGroup(this.puzzle.groups[i])),
       myMistakes: this.mistakes.get(seat) || 0,
+      // підказки: зв'язки без номера групи (колір видав би рівень); знайдені групи — вже не потрібні
+      myHints: [...this.hintsOf(seat).links].map(([gi, ids], k) => ({ k, gi, ids }))
+        .filter((x) => !(this.found.get(seat) || []).includes(x.gi)).map(({ k, ids }) => ({ k, ids })),
+      myHintCost: this.hintsOf(seat).cost,
+      nextHint: this.puzzle && this.phase === 'guess' && !this.done(seat) && this.hintTarget(seat) !== -1 ? (this.hintsOf(seat).count + 1) * HINT_STEP : 0,
       myTries: (this.tries.get(seat) || []).map((t) => ({ key: t.key, correct: t.correct, colors: over ? t.colors : null })),
       myResult: this.results.get(seat) || null,
     };
   }
 }
 
-module.exports = { FoursRoom, kyivDate, dailyNumber, ALLOWED_MISTAKES, ALLOWED_TIMERS, ALLOWED_ROUNDS };
+module.exports = { FoursRoom, kyivDate, dailyNumber, HINT_STEP, ALLOWED_MISTAKES, ALLOWED_TIMERS, ALLOWED_ROUNDS };

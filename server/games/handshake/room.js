@@ -2,14 +2,15 @@
 // поки не назвеш того, хто грав разом із фінішем. Кожен — у своєму темпі; чужий прогрес — лише кількість ланок.
 // Ланку прибрати не можна; помилка — назвав того, хто з останнім у ланцюжку разом не грав. Соло — кімната на одного.
 const { BaseRoom } = require('../../core/base-room');
-const { linked, linkOf, shortestPath, hintClub, makePair, LEVELS, playerById } = require('./graph');
+const { linked, linkOf, shortestPath, distances, hintClub, makePair, LEVELS, playerById } = require('./graph');
 const { T } = require('../../core/i18n');
 
 const MAX_POINTS = 100;
 const MIN_POINTS = 10; // дійшов — щонайменше стільки
 const EXTRA_LINK = 20; // за кожну ланку понад найкоротший шлях
 const MISTAKE_PENALTY = 10;
-const HINT_COST = 15;
+const HINT_COST = 15; // «через який клуб»
+const LETTER_COST = 25; // перша літера прізвища наступної ланки — сильніша, тому дорожча
 const FIRST_BONUS = 10; // у кімнаті — хто першим дійшов найкоротшим шляхом
 const MAX_LINKS = 12; // довший ланцюжок — уже не рукостискання
 const ALLOWED_MISTAKES = [3, 0]; // 0 — без обмеження
@@ -47,7 +48,7 @@ class HandshakeRoom extends BaseRoom {
     this.pair = null;
     this.chains = new Map(); // seat → [id…] від старту (фініш — останній, коли дійшов)
     this.mistakes = new Map(); // seat → кількість
-    this.hints = new Map(); // seat → [{ after: id, club, img, years }]
+    this.hints = new Map(); // seat → [{ after: id, kind: 'club', club, img, years } | { after: id, kind: 'letter', letter }]
     this.results = new Map(); // seat → { done, links, mistakes, hints, points, first }
     this.firstDone = false;
     this.nextVotes = new Set();
@@ -118,6 +119,7 @@ class HandshakeRoom extends BaseRoom {
     this.resetRound();
     if (this.roundNo >= this.pairs.length) return this.finish();
     this.pair = this.pairs[this.roundNo++];
+    this.toFinish = distances(this.pair.finish.id); // скільки кроків до фінішу від кожного — для «дійдеш найкоротшим — +N»
     this.best = shortestPath(this.pair.start.id, this.pair.finish.id);
     this.phase = 'guess';
     const sec = this.options.turnSeconds;
@@ -141,11 +143,12 @@ class HandshakeRoom extends BaseRoom {
     const links = this.chainOf(seat).length - 1;
     const mistakes = this.mistakes.get(seat) || 0;
     const hints = (this.hints.get(seat) || []).length;
+    const cost = this.hintCost(seat);
     let points = 0;
     let first = false;
     if (done) {
       const extra = links - this.pair.steps;
-      points = Math.max(MIN_POINTS, MAX_POINTS - extra * EXTRA_LINK - mistakes * MISTAKE_PENALTY - hints * HINT_COST);
+      points = Math.max(MIN_POINTS, MAX_POINTS - extra * EXTRA_LINK - mistakes * MISTAKE_PENALTY - cost);
       if (!this.solo && extra === 0 && !this.firstDone) {
         this.firstDone = true;
         first = true;
@@ -188,16 +191,36 @@ class HandshakeRoom extends BaseRoom {
     return { ok: true, linked: true, finished, link: linkOf(last, player.id) };
   }
 
-  // Підказка: через який клуб іде наступна ланка найкоротшого шляху від останнього в ланцюжку.
-  hint(seat) {
+  hintCost(seat) {
+    return (this.hints.get(seat) || []).reduce((t, h) => t + (h.kind === 'letter' ? LETTER_COST : HINT_COST), 0);
+  }
+
+  // Скільки буде, якщо звідси дійти найкоротшим шляхом (без нових помилок і підказок).
+  potential(seat) {
+    const chain = this.chainOf(seat);
+    const left = this.toFinish?.get(chain[chain.length - 1]);
+    if (left == null) return null;
+    const extra = Math.max(0, chain.length - 1 + left - this.pair.steps);
+    return Math.max(MIN_POINTS, MAX_POINTS - extra * EXTRA_LINK - (this.mistakes.get(seat) || 0) * MISTAKE_PENALTY - this.hintCost(seat));
+  }
+
+  // Підказки для наступної ланки найкоротшого шляху від останнього в ланцюжку:
+  // kind 'club' — через який клуб, 'letter' — перша літера прізвища того, хто там грав (shortestPath детермінований — той самий гравець).
+  hint(seat, kind = 'club') {
     if (this.status !== 'playing' || this.phase !== 'guess' || this.done(seat)) return { error: T('Зараз не можна', 'Not right now') };
+    if (kind !== 'letter') kind = 'club';
     const chain = this.chainOf(seat);
     const last = chain[chain.length - 1];
     const mine = this.hints.get(seat) || [];
-    if (mine.some((h) => h.after === last)) return { error: T('Підказка для цієї ланки вже є', 'You already have a hint for this link') };
-    const link = hintClub(last, this.pair.finish.id);
-    if (!link) return { error: T('Звідси до фінішу шляху немає', 'There is no way to the finish from here') };
-    mine.push({ after: last, ...link });
+    if (mine.some((h) => h.after === last && (h.kind || 'club') === kind)) return { error: T('Ця підказка для цієї ланки вже є', 'You already have this hint for this link') };
+    const path = shortestPath(last, this.pair.finish.id);
+    if (!path || path.length < 2) return { error: T('Звідси до фінішу шляху немає', 'There is no way to the finish from here') };
+    if (kind === 'club') mine.push({ after: last, kind, ...hintClub(last, this.pair.finish.id) });
+    else {
+      const p = playerById.get(path[1]);
+      const initial = (name) => { const w = String(name || '').trim().split(/\s+/); return (w.length > 1 ? w.slice(1).join(' ') : w[0]).charAt(0).toUpperCase(); };
+      mine.push({ after: last, kind, letter: T(initial(p.uk || p.name), initial(p.name)) });
+    }
     this.hints.set(seat, mine);
     this.touch();
     this.changed();
@@ -271,7 +294,7 @@ class HandshakeRoom extends BaseRoom {
       code: this.code,
       solo: this.solo,
       options: this.options,
-      points: { max: MAX_POINTS, min: MIN_POINTS, extra: EXTRA_LINK, mistake: MISTAKE_PENALTY, hint: HINT_COST, first: FIRST_BONUS },
+      points: { max: MAX_POINTS, min: MIN_POINTS, extra: EXTRA_LINK, mistake: MISTAKE_PENALTY, hint: HINT_COST, letter: LETTER_COST, first: FIRST_BONUS },
       capacity: this.capacity,
       seats: this.publicSeats(),
       host: this.host(),
@@ -302,6 +325,7 @@ class HandshakeRoom extends BaseRoom {
       myChain: chainOut(this.chainOf(seat)),
       myMistakes: this.mistakes.get(seat) || 0,
       myHints: this.hints.get(seat) || [],
+      myPotential: this.done(seat) || this.phase !== 'guess' ? null : this.potential(seat),
       myResult: this.results.get(seat) || null,
     };
   }

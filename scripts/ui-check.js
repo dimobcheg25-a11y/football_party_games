@@ -329,6 +329,10 @@ const scenarios = {
     await pick(st.testAnswer[0]);
     await p.waitForSelector('.pot');
     await pick([...st.testAnswer[1].slice(0, 3), st.testAnswer[2][0]]); // «майже»
+    await p.click('#hint-btn'); // підказки: пара A, потім пара B
+    await p.waitForSelector('.cap-link');
+    await p.click('#hint-btn');
+    await p.waitForFunction(() => document.querySelectorAll('.cap-link').length >= 4);
     await shot(p, 'fours-play', { full: true });
     await new Promise((res) => bot.emit('check', { ids: st.testAnswer[3] }, res)); // бот знайшов групу — у таблиці кулька
     await p.click('#giveup-btn');

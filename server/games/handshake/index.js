@@ -23,7 +23,7 @@ function register({ app, io }) {
     actions: {
       start: (room, seat) => room.start(seat),
       add: (room, seat, { playerId } = {}) => room.add(seat, playerId),
-      hint: (room, seat) => room.hint(seat),
+      hint: (room, seat, { kind } = {}) => room.hint(seat, kind),
       giveUp: (room, seat) => room.giveUp(seat),
       next: (room, seat) => room.next(seat),
     },
