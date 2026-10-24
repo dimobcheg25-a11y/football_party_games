@@ -100,7 +100,8 @@ async function main() {
   ({ res, st } = await act(solo, 'guess', { playerId: w1 }, (x) => x.myTries.length === 1));
   assert.strictEqual(res.correct, false);
   assert.strictEqual(st.myTries[0].cells.length, st.columns.length, 'клітинка на кожну колонку');
-  assert.ok([11, 12].includes(st.columns.length), '11 клітинок, з асистами — 12');
+  const ALL_COLUMNS = require('../server/games/guess/compare').COLUMNS.length;
+  assert.ok([ALL_COLUMNS - 1, ALL_COLUMNS].includes(st.columns.length), `${ALL_COLUMNS - 1} клітинок, з асистами — ${ALL_COLUMNS}`);
   assert.strictEqual(st.potential, st.points[1]);
   assert.ok((await emit(solo, 'guess', { playerId: w1 })).error, 'того самого гравця двічі не можна');
   ({ st } = await act(solo, 'guess', { playerId: w2 }, (x) => x.myTries.length === 2));

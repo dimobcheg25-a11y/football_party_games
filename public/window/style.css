@@ -84,27 +84,32 @@ input::placeholder { color: color-mix(in srgb, var(--muted) 70%, transparent); }
 .lot-meta img { width: 22px; height: 22px; object-fit: contain; }
 .lot-secret { color: var(--muted); font-size: 13px; }
 
-/* пара на вибір: дві картки поруч, під кожною — своя ставка */
-.lot-pair { display: grid; gap: 14px; }
-.lot-pair.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.lot-pair.two .lot-card { grid-template-columns: 110px minmax(0, 1fr); gap: 14px; padding: 16px; align-content: start; }
-.lot-pair.two .lot-photo { width: 110px; height: 136px; }
-.lot-pair.two .lot-name { font-size: clamp(17px, 1.9vw, 24px); overflow-wrap: normal; word-break: normal; hyphens: auto; }
-.lot-pair.two .lot-meta { font-size: 13px; }
-.lot-pair.two .stamp-sold { font-size: 16px; right: 12px; bottom: 12px; }
-.lot-bid { grid-column: 1 / -1; }
-.lot-bid:empty { display: none; }
-.lot-bid .bid-row { gap: 6px; flex-wrap: nowrap; }
-.lot-bid .bid-box { height: 50px; padding: 0 10px; flex: 1; min-width: 0; }
-.lot-bid .bid-box input { width: 100%; min-width: 40px; font-size: 26px; }
-.lot-bid .chip { height: 50px !important; min-width: 44px !important; padding: 0 8px; flex: none; }
-.lot-bid .hint { margin: 0; }
+/* лот — кілька гравців поруч (удвох — троє): вертикальні картки; на виборі — «Забрати за N» */
+.lot-row { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+.mini-card { grid-template-columns: 1fr; gap: 10px; padding: 14px; align-content: start; text-align: left; }
+.mini-card .lot-photo { width: 100%; height: 170px; }
+.mini-card .lot-name { font-size: clamp(17px, 1.7vw, 22px); overflow-wrap: normal; hyphens: auto; }
+.mini-card .lot-meta { font-size: 13px; gap: 4px 10px; }
+.mini-card .stamp-sold { font-size: 15px; right: 10px; top: 120px; bottom: auto; }
+.mini-card.is-taken { opacity: .78; border-top-color: var(--live); }
+.mini-card.back { opacity: .5; border-top-color: var(--line-strong); }
+.lot-foot { display: grid; }
+.lot-foot .hint { margin: 0; }
+.take-btn { width: 100%; }
+.taken { margin: 0; display: flex; align-items: center; gap: 8px; font-weight: 700; }
+.taken b { color: var(--accent); font-family: var(--mono); }
 .bid-rule { margin: 0; font-size: 14px; color: #c9d1db; }
 .bid-rule b { color: var(--accent); }
-.bid-submit { display: flex; gap: 14px; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; }
-.bid-notes { flex: 1; min-width: 240px; display: grid; gap: 4px; }
+.bid-notes { display: grid; gap: 4px; }
 .bid-notes .hint { margin: 0; }
-.bids small { color: var(--muted); font-weight: 600; }
+.pick-panel { display: grid; gap: 10px; }
+.pick-queue { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.pick-queue li { display: grid; grid-template-columns: 22px 12px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 8px 12px; background: var(--surface-2); }
+.pick-queue li small { grid-column: 3 / -1; color: var(--muted); font-size: 12px; }
+.pick-queue li.now { outline: 2px solid var(--accent); }
+.pick-queue li.done { opacity: .6; }
+.pick-queue .q-n { font: 700 12px/1 var(--mono); color: var(--muted); }
+.pick-queue b { font: 700 13px/1 var(--mono); color: var(--accent); }
 
 /* ставка */
 .bid-panel { background: var(--surface-solid); border: 1px solid var(--line); padding: 18px 20px; }
@@ -259,7 +264,9 @@ input::placeholder { color: color-mix(in srgb, var(--muted) 70%, transparent); }
 }
 @media (max-width: 760px) {
   .tw-layout { grid-template-columns: 1fr; }
-  .lot-pair.two { grid-template-columns: 1fr; }
+  .lot-row { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+  .mini-card .lot-photo { height: 130px; }
+  .mini-card .stamp-sold { top: 80px; }
   .lot-card { grid-template-columns: 96px minmax(0, 1fr); gap: 14px; padding: 14px; }
   .lot-photo { width: 96px; height: 120px; }
   .stamp-sold { font-size: 16px; right: 10px; bottom: 10px; }

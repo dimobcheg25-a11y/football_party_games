@@ -469,7 +469,7 @@ const scenarios = {
     await shot(host, 'window-lobby');
     await host.click('#start-btn');
     const people = [host, ...guests];
-    let shotBid = false, shotSold = false;
+    let shotBid = false, shotSold = false, shotPick = false;
     // кожен ставить на кожен лот, поки вікно не закриється
     await host.waitForSelector('#bid-btn');
     await shot(host, 'window-bid', { full: true });
@@ -477,10 +477,13 @@ const scenarios = {
     for (let guard = 0; guard < 80; guard++) {
       if (await host.isVisible('#screen-final')) break;
       for (const [k, x] of people.entries()) {
-        if (await x.isVisible('#bid-btn') && !(await x.textContent('#bid-status')).includes('Твої ставки')) {
-          const inputs = x.locator('#stage input[data-i]');
-          for (let j = 0; j < await inputs.count(); j++) await inputs.nth(j).fill(String(2 + k * 3 + j * 4 + (guard % 4)));
+        if (await x.isVisible('#bid-btn') && !(await x.textContent('#bid-status')).includes('Твоя ставка')) {
+          await x.fill('#bid-input', String(2 + k * 3 + (guard % 4)));
           await x.click('#bid-btn');
+        }
+        if (await x.locator('[data-take]').count()) {
+          if (!shotPick && k === 0) { await shot(x, 'window-pick', { full: true }); shotPick = true; }
+          await x.locator('[data-take]').first().click().catch(() => {});
         }
       }
 

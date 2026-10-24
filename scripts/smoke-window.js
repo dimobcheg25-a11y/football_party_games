@@ -1,6 +1,7 @@
 // Автотест «Трансферного вікна» через справжній сервер: рейтинги (пул 500 в обох режимах, позиції, Мессі ≫ середняк),
 // умовний матч (відтворюється з seed, реалістичні голи й картки), кімната з 3 ботами (схему міняє лише господар, нових посеред
-// вікна не беруть, «пара на вибір» з таємними ставками на обох, максимум, виграєш лише одного, рівні — пріоритет по колу, без пасу, склади за схемою й позиціями,
+// вікна не беруть, торг за право вибору: гравців на одного більше за учасників, таємна ставка, вибір по черзі (перший — за ставку, далі по 2 млн),
+// рівні — пріоритет по колу, без пасу, склади за схемою й позиціями,
 // бюджет не в мінусі), кінець вікна (сила, знахідка/переплата, матчі всіх з усіма, таблиця), «Ще одна гра», англійська.
 // Запуск: npm test (сервер піднімається сам на випадковому порту).
 
@@ -99,68 +100,81 @@ async function main() {
   await emit(a, 'start');
   st = await nextState(a, (x) => x.phase === 'bid');
   assert.strictEqual(st.line, 0, 'спершу воротарі');
-  assert.strictEqual(st.lot.players.length, 2, 'пара на вибір');
-  assert.ok(st.lot.players.every((p) => p.name) && st.lot.types.every((t) => t.length), 'лот: двоє гравців і їхні місця');
+  assert.strictEqual(st.lot.people.length, 3, 'торгуються всі троє');
+  assert.strictEqual(st.lot.players.length, 4, 'гравців на одного більше, ніж учасників');
+  assert.ok(st.lot.players.every((p) => p.name) && st.lot.types.every((t) => t.length), 'лот: гравці і їхні місця');
   assert.ok(st.result === null && !JSON.stringify(st.lot).includes('rating'), 'сила прихована');
+  const { recognition } = require('../server/games/path/careers');
+  const fames = st.lot.players.map((p) => recognition(byId(p.id)));
   const late = bot();
   assert.ok((await emit(late, 'join', { code: res.code, name: 'Пізній' })).error, 'посеред вікна нових не беруть');
   late.close();
   assert.ok((await emit(a, 'formation', { formation: '442' })).error, 'під час вікна схему не змінити');
 
-  // перший лот (двоє воротарів): Аня [30, 5], Борис [30, 2] — на першого рівні, пріоритет лоту 1 в Ані → Аня бере першого за 30;
-  // другого — найбільша з решти: Борис 2 (Аня вже купила), Віра не ставить — таймер, по 1 млн
+  // торги за право вибору: Аня 30, Борис 30 (рівні — пріоритет лоту 1 в Ані), Віра не ставить — таймер, ставка 2
   assert.strictEqual(st.lot.tieWinner, 0, 'пріоритет лоту 1 — у першого');
-  assert.ok(st.lot.eligible.every((e) => e.length >= 2), 'на кожного з пари — щонайменше двоє');
-  assert.ok((await emit(c, 'bid', { amounts: [91, 1] })).error, 'максимум = 100 − 10 порожніх місць');
-  assert.ok((await emit(c, 'bid', { amounts: [0, 1] })).error, 'пасу немає: 0 не приймається');
-  assert.ok((await emit(c, 'bid', { amounts: [5] })).error, 'ставка — на кожного з пари');
-  assert.ok((await emit(a, 'bid', { amounts: [30, 5] })).ok);
+  assert.ok((await emit(c, 'bid', { amount: 81 })).error, 'максимум = 100 − 10 порожніх місць × 2');
+  assert.ok((await emit(c, 'bid', { amount: 1 })).error, 'мінімум — 2 (не дешевше за наступний вибір)');
+  assert.ok((await emit(a, 'pick', { i: 0 })).error, 'обирати — лише після торгів');
+  assert.ok((await emit(a, 'bid', { amount: 30 })).ok);
   const bView = await nextState(b, (x) => x.bidders.includes(0));
-  assert.strictEqual(bView.myBids, null, 'чужих ставок не видно');
-  assert.ok(!JSON.stringify(bView).includes('amounts'), 'суми ставок приховані');
-  assert.deepStrictEqual(last.get(a).myBids, [30, 5], 'свої ставки видно собі');
-  await emit(b, 'bid', { amounts: [30, 2] });
+  assert.strictEqual(bView.myBid, null, 'чужих ставок не видно');
+  assert.ok(bView.pick === null && !JSON.stringify(bView).includes('"amount"'), 'до кінця торгів суми приховані');
+  assert.strictEqual(last.get(a).myBid, 30, 'свою ставку видно собі');
+  await emit(b, 'bid', { amount: 30 });
+  st = await nextState(a, (x) => x.phase === 'pick');
+  assert.deepStrictEqual(st.pick.order, [0, 1, 2], 'черга вибору — за ставками, рівні — за пріоритетом');
+  assert.deepStrictEqual(st.pick.bids, { 0: 30, 1: 30, 2: 2 }, 'після торгів ставки відкрито; хто не поставив — 2');
+  assert.ok(st.pick.picker === 0 && st.pick.price === 30, 'перший обирає за свою ставку');
+  assert.ok((await emit(b, 'pick', { i: 0 })).error, 'не твоя черга');
+  assert.ok((await emit(a, 'pick', { i: 3 })).ok);
+  st = await nextState(b, (x) => x.phase === 'pick' && x.pick.picker === 1);
+  assert.strictEqual(st.pick.price, 2, 'далі — по 2 млн');
+  assert.ok((await emit(b, 'pick', { i: 3 })).error, 'забраного не взяти');
+  await emit(b, 'pick', { i: 0 });
+  st = await nextState(c, (x) => x.phase === 'pick' && x.pick.picker === 2);
+  await emit(c, 'pick', { i: 1 });
   st = await nextState(a, (x) => x.phase === 'sold' && x.lotNo === 1);
-  const [i0, i1] = st.lastLot.items;
-  assert.ok(i0.winner === 0 && i0.price === 30, 'рівні ставки — виграє той, у кого пріоритет');
-  assert.ok(i1.winner === 1 && i1.price === 2, 'другого — найбільша ставка серед тих, хто ще не купив');
-  assert.deepStrictEqual(i1.bids, { 0: 5, 1: 2, 2: 1 }, 'усі ставки відкрито; хто не поставив — 1 млн');
-  assert.ok(st.budgets[0] === 70 && st.budgets[1] === 98, 'платиш свою ставку');
-  console.log('✓ пара на вибір: таємні ставки на обох, максимум, рівні — за пріоритетом, виграєш лише одного, другого — найбільша з решти, без пасу');
+  assert.deepStrictEqual(st.lastLot.items.map((x) => [x.winner, x.price]), [[0, 30], [1, 2], [2, 2]], 'хто кого взяв і за скільки');
+  assert.strictEqual(st.lastLot.leftover.length, 1, 'четвертий — назад у пул');
+  assert.ok(st.budgets[0] === 70 && st.budgets[1] === 98 && st.budgets[2] === 98, 'бюджети');
+  console.log(`✓ торг за право вибору: 4 гравці на трьох (відомість ${Math.min(...fames).toFixed(0)}–${Math.max(...fames).toFixed(0)}), таємні ставки, мін. 2 / макс., рівні — пріоритет, перший — за ставку, далі по 2 млн, зайвий — у пул`);
 
-  // далі — автоматично: Аня ставить випадково, Борис по 1, Віра по 2/1 — на кожного з пари, під кого є місце
+  // далі — автоматично: Аня ставить випадково, Борис 2, Віра 3; хто обирає — бере першого доступного
   const acted = new Set();
-  let autos = 0, lots = 0, ties = 0, pairs = 0;
-  const amountsFor = (x, v) => x.lot.players.map((_, i) => (x.lot.eligible[i].includes(x.you) ? v(i) : null));
+  let autos = 0, lots = 0, ties = 0;
   const play = (s, name, choose) => s.on('state', (x) => {
     if (x.status !== 'playing') return;
     if (x.phase === 'sold' && name === 'a' && !acted.has(`sold:${x.lotNo}`)) {
       acted.add(`sold:${x.lotNo}`);
       lots++;
-      const items = x.lastLot.items;
-      if (items.length === 2) pairs++;
-      const winners = items.filter((it) => it.winner !== -1).map((it) => it.winner);
-      assert.strictEqual(new Set(winners).size, winners.length, 'у лоті кожен виграє щонайбільше одного');
-      if (x.lastLot.auto) { autos++; assert.ok(items[0].price <= 5, 'без торгів — 5 млн'); }
-      for (const it of items) {
-        if (it.winner === -1) continue;
-        assert.strictEqual(it.price, it.bids[it.winner], 'платиш свою ставку');
-        const tookOther = (q) => items.some((o) => o !== it && o.winner === q);
-        for (const [q, v] of Object.entries(it.bids).map(([k, w]) => [Number(k), w])) {
-          if (q !== it.winner && v > it.price) assert.ok(tookOther(q), 'вищу ставку перебито лише тим, що він уже взяв іншого');
-        }
-        const tied = Object.entries(it.bids).map(([k, w]) => [Number(k), w]).filter(([q, w]) => w === it.price && (q === it.winner || !tookOther(q))).map(([q]) => q);
-        if (tied.length > 1) { ties++; assert.strictEqual(it.winner, x.lastLot.priority.find((q) => tied.includes(q)), 'рівні — за пріоритетом'); }
+      const L = x.lastLot;
+      if (L.auto) { autos++; assert.ok(L.items[0].price <= 5, 'без торгів — 5 млн'); return; }
+      const winners = L.items.map((it) => it.winner);
+      assert.strictEqual(new Set(winners).size, winners.length, 'кожен бере щонайбільше одного');
+      const top = Math.max(...Object.values(L.bids));
+      const first = L.items[0];
+      if (first) {
+        assert.strictEqual(first.price, L.bids[first.winner], 'перший платить свою ставку');
+        assert.strictEqual(L.bids[first.winner], top, 'першим обирає найбільша ставка');
+        const tied = Object.entries(L.bids).filter(([, v]) => v === top).map(([k]) => Number(k));
+        if (tied.length > 1) { ties++; assert.strictEqual(first.winner, L.priority.find((q) => tied.includes(q)), 'рівні — за пріоритетом'); }
       }
+      for (const it of L.items.slice(1)) assert.strictEqual(it.price, 2, 'далі — по 2 млн');
     }
-    if (x.phase === 'bid' && name === 'a') assert.ok(x.lot.eligible.every((e) => e.length >= 2), 'сам із собою не торгуються');
-    if (x.phase !== 'bid' || !x.lot.bidders.includes(x.you) || acted.has(`${name}:${x.lotNo}`)) return;
-    acted.add(`${name}:${x.lotNo}`);
-    s.emit('bid', { amounts: amountsFor(x, (i) => choose(x, i)) }, () => {});
+    if (x.phase === 'bid' && name === 'a') assert.ok(x.lot.eligible.some((e) => e.length >= 2), 'сам із собою не торгуються');
+    if (x.phase === 'bid' && x.lot.people.includes(x.you) && !acted.has(`${name}:bid:${x.lotNo}`)) {
+      acted.add(`${name}:bid:${x.lotNo}`);
+      s.emit('bid', { amount: Math.min(choose(x), x.maxBids[x.you]) }, () => {});
+    }
+    if (x.phase === 'pick' && x.pick.picker === x.you && !acted.has(`${name}:pick:${x.lotNo}`)) {
+      acted.add(`${name}:pick:${x.lotNo}`);
+      s.emit('pick', { i: x.pick.options[0] }, () => {});
+    }
   });
-  play(a, 'a', (x) => 1 + Math.floor(Math.random() * Math.min(12, x.maxBids[x.you])));
-  play(b, 'b', () => 1);
-  play(c, 'c', (x, i) => (i ? 1 : 2));
+  play(a, 'a', (x) => 2 + Math.floor(Math.random() * 12));
+  play(b, 'b', () => 2);
+  play(c, 'c', () => 3);
   st = await nextState(a, (x) => x.status === 'finished');
   const slots = FORMATIONS['433'];
   for (const seat of [0, 1, 2]) {
@@ -173,8 +187,7 @@ async function main() {
   }
   const ids = Object.values(st.squads).flat().map((x) => x.id);
   assert.strictEqual(new Set(ids).size, ids.length, 'гравець — лише в одному складі');
-  assert.ok(pairs > 5, 'більшість лотів — пари');
-  console.log(`✓ вікно: ${lots} лотів (${pairs} пар, ${autos} без торгів за 5 млн, ${ties} рівних — за пріоритетом), склади 4-3-3 за позиціями, бюджети`);
+  console.log(`✓ вікно: ${lots} лотів (${autos} без торгів за 5 млн, ${ties} рівних — за пріоритетом), склади 4-3-3 за позиціями, бюджети`);
 
   // кінець: сила, знахідка/переплата, матчі всіх з усіма, таблиця
   const r = st.result;
@@ -211,9 +224,15 @@ async function main() {
   await emit(m1, 'start');
   for (const [s, k] of [[m1, 'm1'], [m2, 'm2']]) {
     s.on('state', (x) => {
-      if (x.status !== 'playing' || x.phase !== 'bid' || !x.lot.bidders.includes(x.you) || acted.has(`${k}:${x.lotNo}`)) return;
-      acted.add(`${k}:${x.lotNo}`);
-      s.emit('bid', { amounts: amountsFor(x, () => 1 + Math.floor(Math.random() * Math.min(20, x.maxBids[x.you]))) }, () => {});
+      if (x.status !== 'playing') return;
+      if (x.phase === 'bid' && x.lot.people.includes(x.you) && !acted.has(`${k}:bid:${x.lotNo}`)) {
+        acted.add(`${k}:bid:${x.lotNo}`);
+        s.emit('bid', { amount: Math.min(x.maxBids[x.you], 2 + Math.floor(Math.random() * 20)) }, () => {});
+      }
+      if (x.phase === 'pick' && x.pick.picker === x.you && !acted.has(`${k}:pick:${x.lotNo}`)) {
+        acted.add(`${k}:pick:${x.lotNo}`);
+        s.emit('pick', { i: x.pick.options[Math.floor(Math.random() * x.pick.options.length)] }, () => {});
+      }
     });
   }
   st = await nextState(m1, (x) => x.status === 'finished');
@@ -238,7 +257,7 @@ async function main() {
   st = await nextState(e1, (x) => x.phase === 'bid');
   const strip = (x) => JSON.stringify({ ...x, seats: null, lot: x.lot && { ...x.lot, players: x.lot.players.map((p) => ({ ...p, uk: null })) }, squads: null, news: null });
   assert.ok(!cyr.test(strip(st)), `стан англійською: ${strip(st).match(/.{0,40}[А-Яа-яІіЇїЄєҐґ].{0,40}/)?.[0]}`);
-  res = await emit(e1, 'bid', { amounts: [999, 999] });
+  res = await emit(e1, 'bid', { amount: 999 });
   assert.ok(/at most/.test(res.error), 'помилка англійською');
   console.log(`✓ англійська: «${st.lines[0]}», «${st.lot.players[0].pos}»`);
   for (const s of [e1, e2]) s.close();
