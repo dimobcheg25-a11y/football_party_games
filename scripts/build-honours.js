@@ -4,8 +4,10 @@
 // і рядки «*[[La Liga]]: 2004–05, 2005–06; runner-up: 2006–07». Рахуємо сезони до «runner-up»/«third place».
 // Молодіжні команди пропускаємо (крім олімпійського золота), особисті нагороди — окремо (лише «Золотий м'яч»).
 //
-// honours.json: { [id гравця]: { league, ucl, uel, cwc, wc, euro, copa, afcon, nl, lib, ballon, cups, total, leagues: { назва: n } } }
-//   league — чемпіонства (вищий дивізіон будь-якої країни), cups — внутрішні кубки й суперкубки, total — усі командні трофеї.
+// honours.json: { [id гравця]: { league, ucl, uel, cwc, wc, euro, copa, afcon, nl, lib, ballon, cups, total, leagues: { назва: n }, ind: [[назва, [роки]]] } }
+//   league — чемпіонства (вищий дивізіон будь-якої країни), cups — внутрішні кубки й суперкубки, total — усі командні трофеї;
+//   ind — особисті нагороди як є («PFA Team of the Year», [2019, 2020]); рік сезону — рік його кінця (2018–19 → 2019).
+//   Що з них скільки важить — вирішує server/games/window/rating.js.
 //
 // Запуск: npm run build-honours   (≈3 хв);  node scripts/build-honours.js Marquinhos "Samuel Eto'o" — перевірка кількох статей
 
@@ -102,8 +104,21 @@ function countSeasons(s) {
   return n;
 }
 
+// Роки нагороди: «2018–19» → 2019, «1999–2000» → 2000, «1994» → 1994 (до «runner-up», як і countSeasons).
+function awardYears(s) {
+  const winners = s.split(/;|\brunners?[- ]?up\s*:|\bfinalists?\s*:|\bthird place\s*:|\bsecond place\s*:/i)[0];
+  const years = [];
+  for (const m of winners.matchAll(/\b((?:18|19|20)\d{2})(?:\s*[–\-\/]\s*(\d{2,4}))?\b/g)) {
+    const start = Number(m[1]);
+    if (!m[2]) { years.push(start); continue; }
+    const end = m[2].length === 4 ? Number(m[2]) : Math.floor(start / 100) * 100 + Number(m[2]) + (Number(m[2]) < start % 100 ? 100 : 0);
+    years.push(end - start === 1 ? end : start); // «1990–1994» — це не сезон, а проміжок: беремо початок
+  }
+  return years;
+}
+
 function parseHonours(section) {
-  const out = { league: 0, ucl: 0, uel: 0, uecl: 0, usc: 0, cwc: 0, wc: 0, euro: 0, copa: 0, afcon: 0, nl: 0, lib: 0, olympic: 0, intl: 0, cont: 0, cups: 0, ballon: 0, total: 0, leagues: {} };
+  const out = { league: 0, ucl: 0, uel: 0, uecl: 0, usc: 0, cwc: 0, wc: 0, euro: 0, copa: 0, afcon: 0, nl: 0, lib: 0, olympic: 0, intl: 0, cont: 0, cups: 0, ballon: 0, total: 0, leagues: {}, ind: [] };
   let team = '', personal = false, youth = false, manager = false;
   for (const line of section.split('\n')) {
     // заголовки бувають з примітками й коментарями: '''Individual'''<!--…-->, '''AC Milan'''<ref …>
@@ -114,7 +129,8 @@ function parseHonours(section) {
       const h = plain(head[1]);
       // трофеї тренера (Райкард з «Барселоною») — не рахуємо, доки не почнеться знову розділ гравця
       if (/^(as )?(a )?(manager|managerial|coach|head coach|assistant|director)/i.test(h)) { manager = true; continue; }
-      if (/^(as )?(a )?player|^playing/i.test(h)) { manager = false; personal = false; continue; }
+      // «Player» усередині ===Individual=== (Кройф, Беккенбауер) — особисті нагороди гравцем, а не початок командних трофеїв
+      if (/^(as )?(a )?player|^playing/i.test(h)) { manager = false; if (!/^player$/i.test(h)) personal = false; continue; }
       if (PERSONAL.test(h)) { personal = true; youth = false; team = h; continue; }
       if (/^(club|international|national team|team|senior)$/i.test(h)) { personal = false; youth = false; continue; }
       // особисте й рекорди йдуть у кінці; підзаголовки в них ('''Overall''', ;Sweden) — теж не командні трофеї
@@ -130,6 +146,7 @@ function parseHonours(section) {
     const n = countSeasons(plain(body.slice(body.indexOf(':') + 1)));
     if (!n) continue;
     if (manager) continue;
+    if (personal) out.ind.push([plain(body.split(':')[0]), awardYears(plain(body.slice(body.indexOf(':') + 1)))]);
     if (personal) { if (/^ballon d'or$/i.test(name.split('#')[0]) && !/runner|third|second|silver|bronze|place|century|prix|winners|nomin|shortlist|dream/i.test(plain(body))) out.ballon += n; continue; }
     const k = kind(label);
     if (youth && k !== 'olympic') continue;
@@ -177,7 +194,7 @@ async function main() {
     const h = parseHonours(sec);
     found++;
     // нулі не зберігаємо — менший файл; гравець без запису — розділу трофеїв немає (невідомо), {} — трофеїв немає
-    result[p.id] = Object.fromEntries(Object.entries(h).filter(([, v]) => (typeof v === 'object' ? Object.keys(v).length : v)));
+    result[p.id] = Object.fromEntries(Object.entries(h).filter(([, v]) => (Array.isArray(v) ? v.length : typeof v === 'object' ? Object.keys(v).length : v)));
   }
   if (only.length) { for (const [id, h] of Object.entries(result)) console.log(id, JSON.stringify(h)); return; }
   fs.writeFileSync(OUT, JSON.stringify(result));

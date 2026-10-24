@@ -101,6 +101,13 @@ window.Sound = (() => {
       tone(140, { dur: 0.16, type: 'sine', vol: 0.3, slideTo: 60 });
       tone(900, { dur: 0.04, type: 'square', vol: 0.05, slideTo: 300 });
     },
+    // молоток аукціоніста: два сухі удари по дереву ('Трансферне вікно' — гравця продано)
+    gavel() {
+      [0, 0.16].forEach((start, i) => {
+        tone(i ? 210 : 260, { start, dur: 0.07, type: 'square', vol: 0.12, slideTo: 90 });
+        tone(1200, { start, dur: 0.025, type: 'triangle', vol: 0.06, slideTo: 500 });
+      });
+    },
     // боксерський гонг: два удари по дзвону з довгим затуханням і металевими обертонами ('Один на один')
     gong() {
       [0, 0.32].forEach((start) => {

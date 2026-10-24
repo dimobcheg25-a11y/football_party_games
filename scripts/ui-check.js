@@ -1,6 +1,6 @@
 // Перевірка інтерфейсу у справжньому Chrome (без вікна): проходить основні екрани ігор, ловить помилки JS
 // і зберігає знімки в .shots/ (їх дивиться Claude перед пушем — лише нові/змінені екрани, щоб не витрачати токени).
-// Запуск: npm run ui-check -- [hub|top|spy|guess|duel|allin|path|crossroads ...] [--mobile]   (без назв — усе)
+// Запуск: npm run ui-check -- [hub|top|spy|guess|duel|allin|window|path|crossroads ...] [--mobile]   (без назв — усе)
 // Chrome: встановлений у системі (або шлях у змінній CHROME). Браузер не завантажується — лише playwright-core.
 
 const fs = require('fs');
@@ -33,7 +33,7 @@ const PHONE = { width: 390, height: 780 };
 async function startServer() {
   const server = spawn(process.execPath, [path.join(ROOT, 'server', 'index.js')], {
     cwd: ROOT,
-    env: { ...process.env, PORT, GUESS_REVEAL_MS: '300000', FIXED_ORDER: '1', FOURS_TEST_ANSWER: '1', FOURS_REVEAL_MS: '300000', HANDSHAKE_TEST_ANSWER: '1', HANDSHAKE_REVEAL_MS: '300000', ALLIN_REVEAL_MS: '300000' }, // FIXED_ORDER — у «Перехресті» першим ходить господар
+    env: { ...process.env, PORT, GUESS_REVEAL_MS: '300000', FIXED_ORDER: '1', FOURS_TEST_ANSWER: '1', FOURS_REVEAL_MS: '300000', HANDSHAKE_TEST_ANSWER: '1', HANDSHAKE_REVEAL_MS: '300000', ALLIN_REVEAL_MS: '300000', WINDOW_SOLD_MS: '1200', WINDOW_AUTO_MS: '300' }, // FIXED_ORDER — у «Перехресті» першим ходить господар
     stdio: ['ignore', 'pipe', 'inherit'],
   });
   await new Promise((res) => server.stdout.on('data', (d) => d.toString().includes('запущено') && res()));
@@ -455,6 +455,46 @@ const scenarios = {
   },
 
   // All in: соло (оцінка, вилка, ставка → відповідь), кімната на трьох (сукно з оцінками, ставки наживо, ALL IN, відповідь), телефон.
+  // Трансферне вікно: головна, лобі зі схемою, лот зі ставкою, продаж, кінець вікна (склади й сила, матчі й таблиця), телефон
+  async window(browser) {
+    const p = await person(browser, 'window');
+    await p.goto(`${URL}/window/`);
+    await p.waitForSelector('[data-opt="basis"] .chip.active');
+    await shot(p, 'window-home', { full: true });
+    await p.context().close();
+
+    const { host, guests } = await room(browser, 'window', 2);
+    await host.click('#lobby-formation [data-f="mini"]');
+    await host.waitForSelector('#lobby-formation [data-f="mini"].active');
+    await shot(host, 'window-lobby');
+    await host.click('#start-btn');
+    const people = [host, ...guests];
+    let shotBid = false, shotSold = false;
+    // кожен ставить на кожен лот, поки вікно не закриється
+    await host.waitForSelector('#bid-input');
+    await shot(host, 'window-bid', { full: true });
+    shotBid = true;
+    for (let guard = 0; guard < 80; guard++) {
+      if (await host.isVisible('#screen-final')) break;
+      for (const [k, x] of people.entries()) {
+        if (await x.isVisible('#bid-input') && !(await x.textContent('#bid-status')).match(/млн|пасуєш/)) {
+          await x.fill('#bid-input', String(2 + k * 3 + (guard % 4)));
+          await x.click('#bid-btn');
+        }
+      }
+      if (!shotBid && await host.isVisible('#bid-input')) { await shot(host, 'window-bid', { full: true }); shotBid = true; }
+      if (!shotSold && await host.isVisible('.stamp-sold')) { await shot(host, 'window-sold', { full: true }); shotSold = true; }
+      await host.waitForTimeout(400);
+    }
+    await host.waitForSelector('#screen-final:not(.hidden)');
+    await shot(host, 'window-final-squads', { full: true });
+    await host.click('[data-tab="matches"]');
+    await shot(host, 'window-final-matches', { full: true });
+    for (const x of people) await x.context().close();
+
+    await phoneShot(browser, 'window', '/window/', async () => {});
+  },
+
   async allin(browser) {
     const p = await person(browser, 'allin');
     await p.goto(`${URL}/allin/`);
@@ -502,7 +542,10 @@ const scenarios = {
     await guests[0].click('#felt .slot[data-slot="1"]');
     await guests[0].click('#felt .slot[data-slot="0"]');
     await guests[1].click('#felt .slot[data-slot="2"]');
-    await host.waitForSelector('#felt .slot[data-slot="0"] .token');
+    await host.waitForSelector('#felt .slot[data-slot="2"] .token.mine');
+    // чужих фішок до відповіді не видно (блеф): у гостя на сукні — лише свої
+    await guests[1].waitForSelector('#felt .slot[data-slot="2"] .token.mine');
+    if (await guests[1].locator('#felt .token:not(.mine)').count()) throw new Error('allin: до відповіді видно чужі фішки');
     await shot(host, 'allin-room-bet', { full: true });
     for (const x of people) await x.click('#done-btn');
     await host.waitForSelector('#felt.revealed');

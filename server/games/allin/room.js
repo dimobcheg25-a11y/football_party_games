@@ -2,7 +2,7 @@
 // і всі ставлять фішки на ту оцінку, яка найближча до правди, але не більша за неї.
 // Кімната (2–8): фази guess (кожен пише число, приховано) → bet (табло: оцінки за зростанням + «менше за всіх» ×6, коефіцієнти
 // від ×2 у центрі до ×5 по краях; у кожного 2 безкоштовні маркери по FREE фішок, до них можна докласти свої; ставки видно наживо;
-// «Готово» — ставки зафіксовано) → reveal (виграшна клітинка платить (маркер + докладене) × коефіцієнт, програні докладені фішки згорають;
+// «Готово» — ставки зафіксовано; чужих ставок до відповіді не видно — можна блефувати) → reveal (виграшна клітинка платить (маркер + докладене) × коефіцієнт, програні докладені фішки згорають;
 // автор виграшної оцінки +AUTHOR_BONUS). Останній раунд — виграші ×2. Банк на старті START_BANK; без фішок не вибуваєш — маркери безкоштовні.
 // Соло: оцінка + впевненість (вузька / середня / широка «вилка» — ×5 / ×3 / ×2) + скільки докласти до маркера; одразу відповідь.
 const { T } = require('../../core/i18n');
@@ -220,7 +220,7 @@ class AllinRoom extends BaseRoom {
     this.changed();
   }
 
-  // Ставки — цілком: [{ slot, extra }, { slot, extra }]; видно всім одразу, змінювати можна до «Готово».
+  // Ставки — цілком: [{ slot, extra }, { slot, extra }]; змінювати можна до «Готово». Чужі — лише після відповіді (блеф).
   bet(seat, { bets } = {}) {
     if (this.status !== 'playing' || this.phase !== 'bet') return { error: T('Ставки зараз не приймаються', 'Bets are closed right now') };
     if (this.ready.has(seat)) return { error: T('Ставки вже зроблено', 'Your bets are locked in') };
@@ -336,7 +336,7 @@ class AllinRoom extends BaseRoom {
       } : null,
       guessed: [...this.guesses.keys()],
       slots: showBets ? this.slots : [],
-      bets: showBets ? Object.fromEntries(this.bets) : {},
+      bets: reveal ? Object.fromEntries(this.bets) : {}, // до відповіді — лише свої (privateState.myBets): можна блефувати
       ready: [...this.ready],
       answer: reveal ? { value: cur.value, detail: cur.q.detail(cur.p) } : null,
       win: reveal ? this.win : -1,
@@ -351,9 +351,9 @@ class AllinRoom extends BaseRoom {
     return state;
   }
 
-  // Свою оцінку до табло бачить лише сам гравець.
+  // Свою оцінку до табло і свої ставки до відповіді бачить лише сам гравець.
   privateState(seat) {
-    return { myGuess: this.guesses.get(seat) ?? null };
+    return { myGuess: this.guesses.get(seat) ?? null, myBets: this.bets.get(seat) || null };
   }
 }
 

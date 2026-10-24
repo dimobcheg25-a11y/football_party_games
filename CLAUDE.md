@@ -76,9 +76,18 @@ Node 18+, Express + Socket.IO, клієнт — чистий HTML/CSS/JS без 
 - `server/games/allin/` — «All in» (як Wits & Wagers): `questions.js` (питання-число про одного гравця: значення й пояснення — з питань duel (`base`), свої — рік народження, рік переходу
   в клуб, де зіграв найбільше (`bigMove`); `ask(p)` — текст з ім'ям, гроші/Instagram — у мільйонах (`scale`, `dec`); `tol` — соло-вилки ±10/25/50 % або ± a/b/c), `room.js` (серія 5/7/10 роздач;
   кімната 2–8: `guess` (таємно, можна змінити) → `bet` (сукно: «менше за всіх» ×6 + оцінки за зростанням, центр ×2 … краї ×5 — `oddsOf`; 2 безкоштовні маркери по 10 + докладені фішки,
-  ставки видно наживо, `done`; на клітинці «тобі ±N» — підсумок, якщо виграє вона; на маркері «виграє → N») → `reveal` (виграє найбільша оцінка ≤ правди; (10 + докладене) × коеф., автору +20; остання роздача ×2;
+  ставки до відповіді бачить лише сам гравець (`privateState.myBets`, блеф), `done`; на клітинці «тобі ±N» — підсумок, якщо виграє вона; на маркері «виграє → N») → `reveal` (виграє найбільша оцінка ≤ правди; (10 + докладене) × коеф., автору +20; остання роздача ×2;
   розклад усіх ставок усіх гравців — `breakdownHtml`, програшні фішки тьмяніють, а не зникають); банк 100, без фішок не вибуваєш;
   соло — оцінка + вилка ×5/×3/×2 + ставка, одразу відповідь; своя оцінка — `privateState.myGuess`).
+- `server/games/window/` — «Трансферне вікно» (2–8, лише кімната): `rating.js` (прихована сила 40…99: показники гравця → z у своїй групі позицій (GK/CB/FB/DM/CM/AM/FW)
+  серед 1500 найвідоміших, лічильники через log; ваги позицій `WEIGHTS` (погоджено з користувачем) × важливість `IMPORTANCE` (нагороди, «Золотий м'яч», вартість, відомість —
+  більше; перемоги, трофеї, рівень клубу — менше); нема показника — вага випадає, `SHRINK` тягне до середнього; нагороди — `awardKind` (світові ×3, континентальні ×2,
+  ліги ×2 × сила ліги того року з `uefa-ranks.json`); `windowPool(mode)` — 500 найвідоміших (`modern` — з повними даними з 2012); `basisTable` — «сила за» одним
+  показником (вартість/голи/асисти/трофеї+нагороди → місце в пулі; вартість і асисти — лише сучасний пул)), `match.js` (умовний матч: сила ліній, 6 відрізків по 15 хв,
+  автори голів/асистів/карток — за частотою гравця, seed; `league` — усі з усіма), `room.js` (схема — господар у лобі (`formation`), «Міні» — 7 універсальних місць;
+  лоти рандомом по лініях ВР → захист → півзахист → атака на позицію, потрібну комусь; таємні ставки 1…max (бюджет − 1 млн на кожне інше порожнє місце) або пас,
+  рівні — раніша; після лоту всі ставки відкрито; місце потрібне одному — авто за 1 млн; посеред вікна нових не беруть; кінець — склади з силою, «знахідка»/«переплата»
+  (відхилення від прямої ціна→сила), матчі й таблиця; своя ставка — `privateState.myBid`).
 - `server/data/` — спільна база футболістів і категорій для всіх ігор (`index.js` — завантаження, `categories.js`, ручні правки в `manual-tags.js`;
   `derived-tags.js` — категорії з зібраних даних при завантаженні: A100 (+ асисти TM), UCL30, T80, JOURNEY (10+ різних клубів), H190/H170 (зріст, `facts.json`),
   BDO3/BDO10 (трійка/десятка «Золотого м'яча», `ballon.json`; `home` — не ставляться з BALLON), AS_* (тип `partner`: асистував зірці з `partnerOf`, фото категорії —
@@ -103,7 +112,7 @@ Node 18+, Express + Socket.IO, клієнт — чистий HTML/CSS/JS без 
   підказки пошуку, тост, звук, чат), `players.js` (`window.Players.search` — автодоповнення імен), `sounds.js` (`window.Sound`),
   `room-client.js` (`RoomClient.create` — уся спільна логіка клієнта кімнатних ігор).
 - `public/<id>/` — сторінка гри (`crossroads/app.js` — ~1100 рядків, читати частинами через Grep).
-- `scripts/smoke-test.js` (Перехрестя), `scripts/smoke-path.js` (Шлях), `scripts/smoke-guess.js` (Вгадай гравця), `scripts/smoke-spy.js` (Шпигун), `scripts/smoke-top.js` (Топ-10), `scripts/smoke-duel.js` (Один на один), `scripts/smoke-lineup.js` (Склад матчу), `scripts/smoke-archive.js` (Фотоархів), `scripts/smoke-sketch.js` (Тактичний ескіз), `scripts/smoke-fours.js` (Чотири четвірки), `scripts/smoke-handshake.js` (Правило рукостискань), `scripts/smoke-allin.js` (All in) — автотести ботами через справжній сервер.
+- `scripts/smoke-test.js` (Перехрестя), `scripts/smoke-path.js` (Шлях), `scripts/smoke-guess.js` (Вгадай гравця), `scripts/smoke-spy.js` (Шпигун), `scripts/smoke-top.js` (Топ-10), `scripts/smoke-duel.js` (Один на один), `scripts/smoke-lineup.js` (Склад матчу), `scripts/smoke-archive.js` (Фотоархів), `scripts/smoke-sketch.js` (Тактичний ескіз), `scripts/smoke-fours.js` (Чотири четвірки), `scripts/smoke-handshake.js` (Правило рукостискань), `scripts/smoke-allin.js` (All in), `scripts/smoke-window.js` (Трансферне вікно) — автотести ботами через справжній сервер.
 - `scripts/build-players.js` → `players.json`; `scripts/build-careers.js` → `careers.json` (запускати після build-players);
   `scripts/build-transfers.js` → `transfers.json` (за id гравця: `maxValue` — макс. ринкова вартість, `value` — поточна (лише активні),
   `topFee/topFrom/topTo/topSeason` — найдорожчий трансфер, `totalFees` — сума всіх трансферів, `paid` — їх кількість,
@@ -114,8 +123,8 @@ Node 18+, Express + Socket.IO, клієнт — чистий HTML/CSS/JS без 
   `scripts/build-honours.js` → `honours.json` (розділ «Honours» статей en.wikipedia: скільки разів виграв чемпіонат (з назвами ліг), ЛЧ, ЛЄ, кубки, ЧС, Євро…;
   без молодіжних, особистих нагород і трофеїв тренером; доступ — `server/data/honours.js` (`honoursOf(p)`: null — розділу немає, невідомо);
   у «Топ-10» — категорія `trophies`);
-  `scripts/build-stats.js` → `stats.json` (з таблиці виходів transfermarkt-datasets, кожен матч з 2012/13: готові топи асистів, гол+пас,
-  голів/асистів за сезон, карток — по лігах, ЛЧ/ЛЄ і клубах; `players[tm]` — підсумки гравців бази: `t` [голи, асисти, матчі, жовті] усі змагання, `c[клуб]` лише чемпіонат);
+  `scripts/build-stats.js` → `stats.json` (з таблиці виходів transfermarkt-datasets, кожен матч з 2012/13 + рахунки з `games`: готові топи асистів, гол+пас,
+  голів/асистів за сезон, карток — по лігах, ЛЧ/ЛЄ і клубах; `players[tm]` — підсумки гравців бази: `t` [голи, асисти, матчі, жовті] усі змагання, `c[клуб]` лише чемпіонат, `x` — хвилини, червоні, сухі матчі, пропущені, перемоги, ЛЧ, сезони на топрівні);
   `scripts/build-lineups.js` → `lineups.json` (склади: статті Вікіпедії про фінали ЧС/Євро/Копа/ЛЧ/ЛЄ і окремі знамениті матчі + вибрані матчі з API УЄФА
   `match.uefa.com/v5` — Металіст Маркевича, Динамо, Шахтар, Україна, камбеки; гравці — за посиланням → `p.wiki` або ім'я + рік народження; тренери поза базою — ім'я uk з Вікідати;
   новий матч УЄФА — id у `UEFA_MATCHES` або команди в `UEFA_FIND`);
@@ -123,7 +132,8 @@ Node 18+, Express + Socket.IO, клієнт — чистий HTML/CSS/JS без 
   ручні правки — `server/data/manual-shots.js`: `rejected`, `extra`, `legends`); `scripts/apply-shot-reports.js` — схвалені звіти (задачі з мітками
   `photo-report` + `approved`) → `manual-shots.js` і `shots.json`, задачі закриває (токен — `git credential fill`);
   `scripts/build-assists.js` → `assists.json` (події матчів transfermarkt-datasets, ~з 2012/13: `to[tm]` — хто асистував гравцю бази (усі), `by[tm]` — кому асистував,
-  `duos`; рядок [tm, передач, tm клубу]); `scripts/build-ballon.js` → `ballon.json` ({ рік: [[id | null, місце, очки | null, ім'я]] }, статті «YYYY Ballon d'Or» en.wikipedia;
+  `duos`; рядок [tm, передач, tm клубу]); `scripts/build-uefa-ranks.js` → `uefa-ranks.json` (коефіцієнти країн УЄФА з 1979 з kassiesa.net: { рік: { країна: [місце, частка від лідера] } } — сила ліги того року);
+  `scripts/build-ballon.js` → `ballon.json` ({ рік: [[id | null, місце, очки | null, ім'я]] }, статті «YYYY Ballon d'Or» en.wikipedia;
   2010–15 — без очок; росіян/білорусів (і радянських, народжених там) немає); `scripts/build-kits.js` → `kits.json` (шаблон {{Football kit}}: `match[id]` — форма в матчі,
   `team[qid]` — основна + `away`; { body, arms, pattern — файл Commons «Kit body_…png» }); зріст, якого немає у Wikidata, — `build-facts --tm` (Transfermarkt);
   `scripts/lib/wikidata.js` — запити до Wikidata з повторами; `scripts/lib/wikipedia.js` — таблиці en.wikipedia (HTML Parsoid: `grid` з rowspan, `qidsOf`).
@@ -136,7 +146,7 @@ Node 18+, Express + Socket.IO, клієнт — чистий HTML/CSS/JS без 
 easy/normal/hard = верхні 30% / наступні 40% / решта. Нова гра бере складність звідси ж, своїх порогів на fame не вигадувати.
 
 ## Не читати цілком
-`server/data/players.json`, `careers.json`, `honours.json`, `lineups.json`, `assists.json`, `ballon.json`, `kits.json`, `photos.json`, `transfers.json`, `transfer-clubs.json`, `tournaments.json`, `stats.json` (десятки–сотні КБ), `package-lock.json` —
+`server/data/players.json`, `careers.json`, `honours.json`, `uefa-ranks.json`, `lineups.json`, `assists.json`, `ballon.json`, `kits.json`, `photos.json`, `transfers.json`, `transfer-clubs.json`, `tournaments.json`, `stats.json` (десятки–сотні КБ), `package-lock.json` —
 лише Grep або `node -e` по конкретному імені/ключу. Клієнти ігор (`public/<id>/app.js`, 240–320 рядків; crossroads — 1100) читати частинами: потрібне місце шукати Grep за назвою функції
 (`renderGame`, `renderFinal`, `renderScoreboard`…).
 
@@ -165,7 +175,9 @@ easy/normal/hard = верхні 30% / наступні 40% / решта. Нов�
   прилітає на серветку + звук `clink`); Чотири четвірки — церемонія жеребкування (Forum, темно-синя сцена під золотим прожектором,
   гравці в прозорих капсулах, знайдена група — кошик свого кольору, капсули скочуються в нього по одній + звук `capsule`); Правило рукостискань — телефонний комутатор (Old Standard TT, горіхова панель,
   латунні таблички й гнізда, ланка — червоний кабель з биркою клубу й років; нова ланка — кабель встромляється, лампа спалахує + звук `plug`); All in — стіл казино (Yeseva One, зелене сукно з золотою розміткою й бордовим бортом, фішки в кольорах гравців;
-  фішки «падають» на клітинку, після відповіді програшні лопатка підсуває вбік і вони тьмяніють (лишаються видно), виграшна спалахує + звук `chips`).
+  фішки «падають» на клітинку, після відповіді програшні лопатка підсуває вбік і вони тьмяніють (лишаються видно), виграшна спалахує + звук `chips`);
+  Трансферне вікно — студія дедлайн-дня (Dela Gothic One + Martian Mono, темна студія, жовта стрічка BREAKING і червоне LIVE; продано — печатка «HERE WE GO» + звук `gavel`,
+  у підсумку — фото Фабріціо Романо з Commons, CC BY 3.0, підпис автора обов'язковий).
   Нова гра — новий світ, не повторювати ці.
 - Як: у `public/<id>/style.css` на початку `:root { --bg --bg-2 --surface --surface-solid --surface-2 --line --line-strong --text --muted --accent --accent-ink --radius --display }`
   + свій `.pitch-bg`; шрифт — Google Fonts з кирилицею в `index.html` (і `theme-color`); логотип `.logo` — у стилі світу.
@@ -246,7 +258,7 @@ actions: { start, guess, ... : (room, seat, payload) => ({ ok } | { error }) }, 
 
 ## Команди
 - `npm test` — прогін усіх перевірок (~3 хв). Обов'язково перед комітом; запускати у фоні, вивід — у файл і `grep ПРОЙШЛИ|✗`.
-- Оновити базу: `npm run build-players` (≈15 хв) → `npm run build-careers` (≈10 хв; кар'єри з таблиць en.wikipedia) → `npm run fetch-photos`; `npm run build-transfers` (≈1 хв); `npm run build-tournaments` (≈1 хв); `npm run build-stats` (≈2 хв, після build-transfers); `npm run build-coaches` (≈1 хв); `npm run build-names-en` (≈5 хв, англійські назви клубів, після build-careers); `npm run build-honours` (≈4 хв, трофеї); `npm run build-facts` (≈10 хв: зріст, дата народження, перегляди Вікіпедії → `facts.json`; `-- --tm` — лише дописати зріст з Transfermarkt, ≈10 с); `npm run build-assists` (≈1 хв, після build-transfers); `npm run build-ballon` (≈2 хв); `npm run build-kits` (≈2 хв, після build-lineups); `npm run build-nicknames` (≈15 хв, лише кандидати для `manual-nicknames.js`); `npm run build-lineups` (≈3 хв, склади матчів, після build-players і build-careers); `npm run build-shots` (≈20 хв уперше, фото «Фотоархіву», після build-players); `npm run apply-shot-reports` (схвалені звіти гравців про фото). Instagram — вручну в `server/data/manual-instagram.js`.
+- Оновити базу: `npm run build-players` (≈15 хв) → `npm run build-careers` (≈10 хв; кар'єри з таблиць en.wikipedia) → `npm run fetch-photos`; `npm run build-transfers` (≈1 хв); `npm run build-tournaments` (≈1 хв); `npm run build-stats` (≈2 хв, після build-transfers); `npm run build-coaches` (≈1 хв); `npm run build-names-en` (≈5 хв, англійські назви клубів, після build-careers); `npm run build-honours` (≈4 хв, трофеї й особисті нагороди з роками — `ind`); `npm run build-uefa-ranks` (≈30 с, сила ліг за роками); `npm run build-facts` (≈10 хв: зріст, дата народження, перегляди Вікіпедії → `facts.json`; `-- --tm` — лише дописати зріст з Transfermarkt, ≈10 с); `npm run build-assists` (≈1 хв, після build-transfers); `npm run build-ballon` (≈2 хв); `npm run build-kits` (≈2 хв, після build-lineups); `npm run build-nicknames` (≈15 хв, лише кандидати для `manual-nicknames.js`); `npm run build-lineups` (≈3 хв, склади матчів, після build-players і build-careers); `npm run build-shots` (≈20 хв уперше, фото «Фотоархіву», після build-players); `npm run apply-shot-reports` (схвалені звіти гравців про фото). Instagram — вручну в `server/data/manual-instagram.js`.
 - `npm run dev` — локальний сервер з перезапуском.
 - `npm run ui-check -- [hub|top|spy|guess|duel|allin|path|lineup|archive|sketch|fours|handshake|crossroads] [--mobile]` — справжній Chrome без вікна (playwright-core + встановлений Chrome; окремий процес,
   браузер користувача не чіпає): проходить основні екрани, ловить помилки JS, знімки — у `.shots/` (не в git). Перед пушем UI-змін запускати

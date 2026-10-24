@@ -69,10 +69,8 @@
     if (s.status !== 'playing') return;
     if (s.phase === 'guess' && (!p || p.round !== s.round || p.phase !== 'guess')) window.Sound.play('pop');
     if (s.phase === 'bet' && p?.phase !== 'bet') window.Sound.play('chips', 3);
-    if (s.phase === 'bet' && p?.phase === 'bet') {
-      const others = (x) => JSON.stringify(Object.entries(x.bets).filter(([k]) => Number(k) !== mySeat));
-      if (others(p) !== others(s)) window.Sound.play('chips', 2);
-    }
+    // чужих ставок до відповіді не видно — чути лише, що хтось зробив свої
+    if (s.phase === 'bet' && p?.phase === 'bet' && s.ready.filter((i) => i !== mySeat).length > p.ready.filter((i) => i !== mySeat).length) window.Sound.play('chips', 2);
     if (s.phase === 'reveal' && p?.phase !== 'reveal') {
       const r = s.results[mySeat];
       window.Sound.play('chips', 6);
@@ -153,7 +151,7 @@
       if (s.phase === 'guess') el.innerHTML = guessHtml();
       else if (s.phase === 'bet') {
         el.innerHTML = `<div class="felt" id="felt"></div><div class="bet-panel" id="bet-panel"></div>`;
-        const mine = s.bets[mySeat];
+        const mine = s.myBets;
         myBets = mine ? mine.map((b) => ({ ...b })) : [{ slot: -1, extra: 0 }, { slot: -1, extra: 0 }];
         sel = myBets[0].slot === -1 ? 0 : myBets[1].slot === -1 ? 1 : 0;
         shownChips = new Set();
@@ -269,8 +267,8 @@
     const key = `${handKey()}:${s.phase}:${JSON.stringify(s.bets)}:${JSON.stringify(myBets)}:${s.ready.join()}`;
     if (key === feltKey) return;
     feltKey = key;
-    const bets = { ...s.bets };
-    if (!reveal && !s.ready.includes(mySeat)) bets[mySeat] = myBets; // свої — одразу, не чекаючи сервера
+    // до відповіді на сукні лише свої фішки (чужі сервер не показує — блеф); свої — одразу, не чекаючи сервера
+    const bets = reveal ? { ...s.bets } : { [mySeat]: s.ready.includes(mySeat) ? s.myBets || myBets : myBets };
     const now = new Set();
     el.classList.toggle('revealed', reveal);
     el.classList.toggle('picking', !reveal && !s.ready.includes(mySeat));

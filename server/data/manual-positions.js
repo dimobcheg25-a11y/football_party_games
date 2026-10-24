@@ -62,6 +62,12 @@ const LIST = {
   'gianluca-vialli': 'CF', 'gerald-vanenburg': 'RW', 'markus-babbel': 'CB', 'marcelo-salas': 'CF', 'andriy-husin': 'CM',
   'zdenek-grygera': 'RB', 'benni-mccarthy': 'CF', 'gheorghe-hagi': 'AM', 'raymond-kopa': 'AM', 'valyantsin-byalkevich': 'AM',
   juan: 'CB', 'david-james': 'GK', 'robert-enke': 'GK', 'mateja-kezman': 'CF',
+  // найвідоміші без позиції — знайдено для «Трансферного вікна» (топ-900 за відомістю)
+  pele: 'CF', 'paolo-maldini': 'CB', 'edwin-van-der-sar': 'GK', 'oliver-kahn': 'GK', 'george-best': 'RW', deco: 'AM',
+  'marco-van-basten': 'CF', 'lothar-matthaus': 'CM', 'bixente-lizarazu': 'LB', 'gianni-rivera': 'AM', 'gary-neville': 'RB',
+  'manolo-sanchis': 'CB', 'franco-baresi': 'CB', 'akhrik-tsveiba': 'CB', 'giuseppe-bergomi': 'CB', 'alessandro-costacurta': 'CB',
+  'giacinto-facchetti': 'LB', 'andriy-nesmachnyi': 'LB', 'emilio-butragueno': 'CF', romario: 'CF', 'antonio-conte': 'CM',
+  'gianluca-pessotto': 'RB',
 };
 
 module.exports = Object.fromEntries(Object.entries(LIST).map(([id, code]) => [id, CODES[code]]));

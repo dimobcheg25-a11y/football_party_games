@@ -31,6 +31,7 @@ const ART = {
   handshake: `<span class="a-board">${[0, 1, 0, 0, 0, 0, 1, 0].map((on) => `<i class="${on ? 'on' : ''}"></i>`).join('')}<svg viewBox="0 0 160 86" aria-hidden="true"><path d="M58 25 C70 80 100 80 110 61" fill="none" stroke="#c63a2b" stroke-width="5" stroke-linecap="round"/></svg></span>`,
   // сукно казино: стос фішок і «ALL IN»
   allin: `<span class="a-felt"><span class="a-stack"><i style="--c:#7d1730"></i><i style="--c:#1d5fd4"></i><i style="--c:#e8c162"></i><i style="--c:#7d1730"></i></span><b>ALL IN</b><span class="a-stack"><i style="--c:#e8c162"></i><i style="--c:#7d1730"></i></span></span>`,
+  window: `<span class="a-deadline"><i class="live">LIVE</i><b>HERE WE GO</b><span class="a-ticker">BREAKING · €100M</span></span>`,
   duel: `<span class="a-bout"><i class="r">${L('Червоний', 'Red')}</i><b>VS</b><i class="b">${L('Синій', 'Blue')}</i></span>`,
 };
 

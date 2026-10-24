@@ -1,2 +1,2 @@
 // Каталог ігор сайту. Нова гра = папка server/games/<id>/ з { meta, register } + сторінка public/<id>/ + рядок тут.
-module.exports = [require('./crossroads'), require('./path'), require('./guess'), require('./spy'), require('./top'), require('./duel'), require('./lineup'), require('./archive'), require('./sketch'), require('./fours'), require('./handshake'), require('./allin')];
+module.exports = [require('./crossroads'), require('./path'), require('./guess'), require('./spy'), require('./top'), require('./duel'), require('./lineup'), require('./archive'), require('./sketch'), require('./fours'), require('./handshake'), require('./allin'), require('./window')];

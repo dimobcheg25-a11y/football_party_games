@@ -1,6 +1,6 @@
 // Автотест «All in» через справжній сервер: питання (усі мають число й текст обома мовами), коефіцієнти табло,
-// соло (вилка впевненості, ставка, ALL IN), кімната з 3 ботами (приховані оцінки, табло, ставки наживо, «не більше»,
-// «менше за всіх», бонус автору, фінальний раунд ×2), англійська.
+// соло (вилка впевненості, ставка, ALL IN), кімната з 3 ботами (приховані оцінки, табло, приховані ставки, «не більше»,
+// «менше за всіх», бонус автору, фінальний раунд ×2; чужих ставок до відповіді не видно), англійська.
 // Запуск: npm test (сервер піднімається сам на випадковому порту).
 
 const { spawn } = require('child_process');
@@ -122,8 +122,9 @@ async function main() {
   // ставки: Аня — ALL IN на свою, Борис — на свою + 30, Віра — маркер на Аню
   assert.ok((await emit(a, 'bet', { bets: [{ slot: exact, extra: 101 }, { slot: -1 }] })).error, 'більше за банк — ні');
   await emit(a, 'bet', { bets: [{ slot: exact, extra: 100 }, { slot: -1, extra: 0 }] });
-  const cView = await nextState(c, (x) => x.bets[0]);
-  assert.strictEqual(cView.bets[0][0].extra, 100, 'ставки видно наживо');
+  await nextState(a, (x) => x.myBets?.[0].extra === 100);
+  assert.deepStrictEqual(last.get(c).bets, {}, 'чужих ставок до відповіді не видно — блеф');
+  assert.strictEqual(last.get(c).myBets, null, 'у Віри своїх ставок ще немає');
   await emit(b, 'bet', { bets: [{ slot: over, extra: 30 }, { slot: 0, extra: 0 }] });
   await emit(c, 'bet', { bets: [{ slot: exact, extra: 0 }, { slot: -1, extra: 0 }] });
   for (const s of [a, b, c]) assert.ok((await emit(s, 'done')).ok);
@@ -134,7 +135,7 @@ async function main() {
   assert.strictEqual(st.results[0].net, (10 + 100) * odds + 20 - 100, 'Аня: ALL IN × коеф. + бонус автору');
   assert.strictEqual(st.banks[1], 100 - 30, 'Борис: докладене згоріло');
   assert.strictEqual(st.banks[2], 100 + 10 * odds, 'Віра: безкоштовний маркер');
-  console.log(`✓ кімната: табло, ставки наживо, «не більше», ALL IN ×${odds} + бонус автору`);
+  console.log(`✓ кімната: табло, чужі ставки приховані, «не більше», ALL IN ×${odds} + бонус автору`);
 
   // раунд 2: усі завищили — виграє «менше за всіх»; хто не поставив — 0; таймер ставок закриває раунд
   st = await nextState(a, (x) => x.phase === 'guess' && x.round === 2);

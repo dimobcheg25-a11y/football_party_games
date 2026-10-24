@@ -1,0 +1,255 @@
+/* Трансферне вікно. Лобі, таблиця, підсумок — з /path/style.css; тут — тема, лот і ставка, суперники, своє поле, стрічка, підсумок.
+
+   ── Оформлення гри: студія спортивного каналу в день трансферного дедлайну. Темна студія з холодним світлом екранів,
+   жовта плашка BREAKING і червоне LIVE, лот — картка з великим фото, цифри — моноширинні, як на табло біржі.
+   Заголовки — Dela Gothic One (кирилиця), цифри — Martian Mono. Фірмова анімація: печатка «HERE WE GO» з ударом молотка,
+   коли гравця продано (звук gavel); новий лот виїжджає збоку (без руху — prefers-reduced-motion). */
+:root {
+  --bg: #0a0e14; --bg-2: #101722;
+  --surface: rgba(18, 24, 33, 0.94); --surface-solid: #121821; --surface-2: #1a212c;
+  --line: #1f2733; --line-strong: #2a3442;
+  --text: #eef2f7; --muted: #9aa5b4;
+  --accent: #ffd400; --accent-ink: #0a0e14;
+  --live: #e5262e;
+  --radius: 4px;
+  --display: 'Dela Gothic One', 'Manrope', sans-serif;
+  --mono: 'Martian Mono', ui-monospace, monospace;
+}
+.pitch-bg {
+  background:
+    radial-gradient(ellipse 60% 40% at 50% 0%, rgba(77, 163, 255, 0.10), transparent 70%), /* світло студії */
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.018) 0 1px, transparent 1px 4px), /* рядки екрана */
+    linear-gradient(180deg, #0d131c, var(--bg) 60%);
+}
+input::placeholder { color: color-mix(in srgb, var(--muted) 70%, transparent); }
+.start-buttons { grid-template-columns: 1fr; }
+
+.round-info b, .room-code, .final h2, .rules-card h3, .lot-name, .tc-name, .stamp-sold, .hwg-stamp, .breaking, .tw-logo span { font-family: var(--display); font-weight: 400; }
+.timer, .tw-budget, .scoreboard b, .tc-avg, .tc-r, .tc-price, .m-score, .bid-box input, .p-slot em, .t-n, .league b { font-family: var(--mono); font-weight: 700; }
+.timer { font-size: 26px; color: var(--accent); }
+.timer.soft { font: 600 13px/1.2 var(--mono); color: var(--muted); }
+.timer.low { color: var(--live); }
+.room-code { font-size: 48px; color: var(--accent); letter-spacing: .12em; }
+.card { border-radius: var(--radius); border-color: var(--line-strong); }
+.btn, .chip { border-radius: var(--radius); }
+.btn-primary { font-family: var(--display); font-weight: 400; letter-spacing: .02em; }
+
+/* ── логотип: LIVE + назва, жовта лінія знизу */
+.tw-logo { display: grid; justify-items: center; gap: 10px; }
+.tw-logo small { display: inline-flex; align-items: center; gap: 8px; background: var(--live); color: #fff; padding: 5px 12px; font: 700 12px/1 var(--mono); letter-spacing: .12em; }
+.tw-logo span { font-size: clamp(30px, 7.4vw, 58px); max-width: 100%; text-align: center; line-height: 1; color: var(--text); border-bottom: 6px solid var(--accent); padding-bottom: 8px; text-transform: uppercase; }
+.live-dot { width: 8px; height: 8px; border-radius: 50%; background: #fff; display: inline-block; animation: live 1.2s ease-in-out infinite; }
+@keyframes live { 50% { opacity: .25; } }
+
+/* ── лобі: схема */
+.lobby-formation { width: 100%; }
+.lobby-formation .chips { justify-content: center; }
+
+/* ── гра */
+.screen-game { max-width: 1240px; }
+.round-info { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.round-info b { font-size: 22px; }
+.live-tag { display: inline-flex; align-items: center; gap: 6px; background: var(--live); color: #fff !important; padding: 4px 9px; font: 700 11px/1 var(--mono) !important; letter-spacing: .1em; }
+.tw-lines { list-style: none; margin: 0 0 14px; padding: 0; display: flex; gap: 6px; flex-wrap: wrap; }
+.tw-lines li { padding: 6px 10px; background: var(--surface-2); color: var(--muted); font: 700 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.tw-lines li.now { background: var(--accent); color: var(--accent-ink); }
+.tw-lines li.done { text-decoration: line-through; opacity: .55; }
+
+.tw-layout { display: grid; grid-template-columns: 240px minmax(0, 1fr) 290px; gap: 18px; align-items: start; }
+.tw-rivals, .tw-mine { display: grid; gap: 10px; }
+.tw-stage { display: grid; gap: 14px; min-width: 0; }
+.scoreboard li { border-radius: var(--radius); }
+.tw-rivals .scoreboard .nm { min-width: 60px; }
+.scoreboard .nm small { display: block; color: var(--muted); font: 600 11px/1.3 var(--mono); }
+.scoreboard b { font-size: 15px; color: var(--accent); min-width: 0; }
+.scoreboard .st.ok { color: #7be08c; }
+
+/* картка лоту */
+.lot-card {
+  position: relative; display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 22px; align-items: center; padding: 22px;
+  background: var(--surface-solid); border: 1px solid var(--line-strong); border-top: 4px solid var(--accent);
+}
+.lot-card.enter { animation: lot-in .45s cubic-bezier(.2, .8, .2, 1); }
+@keyframes lot-in { from { transform: translateX(40px); opacity: 0; } }
+.ph { display: grid; place-items: center; overflow: hidden; background: var(--surface-2); color: var(--muted); border-radius: 50%; flex: none; }
+.ph img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 18%; }
+.ph span { font: 700 14px/1 var(--mono); }
+.lot-photo { width: 170px; height: 210px; border-radius: var(--radius); }
+.lot-photo span { font: 52px/1 var(--display); color: var(--line-strong); }
+.lot-body { display: grid; gap: 8px; min-width: 0; }
+.lot-kicker { font: 700 12px/1.4 var(--mono); color: var(--accent); letter-spacing: .1em; text-transform: uppercase; }
+.lot-name { font-size: clamp(28px, 4vw, 44px); line-height: 1.05; text-transform: uppercase; overflow-wrap: anywhere; }
+.lot-meta { display: flex; flex-wrap: wrap; gap: 6px 16px; color: #c9d1db; font-size: 15px; }
+.lot-meta span { display: inline-flex; align-items: center; gap: 6px; }
+.lot-meta img { width: 22px; height: 22px; object-fit: contain; }
+.lot-secret { color: var(--muted); font-size: 13px; }
+
+/* ставка */
+.bid-panel { background: var(--surface-solid); border: 1px solid var(--line); padding: 18px 20px; }
+.bid-form { display: grid; gap: 10px; }
+.bid-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.bid-row .grow { flex: 1; }
+.bid-box { display: inline-flex; align-items: center; gap: 6px; background: var(--bg); border: 2px solid var(--accent); padding: 0 14px; height: 60px; }
+.bid-box input::-webkit-outer-spin-button, .bid-box input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.bid-box input { -moz-appearance: textfield; appearance: textfield; width: 90px; background: transparent; border: 0; color: var(--accent); font-size: 30px; outline: none; padding: 0; box-shadow: none; }
+.bid-box span { font: 700 16px/1 var(--mono); color: var(--muted); }
+.bid-row .chip { height: 60px; min-width: 56px; font: 700 15px/1 var(--mono); }
+.bid-row .btn { height: 60px; }
+.bid-form b { color: var(--text); }
+
+/* продано */
+.lot-card.sold { border-top-color: var(--live); }
+.sold-who { margin: 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-weight: 700; }
+.sold-who b { color: var(--accent); font-family: var(--mono); }
+.bids { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 4px; max-width: 360px; }
+.bids li { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: var(--surface-2); font-size: 14px; }
+.bids li span:nth-child(2) { flex: 1; }
+.bids li b { font: 700 13px/1 var(--mono); color: var(--muted); }
+.bids li.win { outline: 1px solid var(--accent); }
+.bids li.win b { color: var(--accent); }
+.stamp-sold {
+  position: absolute; right: 18px; bottom: 18px; transform: rotate(-8deg); border: 4px solid var(--live); color: var(--live);
+  padding: 6px 14px; font-size: 24px; letter-spacing: .02em; background: rgba(10, 14, 20, .6); text-transform: uppercase;
+}
+.stamp-sold.off { border-color: var(--muted); color: var(--muted); }
+.stamp-sold.hit { animation: stamp .5s cubic-bezier(.3, 1.6, .5, 1) both; }
+@keyframes stamp { 0% { transform: rotate(-8deg) scale(2.6); opacity: 0; } 60% { opacity: 1; } 100% { transform: rotate(-8deg) scale(1); } }
+
+/* своє поле */
+.tw-mine-head { display: flex; align-items: baseline; justify-content: space-between; }
+.tw-mine-head .table-title { margin: 0; }
+.tw-budget { color: var(--accent); font-size: 20px; }
+.tw-pitch {
+  position: relative; display: grid; gap: 14px; padding: 14px 6px; min-height: 380px; align-content: space-around;
+  background: linear-gradient(90deg, transparent calc(50% - .5px), #23402f calc(50% - .5px) calc(50% + .5px), transparent calc(50% + .5px)), #0f1a14;
+  border: 1px solid #23402f;
+}
+.p-row { display: flex; justify-content: space-around; gap: 4px; }
+.p-slot { width: 64px; display: grid; justify-items: center; gap: 3px; text-align: center; }
+.p-ph { width: 44px; height: 44px; border: 2px dashed #3b5a47; background: transparent; color: #6e8f7a; font: 700 10px/1 var(--mono); }
+.p-ph.empty { display: grid; place-items: center; border-radius: 50%; }
+.p-slot.filled .p-ph { border: 2px solid var(--accent); }
+.p-slot.now .p-ph { border: 2px solid var(--accent); background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); }
+.p-slot small { font-size: 11px; line-height: 1.15; color: #c9d1db; max-width: 64px; overflow-wrap: anywhere; }
+.p-slot.now small { color: var(--accent); font-weight: 700; }
+.p-slot em { font-style: normal; font-size: 10px; color: var(--accent); }
+
+/* стрічка BREAKING */
+.ticker { display: flex; align-items: stretch; margin: 0 0 12px; min-height: 40px; background: var(--accent); color: var(--accent-ink); overflow: hidden; }
+.breaking { display: flex; align-items: center; padding: 0 16px; background: var(--live); color: #fff; font-size: 15px; flex: none; }
+.ticker-run { display: flex; align-items: center; gap: 18px; padding: 0 18px; font-weight: 800; font-size: 14px; white-space: nowrap; overflow: hidden; }
+.ticker-run i { font-style: normal; opacity: .5; }
+
+/* ── підсумок */
+.screen-final-tw { max-width: 1240px; }
+.screen-final-tw .final { max-width: none; text-align: left; }
+.tw-closed { display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
+.final h2 { font-size: clamp(24px, 3.4vw, 34px); margin: 0 0 4px; color: var(--text); }
+.hwg { display: flex; align-items: center; gap: 14px; }
+.hwg img { width: 68px; height: 68px; border-radius: 50%; object-fit: cover; object-position: 50% 20%; border: 3px solid var(--live); }
+.hwg > div { display: grid; gap: 14px; justify-items: start; }
+.hwg-stamp { transform: rotate(-6deg); border: 4px solid var(--live); color: var(--live); padding: 5px 14px; font-size: 24px; animation: stamp .6s cubic-bezier(.3, 1.6, .5, 1) both .2s; }
+.hwg-credit { color: var(--muted); font-size: 10px; }
+.tw-tabs, .m-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 18px 0 14px; }
+.tw-tab, .m-tab { padding: 10px 16px; background: var(--surface-2); color: #c9d1db; border: 1px solid var(--line-strong); font: 700 13px/1 var(--mono); cursor: pointer; }
+.tw-tab.active, .m-tab.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+.team-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; }
+.team-card { grid-template-columns: minmax(0, 1fr); min-width: 0; background: var(--surface-solid); border: 1px solid var(--line); border-top: 4px solid var(--pc); display: grid; align-content: start; }
+.team-card header { display: flex; align-items: center; gap: 10px; padding: 12px 14px 6px; }
+.tc-name { flex: 1; font-size: 18px; }
+.tc-avg { font-size: 30px; color: var(--accent); }
+.tc-lines { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 14px 10px; }
+.tc-lines span { background: var(--surface-2); padding: 4px 8px; font: 600 11px/1 var(--mono); color: var(--muted); }
+.tc-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.tc-list li { display: flex; align-items: center; gap: 9px; padding: 0 14px; height: 46px; border-bottom: 1px solid #18202a; }
+.tc-ph { width: 34px; height: 34px; }
+.tc-pos { width: 30px; font: 600 10px/1 var(--mono); color: var(--muted); }
+.tc-pl { flex: 1; min-width: 0; font-weight: 700; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tc-pl small { display: block; font: 600 11px/1.2 var(--mono); color: var(--accent); }
+.tc-list li:has(.tc-pl small) { height: 52px; }
+.tc-price { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.tc-r { width: 40px; text-align: center; padding: 4px 0; font-size: 15px; }
+.r-elite { background: var(--accent); color: var(--accent-ink); }
+.r-good { background: #2a3442; color: var(--text); }
+.r-mid { background: #1a212c; color: var(--text); }
+.r-low { background: #3a1c20; color: #ff9aa0; }
+.tc-spent { padding: 10px 14px; color: var(--muted); font-size: 12px; }
+.deals { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin: 14px 0; }
+.deal { display: flex; align-items: center; gap: 12px; padding: 12px 16px; flex-wrap: wrap; }
+.deal small { width: 100%; font: 700 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+.deal.good { background: #10241a; border: 1px solid #23402f; }
+.deal.good small { color: #7be08c; }
+.deal.bad { background: #2a1416; border: 1px solid #4a2226; }
+.deal.bad small { color: #ff7a80; }
+.deal-ph { width: 48px; height: 48px; }
+.deal > span:last-child { flex: 1; min-width: 0; }
+
+/* матч */
+.m-board { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 20px; padding: 18px 22px; background: var(--surface-solid); border: 1px solid var(--line-strong); }
+.m-team { display: grid; justify-items: end; gap: 2px; }
+.m-team.right { justify-items: start; }
+.m-team b { font-size: 22px; }
+.m-team small { font: 600 12px/1 var(--mono); color: var(--muted); }
+.m-score { display: flex; align-items: center; gap: 8px; }
+.m-score span { display: grid; place-items: center; width: 64px; height: 76px; font-size: 46px; background: var(--surface-2); }
+.m-score span:first-child { background: var(--pa); color: var(--accent-ink); }
+.m-score span:last-child { background: var(--pb); color: var(--accent-ink); }
+.m-score i { font-style: normal; font-size: 28px; color: var(--muted); }
+.m-grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; margin-top: 14px; align-items: start; }
+.m-events { list-style: none; margin: 0; padding: 6px 0; background: var(--surface-solid); border: 1px solid var(--line); }
+.m-events li { display: grid; grid-template-columns: 1fr 90px 1fr; align-items: center; min-height: 46px; padding: 0 14px; border-bottom: 1px solid #18202a; }
+.m-events li.none { display: block; padding: 14px; color: var(--muted); text-align: center; }
+.m-events .ev-side:first-child { text-align: right; }
+.m-events small { display: block; color: var(--muted); font-size: 12px; }
+.ev-mid { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.ev-mid em { font: 700 13px/1 var(--mono); font-style: normal; color: var(--accent); }
+.ev { display: inline-block; flex: none; }
+.ev-goal { width: 14px; height: 14px; border-radius: 50%; background: var(--text); box-shadow: inset 0 0 0 3px var(--surface-solid), inset 0 0 0 5px var(--text); }
+.ev-yellow, .ev-red { width: 11px; height: 15px; border-radius: 2px; background: var(--accent); }
+.ev-red { background: var(--live); }
+.m-side { display: grid; gap: 14px; }
+.m-stats { display: grid; gap: 12px; padding: 16px; background: var(--surface-solid); border: 1px solid var(--line); }
+.m-stat > div:first-child { display: flex; font-size: 13px; }
+.m-stat > div:first-child span { flex: 1; text-align: center; color: var(--muted); }
+.m-stat b { font: 700 13px/1 var(--mono); }
+.m-stat .bar { height: 6px; background: var(--pb); margin-top: 5px; }
+.m-stat .bar i { display: block; height: 100%; background: var(--pa); }
+.league { padding: 14px 16px; background: var(--surface-solid); border: 1px solid var(--line); }
+.lg-head, .league .standings li { display: grid; grid-template-columns: 22px 14px minmax(0, 1fr) 28px 58px 52px 30px; align-items: center; gap: 6px; }
+.lg-head { grid-template-columns: minmax(0, 1fr) 28px 58px 52px 30px; font: 600 10px/1 var(--mono); color: var(--muted); text-transform: uppercase; padding-bottom: 6px; }
+.league .standings { list-style: none; margin: 0; padding: 0; }
+.league .standings li { height: 38px; border-top: 1px solid #18202a; font-size: 14px; }
+.league .standings .nm { font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.league .standings li.me { background: color-mix(in srgb, var(--pc) 10%, transparent); }
+.league .place { font: 700 12px/1 var(--mono); color: var(--muted); }
+.t-n { font-size: 12px; text-align: center; color: #c9d1db; }
+.league b { color: var(--accent); text-align: right; }
+
+/* ── вікно підтвердження в стилі студії */
+.ask-sheet { border-top: 4px solid var(--accent); border-radius: var(--radius); }
+
+@media (max-width: 1100px) {
+  .tw-layout { grid-template-columns: minmax(0, 1fr) 280px; }
+  .tw-rivals { grid-column: 1 / -1; order: -1; }
+  .tw-rivals .scoreboard { grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); }
+  .tw-rivals .reactions { display: none; }
+}
+@media (max-width: 760px) {
+  .tw-layout { grid-template-columns: 1fr; }
+  .lot-card { grid-template-columns: 96px minmax(0, 1fr); gap: 14px; padding: 14px; }
+  .lot-photo { width: 96px; height: 120px; }
+  .stamp-sold { font-size: 16px; right: 10px; bottom: 10px; }
+  .bid-box { height: 52px; }
+  .bid-row .chip, .bid-row .btn { height: 52px; }
+  .bid-row .grow { display: none; }
+  .tw-pitch { min-height: 300px; }
+  .m-grid { grid-template-columns: 1fr; }
+  .m-score span { width: 48px; height: 58px; font-size: 34px; }
+  .m-team b { font-size: 16px; }
+  .m-events li { grid-template-columns: 1fr 70px 1fr; padding: 0 8px; font-size: 13px; }
+  .team-grid { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lot-card.enter, .stamp-sold.hit, .hwg-stamp, .live-dot { animation: none; }
+}

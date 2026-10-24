@@ -14,6 +14,7 @@ const GAMES = {
   fours: ['4️⃣', L('Чотири четвірки', 'Four Fours')],
   handshake: ['🤝', L('Правило рукостискань', 'Handshake Rule')],
   allin: ['🎰', 'All in'],
+  window: ['💸', L('Трансферне вікно', 'Transfer Window')],
 };
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
