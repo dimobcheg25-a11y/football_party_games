@@ -45,9 +45,17 @@ const COACH_FAME = 0.6;
 const { EXCLUDED } = require('./derived-tags');
 const { isBanned } = require('./banned');
 const bannedPlayers = rawPlayers.filter((p) => !EXCLUDED.has(p.qid) && isBanned(p));
+// Українське ім'я буває назвою статті Вікіпедії: «Джонатан Девід (футболіст)», зламане «1997) Габріел (футболіст»
+// або «Савченко Андрій Володимирович (футболіст)» — прибираємо уточнення, а «Прізвище Ім'я По батькові» → «Ім'я Прізвище».
+function cleanUk(uk) {
+  if (!uk || !/[()]/.test(uk)) return uk;
+  const words = uk.replace(/\([^()]*\)/g, ' ').split(/\s+/).filter((w) => w && !/[()\d]/.test(w));
+  if (words.length === 3 && /(ович|евич|йович|івна|ївна)$/.test(words[2])) return `${words[1]} ${words[0]}`;
+  return words.join(' ') || uk;
+}
 const players = rawPlayers.filter((p) => !EXCLUDED.has(p.qid) && !isBanned(p)).map((p) => ({
   // photo — через наш сервер (server/core/photos.js), photoSrc — посилання на Wikimedia.
-  ...p, tags: new Set(p.tags), photoSrc: photos[p.id] || null, photo: photos[p.id] ? `/api/photo/${p.id}` : null,
+  ...p, uk: cleanUk(p.uk), tags: new Set(p.tags), photoSrc: photos[p.id] || null, photo: photos[p.id] ? `/api/photo/${p.id}` : null,
   rawFame: p.fame, coach: coaches.has(p.qid), fame: coaches.has(p.qid) ? Math.round(p.fame * COACH_FAME) : p.fame,
 }));
 require('./derived-tags').addDerivedTags(players); // 100+ асистів, 30+ голів у ЛЧ, трансфер 80+ млн, мандрівник

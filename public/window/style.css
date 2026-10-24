@@ -109,6 +109,13 @@ input::placeholder { color: color-mix(in srgb, var(--muted) 70%, transparent); }
 .bid-rule { margin: 0; font-size: 14px; color: #c9d1db; }
 .bid-rule b { color: var(--accent); }
 .bid-notes { display: grid; gap: 4px; }
+/* хто виграє при рівних ставках — плашка в кольорі гравця */
+.tie-box { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; padding: 10px 14px; border: 2px solid var(--pc); background: color-mix(in srgb, var(--pc) 12%, transparent); font-size: 15px; }
+.tie-box .tie-icon { font-size: 20px; line-height: 1; }
+.tie-box .tie-who { display: inline-flex; align-items: center; gap: 6px; font-family: var(--display); font-weight: 400; font-size: 18px; color: var(--text); }
+.tie-box small { flex-basis: 100%; color: var(--muted); font-size: 12px; }
+.tie-box.mine .tie-who { color: var(--accent); }
+.scoreboard .prio { display: inline-block; margin-left: 0; padding: 2px 6px; font: 700 10px/1.2 var(--mono); font-style: normal; text-transform: uppercase; color: var(--accent-ink); background: var(--accent); vertical-align: middle; }
 .bid-notes .hint { margin: 0; }
 .pick-panel { display: grid; gap: 10px; }
 .pick-queue { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
@@ -182,7 +189,7 @@ input::placeholder { color: color-mix(in srgb, var(--muted) 70%, transparent); }
 .ticker { display: flex; align-items: stretch; margin: 0 0 12px; min-height: 40px; background: var(--accent); color: var(--accent-ink); overflow: hidden; }
 .breaking { display: flex; align-items: center; padding: 0 16px; background: var(--live); color: #fff; font-size: 15px; flex: none; }
 .ticker-run { display: flex; align-items: center; gap: 18px; padding: 0 18px; font-weight: 800; font-size: 14px; white-space: nowrap; overflow: hidden; }
-.ticker-run i { font-style: normal; opacity: .5; }
+.ticker-run .tick-dot { flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--live); }
 
 /* ── підсумок */
 .screen-final-tw { max-width: 1240px; }

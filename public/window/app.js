@@ -188,7 +188,8 @@
           <span class="grow"></span>
           <button class="btn btn-primary btn-lg" id="bid-btn">${L('Ставлю', 'Bid')}</button>
         </div>
-        <div class="bid-notes"><p class="hint" id="bid-max"></p><p class="hint" id="bid-tie"></p><p class="hint" id="bid-status"></p></div>
+        <div class="tie-box" id="bid-tie"></div>
+        <div class="bid-notes"><p class="hint" id="bid-max"></p><p class="hint" id="bid-status"></p></div>
       </form>`;
   }
 
@@ -224,8 +225,13 @@
     $('#bid-max').innerHTML = L(`Можна до <b>${money(myMax())}</b> = ${money(s.budgets[mySeat])} у бюджеті − ${empty - 1} ${window.I18n.plural(empty - 1, ['порожнє місце', 'порожні місця', 'порожніх місць'], [])} після цього × ${money(s.rules.pick)}`,
       `Up to <b>${money(myMax())}</b> = ${money(s.budgets[mySeat])} budget − ${empty - 1} empty ${empty - 1 === 1 ? 'slot' : 'slots'} after this × ${money(s.rules.pick)}`);
     const tw = s.lot.tieWinner;
-    $('#bid-tie').innerHTML = tw === mySeat ? L('Рівні ставки — <b>першим обираєш ти</b> (пріоритет цього лоту; далі він переходить до наступного)', 'Tied bids — <b>you pick first</b> (this lot’s priority; it moves on to the next player)')
-      : L(`Рівні ставки — першим обирає <b>${escapeHtml(seatName(tw))}</b> (пріоритет іде по колу)`, `Tied bids — <b>${escapeHtml(seatName(tw))}</b> picks first (priority rotates)`);
+    // хто виграє при рівних ставках — помітною плашкою в кольорі гравця
+    const tie = $('#bid-tie');
+    tie.setAttribute('style', seatStyle(tw));
+    tie.classList.toggle('mine', tw === mySeat);
+    tie.innerHTML = `<span class="tie-icon" aria-hidden="true">⚖</span><span>${L('Рівні ставки — першим обирає', 'Tied bids — first pick goes to')}</span>
+      <b class="tie-who"><span class="dot-p"></span>${tw === mySeat ? L('ти', 'you') : escapeHtml(seatName(tw))}</b>
+      <small>${L('пріоритет цього лоту, далі переходить до наступного', 'this lot’s priority, then it moves on')}</small>`;
     const mine = s.myBid;
     $('#bid-status').innerHTML = mine == null ? `${L(`Пасу немає: не поставиш до кінця часу — ставка ${money(s.rules.min)}.`, `No passing: no bid by the end of the timer means ${money(s.rules.min)}.`)} ${others}`
       : `${L('Твоя ставка', 'Your bid')}: <b>${money(mine)}</b> · ${L('можна змінити', 'you can change it')} · ${others}`;
@@ -288,12 +294,14 @@
     const s = state;
     $('#scoreboard').innerHTML = present().map((i) => {
       let st = '';
+      const prio = s.phase === 'bid' && s.lot.tieWinner === i ? `<em class="prio" title="${L('Виграє при рівних ставках', 'Wins on tied bids')}">⚖ ${L('пріоритет', 'priority')}</em>` : '';
       if (s.phase === 'bid') st = !s.lot.people.includes(i) ? `<span class="st">${L('не потрібен', 'no slot')}</span>` : s.bidders.includes(i) ? `<span class="st ok">${L('ставку зроблено', 'bid in')}</span>` : `<span class="st thinking">${L('думає…', 'thinking…')}</span>`;
       if (s.phase === 'pick' && (s.pick.bids[i] != null || s.pick.picker === i)) st = `<span class="st ${s.pick.picker === i ? 'ok' : ''}">${s.pick.bids[i] != null ? money(s.pick.bids[i]) : ''}${s.pick.bids[i] != null && s.pick.picker === i ? ' · ' : ''}${s.pick.picker === i ? L('обирає', 'picking') : ''}</span>`;
       if (s.phase === 'sold') {
         const it = s.lastLot.items.find((x) => x.winner === i);
         if (it) st = `<span class="st ok">${escapeHtml(surname(it.player))} · ${money(it.price)}</span>`;
       }
+      if (prio) st = st.replace('<span class="st', `<span class="st">${prio}</span><span class="st`); // окремим рядком — не обрізається з іменем
       return `<li style="${seatStyle(i)}" class="${i === mySeat ? 'me' : ''} ${s.seats[i].connected ? '' : 'offline'} ${i === (viewSeat ?? mySeat) ? 'viewing' : ''}" data-seat="${i}" title="${L('Показати склад', 'Show squad')}">
         <span class="dot-p"></span><span class="nm">${escapeHtml(seatName(i))}<small>${s.squads[i].length} ${L('з', 'of')} ${s.slots.length}</small></span>${st}<b>${money(s.budgets[i])}</b></li>`;
     }).join('');
@@ -351,7 +359,7 @@
   function renderTicker() {
     const s = state;
     const items = s.news.map((n) => `<span>${escapeHtml(L(`${seatName(n.winner)} забирає ${nameOf(n)} за ${money(n.price)}`, `${seatName(n.winner)} signs ${nameOf(n)} for ${money(n.price)}`))}</span>`);
-    $('#ticker').innerHTML = `<b class="breaking">BREAKING</b><div class="ticker-run">${items.join('<i>·</i>') || `<span>${L('Вікно відкрито. Перший лот — на торгах.', 'The window is open. First lot on the block.')}</span>`}</div>`;
+    $('#ticker').innerHTML = `<b class="breaking">BREAKING</b><div class="ticker-run">${items.join('<i class="tick-dot" aria-hidden="true"></i>') || `<span>${L('Вікно відкрито. Перший лот — на торгах.', 'The window is open. First lot on the block.')}</span>`}</div>`;
   }
 
   // ── таймер
