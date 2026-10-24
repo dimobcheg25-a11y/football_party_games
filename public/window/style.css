@@ -60,6 +60,10 @@ input::placeholder { color: color-mix(in srgb, var(--muted) 70%, transparent); }
 .tw-stage { display: grid; gap: 14px; min-width: 0; }
 .scoreboard li { border-radius: var(--radius); }
 .tw-rivals .scoreboard .nm { min-width: 60px; }
+.tw-rivals { min-width: 0; }
+.tw-rivals .scoreboard li { flex-wrap: wrap; row-gap: 2px; }
+.tw-rivals .scoreboard .st { order: 5; flex-basis: 100%; padding-left: 18px; white-space: normal; }
+.tw-rivals .scoreboard b { white-space: nowrap; }
 .scoreboard .nm small { display: block; color: var(--muted); font: 600 11px/1.3 var(--mono); }
 .scoreboard b { font-size: 15px; color: var(--accent); min-width: 0; }
 .scoreboard .st.ok { color: #7be08c; }
@@ -85,8 +89,12 @@ input::placeholder { color: color-mix(in srgb, var(--muted) 70%, transparent); }
 .lot-secret { color: var(--muted); font-size: 13px; }
 
 /* лот — кілька гравців поруч (удвох — троє): вертикальні картки; на виборі — «Забрати за N» */
-.lot-row { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
-.mini-card { grid-template-columns: 1fr; gap: 10px; padding: 14px; align-content: start; text-align: left; }
+.lot-row { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.lot-row > * { min-width: 0; } /* картка не ширша за свою колонку — інакше налазять одна на одну */
+.mini-card { grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 14px; align-content: start; text-align: left; overflow: hidden; }
+.mini-card .lot-body { min-width: 0; }
+.mini-card .lot-meta span { min-width: 0; overflow-wrap: anywhere; }
+.take-btn { white-space: normal; line-height: 1.2; padding-inline: 8px; font-size: 14px; }
 .mini-card .lot-photo { width: 100%; height: 170px; }
 .mini-card .lot-name { font-size: clamp(17px, 1.7vw, 22px); overflow-wrap: normal; hyphens: auto; }
 .mini-card .lot-meta { font-size: 13px; gap: 4px 10px; }

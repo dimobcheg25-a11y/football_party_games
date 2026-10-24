@@ -234,6 +234,14 @@
   function renderPickPanel() {
     const s = state;
     const pk = s.pick;
+    if (pk.auto) {
+      // позиція потрібна лише одному: торгів немає, обирає сам за фіксовану ціну
+      $('#pick-panel').innerHTML = `<p class="bid-rule">${pk.picker === mySeat
+        ? L(`<b>Ця позиція потрібна лише тобі</b> — торгів немає. Обери одного з ${s.lot.players.length} за ${money(pk.price)}: тисни «Забрати» на картці.`, `<b>Only you need this position</b> — no auction. Pick one of ${s.lot.players.length} for ${money(pk.price)}: press “Take” on a card.`)
+        : L(`<b>${escapeHtml(seatName(pk.picker))}</b> обирає без торгів — ця позиція потрібна лише йому (${money(pk.price)}).`, `<b>${escapeHtml(seatName(pk.picker))}</b> picks without an auction — only they need this position (${money(pk.price)}).`)}</p>
+        <p class="hint">${L('Не встиг обрати до кінця часу — візьметься випадковий.', 'Run out of time — a random one is taken.')}</p>`;
+      return;
+    }
     const queue = pk.order.map((seat, n) => {
       const done = pk.picks.find((x) => x.seat === seat);
       const now = seat === pk.picker;
@@ -258,7 +266,7 @@
           <small class="lot-kicker">${escapeHtml(it.player.pos || '')}</small>
           <b class="lot-name">${escapeHtml(nameOf(it.player))}</b>
           <p class="sold-who"><span class="dot-p" style="${seatStyle(it.winner)}"></span>${escapeHtml(seatName(it.winner))} · <b>${money(it.price)}</b></p>
-          ${lot.auto ? `<small class="hint">${L('позиція потрібна лише йому — без торгів', 'only they needed this position — no auction')}</small>` : ''}
+          ${lot.auto ? `<small class="hint">${L('позиція потрібна лише йому — обрав без торгів', 'only they needed this position — picked without an auction')}</small>` : ''}
         </div>
         <b class="stamp-sold ${reduced ? '' : 'hit'}">${lot.auto ? L('Без торгів', 'No contest') : 'HERE WE GO'}</b>
       </article>`);
@@ -279,7 +287,7 @@
     $('#scoreboard').innerHTML = present().map((i) => {
       let st = '';
       if (s.phase === 'bid') st = !s.lot.people.includes(i) ? `<span class="st">${L('не потрібен', 'no slot')}</span>` : s.bidders.includes(i) ? `<span class="st ok">${L('ставку зроблено', 'bid in')}</span>` : `<span class="st thinking">${L('думає…', 'thinking…')}</span>`;
-      if (s.phase === 'pick' && s.pick.bids[i] != null) st = `<span class="st ${s.pick.picker === i ? 'ok' : ''}">${money(s.pick.bids[i])}${s.pick.picker === i ? ` · ${L('обирає', 'picking')}` : ''}</span>`;
+      if (s.phase === 'pick' && (s.pick.bids[i] != null || s.pick.picker === i)) st = `<span class="st ${s.pick.picker === i ? 'ok' : ''}">${s.pick.bids[i] != null ? money(s.pick.bids[i]) : ''}${s.pick.bids[i] != null && s.pick.picker === i ? ' · ' : ''}${s.pick.picker === i ? L('обирає', 'picking') : ''}</span>`;
       if (s.phase === 'sold') {
         const it = s.lastLot.items.find((x) => x.winner === i);
         if (it) st = `<span class="st ok">${escapeHtml(surname(it.player))} · ${money(it.price)}</span>`;

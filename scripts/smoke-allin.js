@@ -120,7 +120,8 @@ async function main() {
   const exact = st.slots.findIndex((x) => x.value === ans);
   const over = st.slots.findIndex((x) => x.value === ans + more);
   assert.ok(exact > 0 && over > exact && st.slots[0].value === null && st.slots[0].odds === 6, 'табло: «менше за всіх» + оцінки за зростанням');
-  assert.deepStrictEqual(st.slots[exact].authors, [0]);
+  // відповідь 0: Віра (на 1 менше, але не нижче 0) теж ставить 0 — клітинка з двома авторами
+  assert.ok(st.slots[exact].authors.includes(0) && st.slots[exact].authors.every((x) => x === 0 || (x === 2 && ans === 0)), 'автор точної оцінки');
   // ставки: Аня — ALL IN на свою, Борис — на свою + 30, Віра — маркер на Аню
   assert.ok((await emit(a, 'bet', { bets: [{ slot: exact, extra: 101 }, { slot: -1 }] })).error, 'більше за банк — ні');
   await emit(a, 'bet', { bets: [{ slot: exact, extra: 100 }, { slot: -1, extra: 0 }] });

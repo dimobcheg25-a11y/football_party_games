@@ -7,7 +7,7 @@
 // рівні — пріоритет по колу: перший обирає будь-кого й платить свою ставку, наступні — з тих, що лишились, за PICK_PRICE;
 // час вийшов або офлайн — випадковий) → sold (хто кого взяв і за скільки, усі ставки; хто лишився — назад у пул).
 // Лот — лише на позицію, яку можуть узяти щонайменше двоє (не торгуєшся сам із собою); якщо таких немає — гравець іде тому, кому
-// потрібен, автоматично за AUTO_PRICE. Рівні ставки — пріоритет по колу (у кожному лоті — наступний гравець), його видно до ставки.
+// потрібен: торгів немає, він сам обирає одного з трьох схожих за AUTO_PRICE. Рівні ставки — пріоритет по колу (у кожному лоті — наступний гравець), його видно до ставки.
 // Сила гравців (rating.js) прихована до кінця вікна.
 // Кінець: склади з силою, «знахідка» й «переплата» вікна, матчі всіх з усіма (match.js) і таблиця.
 // Схема «Міні» — 7 місць (ВР, 2 захисники, 2 півзахисники, 2 нападники/вінгери), місця універсальні в межах лінії.
@@ -26,11 +26,11 @@ const PICK_PRICE = 2; // вибір після першого (з тих, що �
 const MIN_BID = PICK_PRICE; // право першого вибору не дешевше за наступні
 const MAX_SHOWN = 5; // гравців у лоті — учасників + 1, не більше
 const NEAR = 8; // трійку добираємо з NEAR найближчих за відомістю
-const PICK_MS = Number(process.env.WINDOW_PICK_MS) || 15000;
-const AUTO_PRICE = 5; // гравець без торгів (позиція потрібна лише одному) — не подарунок
-const ALLOWED_SECONDS = [10, 15, 20, 0]; // 0 — без таймера: лот закривається, коли всі поставили або пасували
+const PICK_MS = Number(process.env.WINDOW_PICK_MS) || 20000; // на вибір — не встиг, береться випадковий
+const AUTO_PRICE = 5; // позиція потрібна лише одному — без торгів, але не подарунок
+const AUTO_CHOICE = 3; // і тоді він обирає одного з трьох схожих
+const ALLOWED_SECONDS = [10, 15, 20, 0]; // 0 — без таймера: торги закриваються, коли всі поставили, вибір чекає того, хто обирає
 const SOLD_MS = Number(process.env.WINDOW_SOLD_MS) || 3500;
-const AUTO_MS = Number(process.env.WINDOW_AUTO_MS) || 1600;
 const UNSOLD_LIMIT = 4; // стільки лотів поспіль без ставок — далі лоти лінії розходяться автоматично тим, кому бракує
 
 // Місця схем. Тип місця → які позиції Transfermarkt на нього годяться.
@@ -191,7 +191,7 @@ class WindowRoom extends BaseRoom {
     const contested = candidates.filter((p) => this.eligibleFor(p).length >= 2);
     if (!contested.length || this.unsoldRun >= UNSOLD_LIMIT) {
       const p = rand(contested.length ? contested : candidates);
-      return this.autoSell(rand(this.eligibleFor(p)), p);
+      return this.autoSell(rand(this.eligibleFor(p).filter((s) => need.includes(s))), p);
     }
     // учасники — хто може взяти когось зі спірних; гравців на одного більше, ніж учасників (удвох — троє)
     const people = need.filter((s) => contested.some((p) => this.eligibleFor(p).includes(s)));
@@ -224,22 +224,20 @@ class WindowRoom extends BaseRoom {
     return this.fameCache.get(p.id);
   }
 
+  // Позиція потрібна лише одному: торгів немає, але він сам обирає одного з AUTO_CHOICE схожих за AUTO_PRICE
   autoSell(seat, p) {
-    this.used.add(p.id);
+    const own = this.pool.filter((x) => x.id !== p.id && !this.used.has(x.id) && this.freeSlots(seat).some((k) => fits(x, this.slots[k])))
+      .sort((a, b) => Math.abs(this.fame(a) - this.fame(p)) - Math.abs(this.fame(b) - this.fame(p))).slice(0, NEAR);
+    const players = [p];
+    while (players.length < AUTO_CHOICE && own.length) players.push(own.splice(Math.floor(Math.random() * own.length), 1)[0]);
+    players.sort(() => Math.random() - 0.5);
+    players.forEach((x) => this.used.add(x.id));
     this.lotNo++;
-    this.lot = { players: [p], eligible: [[seat]], people: [seat], auto: true };
-    const price = Math.min(AUTO_PRICE, this.maxBid(seat));
-    const slot = this.freeSlots(seat).find((k) => fits(p, this.slots[k]));
-    this.squads[seat].push({ slot, id: p.id, price });
-    this.budgets[seat] -= price;
-    this.news.unshift({ id: p.id, winner: seat, price, auto: true });
-    this.news = this.news.slice(0, 6);
-    this.lastLot = { items: [{ id: p.id, player: this.lotPlayer(p), winner: seat, price, order: 0 }], leftover: [], bids: {}, auto: true };
-    this.phase = 'sold';
-    this.deadline = Date.now() + AUTO_MS;
-    clearTimeout(this.timer);
-    this.timer = setTimeout(() => this.nextLot(), AUTO_MS);
-    this.changed();
+    this.lot = { players, eligible: players.map(() => [seat]), people: [seat], auto: true };
+    this.bids = new Map();
+    this.pick = { order: [seat], idx: 0, picks: [], priority: this.priority() };
+    this.phase = 'pick';
+    this.startPick();
   }
 
   // Пул вичерпано (дуже рідко): решта місць лінії — найвідоміші з тих, хто лишився, за PICK_PRICE
@@ -279,7 +277,7 @@ class WindowRoom extends BaseRoom {
       if (!waiting.length) this.closeBids();
     } else if (this.phase === 'pick') {
       const seat = this.pick.order[this.pick.idx];
-      if (!this.seats[seat]?.connected) this.autoPick(); // офлайн не тримає вибір
+      if (!this.seats[seat]?.connected && !this.options.seconds) this.autoPick(); // без таймера офлайн не тримає вибір; з таймером — чекаємо його
     }
   }
 
@@ -320,12 +318,15 @@ class WindowRoom extends BaseRoom {
       this.deadline = Date.now() + PICK_MS;
       this.timer = setTimeout(() => this.autoPick(), PICK_MS);
     }
-    if (!this.seats[pk.order[pk.idx]].connected) return this.autoPick();
+    if (!this.seats[pk.order[pk.idx]].connected && !this.options.seconds) return this.autoPick();
     this.changed();
   }
 
   // Ціна вибору: перший — своя ставка, далі — PICK_PRICE
-  pickPrice(seat) { return this.pick.picks.length ? PICK_PRICE : this.bids.get(seat).amount; }
+  pickPrice(seat) {
+    if (this.lot.auto) return Math.min(AUTO_PRICE, this.maxBid(seat)); // без торгів — фіксована ціна
+    return this.pick.picks.length ? PICK_PRICE : this.bids.get(seat).amount;
+  }
 
   choose(seat, { i } = {}) {
     if (this.status !== 'playing' || this.phase !== 'pick') return { error: T('Зараз не час обирати', 'It’s not time to pick') };
@@ -365,7 +366,7 @@ class WindowRoom extends BaseRoom {
     leftover.forEach((p) => this.used.delete(p.id));
     if (items.length) this.unsoldRun = 0; else this.unsoldRun++;
     this.lastLot = {
-      items, auto: false, priority: this.pick.priority,
+      items, auto: this.lot.auto, priority: this.pick.priority,
       leftover: leftover.map((p) => this.lotPlayer(p)),
       bids: Object.fromEntries([...this.bids].map(([s, b]) => [s, b.amount])),
     };
@@ -444,7 +445,7 @@ class WindowRoom extends BaseRoom {
     } : null;
     // вибір: черга (за ставками), хто зараз обирає, що вже забрали, усі ставки (після торгів — відкриті)
     const pick = this.phase === 'pick' ? {
-      order: this.pick.order, picker: this.pick.order[this.pick.idx], picks: this.pick.picks,
+      order: this.pick.order, picker: this.pick.order[this.pick.idx], picks: this.pick.picks, auto: this.lot.auto,
       price: this.pickPrice(this.pick.order[this.pick.idx]), options: this.pickable(this.pick.order[this.pick.idx]),
       bids: Object.fromEntries([...this.bids].map(([s, b]) => [s, b.amount])),
     } : null;

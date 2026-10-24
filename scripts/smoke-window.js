@@ -15,7 +15,7 @@ const URL = `http://localhost:${PORT}`;
 const GAME = `${URL}/window`;
 
 const server = spawn(process.execPath, [path.join(__dirname, '..', 'server', 'index.js')], {
-  env: { ...process.env, PORT, WINDOW_SOLD_MS: '150', WINDOW_AUTO_MS: '30' },
+  env: { ...process.env, PORT, WINDOW_SOLD_MS: '150' },
   stdio: ['ignore', 'pipe', 'inherit'],
 });
 
@@ -142,7 +142,7 @@ async function main() {
 
   // далі — автоматично: Аня ставить випадково, Борис 2, Віра 3; хто обирає — бере першого доступного
   const acted = new Set();
-  let autos = 0, lots = 0, ties = 0;
+  let autos = 0, lots = 0, ties = 0, autoChoices = 0;
   const play = (s, name, choose) => s.on('state', (x) => {
     if (x.status !== 'playing') return;
     if (x.phase === 'sold' && name === 'a' && !acted.has(`sold:${x.lotNo}`)) {
@@ -163,6 +163,11 @@ async function main() {
       for (const it of L.items.slice(1)) assert.strictEqual(it.price, 2, 'далі — по 2 млн');
     }
     if (x.phase === 'bid' && name === 'a') assert.ok(x.lot.eligible.some((e) => e.length >= 2), 'сам із собою не торгуються');
+    if (x.phase === 'pick' && x.pick.auto && name === 'a' && !acted.has(`auto:${x.lotNo}`)) {
+      acted.add(`auto:${x.lotNo}`);
+      autoChoices = Math.max(autoChoices, x.lot.players.length);
+      assert.ok(x.pick.order.length === 1 && x.pick.price <= 5, 'без торгів: обирає сам, за 5 млн');
+    }
     if (x.phase === 'bid' && x.lot.people.includes(x.you) && !acted.has(`${name}:bid:${x.lotNo}`)) {
       acted.add(`${name}:bid:${x.lotNo}`);
       s.emit('bid', { amount: Math.min(choose(x), x.maxBids[x.you]) }, () => {});
@@ -187,7 +192,7 @@ async function main() {
   }
   const ids = Object.values(st.squads).flat().map((x) => x.id);
   assert.strictEqual(new Set(ids).size, ids.length, 'гравець — лише в одному складі');
-  console.log(`✓ вікно: ${lots} лотів (${autos} без торгів за 5 млн, ${ties} рівних — за пріоритетом), склади 4-3-3 за позиціями, бюджети`);
+  console.log(`✓ вікно: ${lots} лотів (${autos} без торгів — вибір з ${autoChoices} за 5 млн, ${ties} рівних — за пріоритетом), склади 4-3-3 за позиціями, бюджети`);
 
   // кінець: сила, знахідка/переплата, матчі всіх з усіма, таблиця
   const r = st.result;

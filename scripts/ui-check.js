@@ -33,7 +33,7 @@ const PHONE = { width: 390, height: 780 };
 async function startServer() {
   const server = spawn(process.execPath, [path.join(ROOT, 'server', 'index.js')], {
     cwd: ROOT,
-    env: { ...process.env, PORT, GUESS_REVEAL_MS: '300000', FIXED_ORDER: '1', FOURS_TEST_ANSWER: '1', FOURS_REVEAL_MS: '300000', HANDSHAKE_TEST_ANSWER: '1', HANDSHAKE_REVEAL_MS: '300000', ALLIN_REVEAL_MS: '300000', WINDOW_SOLD_MS: '1200', WINDOW_AUTO_MS: '300' }, // FIXED_ORDER — у «Перехресті» першим ходить господар
+    env: { ...process.env, PORT, GUESS_REVEAL_MS: '300000', FIXED_ORDER: '1', FOURS_TEST_ANSWER: '1', FOURS_REVEAL_MS: '300000', HANDSHAKE_TEST_ANSWER: '1', HANDSHAKE_REVEAL_MS: '300000', ALLIN_REVEAL_MS: '300000', WINDOW_SOLD_MS: '1200' }, // FIXED_ORDER — у «Перехресті» першим ходить господар
     stdio: ['ignore', 'pipe', 'inherit'],
   });
   await new Promise((res) => server.stdout.on('data', (d) => d.toString().includes('запущено') && res()));
@@ -67,8 +67,8 @@ async function phoneShot(browser, name, url, prepare) {
 }
 
 // Кімната: хост створює, друзі заходять за посиланням, хост починає.
-async function room(browser, game, count, setup = async () => {}) {
-  const host = await person(browser, `${game}-host`);
+async function room(browser, game, count, setup = async () => {}, viewport = DESKTOP) {
+  const host = await person(browser, `${game}-host`, viewport);
   await host.goto(`${URL}/${game}/`);
   await host.fill('#name-input', 'Хост');
   await setup(host);
@@ -77,7 +77,7 @@ async function room(browser, game, count, setup = async () => {}) {
   const code = await host.textContent('#lobby-code');
   const guests = [];
   for (let i = 1; i < count; i++) {
-    const g = await person(browser, `${game}-guest${i}`);
+    const g = await person(browser, `${game}-guest${i}`, viewport);
     await g.goto(`${URL}/${game}/?room=${code}`);
     await g.fill('#name-input', `Друг${i}`);
     await g.click('#join-btn');
@@ -463,7 +463,8 @@ const scenarios = {
     await shot(p, 'window-home', { full: true });
     await p.context().close();
 
-    const { host, guests } = await room(browser, 'window', 2);
+    // ширина як у звичайного ноутбука: три колонки (суперники · лот · своє поле) — найтісніше місце
+    const { host, guests } = await room(browser, 'window', 2, async () => {}, { width: 1440, height: 900 });
     await host.click('#lobby-formation [data-f="mini"]');
     await host.waitForSelector('#lobby-formation [data-f="mini"].active');
     await shot(host, 'window-lobby');
