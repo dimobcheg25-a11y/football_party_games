@@ -29,10 +29,15 @@ function shuffle(list) {
 }
 
 // Слова імені футболіста (від 4 літер) і його прізвиська цілком («Шева», «CR7», «La Pulga») — щоб агент не написав їх у підказці.
-const nameWords = (p) => [
-  ...[p.uk, p.name].filter(Boolean).join(' ').toLowerCase().split(/[\s\-'’.]+/).filter((w) => w.length >= 4),
-  ...nicknameVariants(p).map((n) => n.toLowerCase()).filter((n) => n.length >= 3),
-];
+// Апострофи зводимо до одного: «К'єза», «К’єза», «Кʼєза» — те саме слово; слово з апострофом береться й цілком (частини коротші за 4 літери).
+const apos = (s) => s.toLowerCase().replace(/[’ʼ`´]/g, "'");
+const nameWords = (p) => {
+  const words = apos([p.uk, p.name].filter(Boolean).join(' ')).split(/[\s\-.]+/);
+  return [
+    ...words.flatMap((w) => [w, ...w.split("'")]).filter((w) => w.length >= 4),
+    ...nicknameVariants(p).map(apos).filter((n) => n.length >= 3),
+  ];
+};
 
 class SpyRoom extends BaseRoom {
   constructor(code, onChange, opts = {}) {
@@ -209,7 +214,7 @@ class SpyRoom extends BaseRoom {
     if (text != null) {
       clean = String(text).replace(/\s+/g, ' ').trim().slice(0, CLUE_MAX);
       if (!clean) return { error: T('Напиши підказку або натисни «Сказав голосом»', 'Type a clue or press “Said it out loud”') };
-      const low = clean.toLowerCase();
+      const low = apos(clean);
       if (seat !== this.spy && nameWords(this.footballer).some((w) => low.includes(w))) return { error: T('Не називай самого футболіста 🙂', 'Don’t name the footballer 🙂') };
     }
     this.clues.push({ seat, circle: this.circle, text: clean });

@@ -46,12 +46,13 @@ const FORMATIONS = {
 // лот — гравці однієї позиції, і вона потрібна всім однаково.
 const SLOT_POS = {
   GK: ['Goalkeeper'], CB: ['Centre-Back'], LB: ['Left-Back'], RB: ['Right-Back'],
-  DM: ['Defensive Midfield'], CM: ['Central Midfield'], AM: ['Attacking Midfield'],
+  // ЦП — і атакувальні півзахисники: у схемах без місця АП (4-3-3, 4-4-2, 3-5-2) вони інакше не потрапляли б на торги
+  DM: ['Defensive Midfield'], CM: ['Central Midfield', 'Attacking Midfield'], AM: ['Attacking Midfield'],
   LW: ['Left Winger', 'Left Midfield'], RW: ['Right Winger', 'Right Midfield'], ST: ['Centre-Forward', 'Second Striker'],
 };
 // універсальні місця «Міні»: будь-хто зі своєї лінії
 SLOT_POS.D = [...SLOT_POS.CB, ...SLOT_POS.LB, ...SLOT_POS.RB];
-SLOT_POS.M = [...SLOT_POS.DM, ...SLOT_POS.CM, ...SLOT_POS.AM];
+SLOT_POS.M = [...new Set([...SLOT_POS.DM, ...SLOT_POS.CM, ...SLOT_POS.AM])];
 SLOT_POS.F = [...SLOT_POS.LW, ...SLOT_POS.RW, ...SLOT_POS.ST];
 const LINES = [['GK'], ['CB', 'LB', 'RB', 'D'], ['DM', 'CM', 'AM', 'M'], ['LW', 'RW', 'ST', 'F']];
 const TYPE_ORDER = LINES.flat(); // торги йдуть по позиціях у цьому порядку
