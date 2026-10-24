@@ -1,8 +1,10 @@
 // Партія «Трансферне вікно» (2–8): спільна схема, аукціон із таємними ставками по лініях, потім сила складів і міні-ліга.
 // Лоти — випадкові гравці з пулу (500 найвідоміших: усі епохи або лише з повними даними з 2012), по лініях:
 // воротарі → захисники → півзахисники → атака; у лоті — гравець на позицію, яка ще комусь потрібна.
-// Фази лоту: bid (кожен, кому гравець підходить у вільне місце, таємно ставить 1…max млн; max = бюджет − 1 млн за кожне
-// інше порожнє місце; пасу немає — береш те, що дала гра: не поставив до кінця таймера — ставка 1 млн) → sold (усі ставки відкрито).
+// Лот — «пара на вибір»: двоє з лінії. Фази: bid (кожен таємно ставить на кожного, під кого є вільне місце, 1…max млн;
+// max = бюджет − 1 млн за кожне інше порожнє місце; пасу немає — не поставив до кінця таймера, ставка 1 млн) → sold:
+// усі ставки від найбільшої — найбільша купує свого гравця, хто купив, у цьому лоті більше нічого не бере, другого — найбільша
+// з решти; платиш свою ставку; непроданий повертається в пул; усі ставки відкрито.
 // Лот — лише на позицію, яку можуть узяти щонайменше двоє (не торгуєшся сам із собою); якщо таких немає — гравець іде тому, кому
 // потрібен, автоматично за AUTO_PRICE. Рівні ставки — пріоритет по колу (у кожному лоті — наступний гравець), його видно до ставки.
 // Сила гравців (rating.js) прихована до кінця вікна.
@@ -72,10 +74,10 @@ class WindowRoom extends BaseRoom {
     this.budgets = Array(this.capacity).fill(BUDGET);
     this.line = 0;
     this.lotNo = 0;
-    this.lot = null; // { p, eligible: [seat], auto }
+    this.lot = null; // { players: [p, p], eligible: [[seat]…] — хто може взяти кожного, auto }
     this.phase = null; // bid | sold
-    this.bids = new Map(); // seat → { amount (0 — пас), t }
-    this.lastLot = null; // { id, winner, price, bids: { seat: amount }, unsold, auto }
+    this.bids = new Map(); // seat → { amounts: [на кожного з лоту | null], t }
+    this.lastLot = null; // { items: [{ id, player, winner, price, bids: { seat: amount }, unsold }], auto, priority }
     this.news = []; // стрічка BREAKING: останні продажі
     this.used = new Set();
     this.unsoldRun = 0;
@@ -174,20 +176,23 @@ class WindowRoom extends BaseRoom {
     const neededTypes = [...new Set(need.flatMap((s) => this.freeSlots(s, types).map((i) => this.slots[i])))];
     const candidates = this.pool.filter((p) => !this.used.has(p.id) && neededTypes.some((t) => fits(p, t)));
     if (!candidates.length) return this.fillRest(need, types);
-    // на торги — лише той, кого можуть узяти щонайменше двоє; немає таких (позиція потрібна одному) або лоти довго
+    // на торги — лише ті, кого можуть узяти щонайменше двоє; немає таких (позиція потрібна одному) або лоти довго
     // не продаються — гравець іде автоматично тому, кому потрібен, за AUTO_PRICE
     const contested = candidates.filter((p) => this.eligibleFor(p).length >= 2);
     if (!contested.length || this.unsoldRun >= UNSOLD_LIMIT) {
       const p = rand(contested.length ? contested : candidates);
       return this.autoSell(rand(this.eligibleFor(p)), p);
     }
-    const p = rand(contested);
-    this.used.add(p.id);
+    // пара на вибір: двоє з лінії (якщо на торги годиться лише один — лот з одного)
+    const first = rand(contested);
+    const rest = contested.filter((p) => p.id !== first.id);
+    const players = rest.length ? [first, rand(rest)] : [first];
+    players.forEach((p) => this.used.add(p.id));
     this.lotNo++;
-    this.lot = { p, eligible: this.eligibleFor(p), auto: false };
+    this.lot = { players, eligible: players.map((p) => this.eligibleFor(p)), auto: false };
     this.phase = 'bid';
     if (this.options.seconds) {
-      const ms = this.options.seconds * 1000;
+      const ms = this.options.seconds * 1000 * (players.length > 1 ? 1.5 : 1); // за пару — трохи більше часу
       this.deadline = Date.now() + ms;
       this.timer = setTimeout(() => this.close(), ms);
     }
@@ -197,8 +202,8 @@ class WindowRoom extends BaseRoom {
   autoSell(seat, p) {
     this.used.add(p.id);
     this.lotNo++;
-    this.lot = { p, eligible: [seat], auto: true };
-    this.bids = new Map([[seat, { amount: Math.min(AUTO_PRICE, this.maxBid(seat)), t: Date.now() }]]);
+    this.lot = { players: [p], eligible: [[seat]], auto: true };
+    this.bids = new Map([[seat, { amounts: [Math.min(AUTO_PRICE, this.maxBid(seat))], t: Date.now() }]]);
     this.close();
   }
 
@@ -217,15 +222,25 @@ class WindowRoom extends BaseRoom {
     this.nextLot();
   }
 
-  // Таємна ставка 1…max; можна змінити, поки лот відкритий. Пасу немає.
-  bid(seat, { amount } = {}) {
+  // Хто з гравців кімнати може торгуватись за лот (є вільне місце хоча б під одного з пари)
+  bidders() { return [...new Set(this.lot.eligible.flat())]; }
+
+  // Таємні ставки на кожного з лоту: amounts[i] — 1…max для тих, під кого є місце (інших — null). Пасу немає.
+  // Можна змінити, поки лот відкритий. Виграти в одному лоті можна лише одного.
+  bid(seat, { amounts, amount } = {}) {
     if (this.status !== 'playing' || this.phase !== 'bid') return { error: T('Зараз торгів немає', 'No lot is open right now') };
-    if (!this.lot.eligible.includes(seat)) return { error: T('Під цього гравця в тебе немає вільного місця', 'You have no free slot for this player') };
-    const v = Math.floor(Number(amount));
-    if (!Number.isFinite(v) || v < MIN_BID) return { error: T(`Мінімальна ставка — ${MIN_BID} млн`, `The minimum bid is €${MIN_BID}M`) };
+    if (!this.bidders().includes(seat)) return { error: T('Під цих гравців у тебе немає вільного місця', 'You have no free slot for these players') };
+    const list = Array.isArray(amounts) ? amounts : [amount];
     const max = this.maxBid(seat);
-    if (v > max) return { error: T(`Можна щонайбільше ${max} млн — решта на порожні місця`, `${max}M at most — the rest is for empty slots`) };
-    this.bids.set(seat, { amount: v, t: Date.now() });
+    const clean = [];
+    for (let i = 0; i < this.lot.players.length; i++) {
+      if (!this.lot.eligible[i].includes(seat)) { clean.push(null); continue; }
+      const v = Math.floor(Number(list[i]));
+      if (!Number.isFinite(v) || v < MIN_BID) return { error: T(`Постав на кожного — щонайменше ${MIN_BID} млн`, `Bid on each — at least €${MIN_BID}M`) };
+      if (v > max) return { error: T(`Можна щонайбільше ${max} млн — решта на порожні місця`, `${max}M at most — the rest is for empty slots`) };
+      clean.push(v);
+    }
+    this.bids.set(seat, { amounts: clean, t: Date.now() });
     this.touch();
     this.checkProgress();
     if (this.phase === 'bid') this.changed();
@@ -234,7 +249,7 @@ class WindowRoom extends BaseRoom {
 
   checkProgress() {
     if (this.phase !== 'bid') return;
-    const waiting = this.lot.eligible.filter((s) => this.seats[s]?.connected && !this.bids.has(s));
+    const waiting = this.bidders().filter((s) => this.seats[s]?.connected && !this.bids.has(s));
     if (!waiting.length) this.close();
   }
 
@@ -245,31 +260,48 @@ class WindowRoom extends BaseRoom {
     return [...seats.slice(k), ...seats.slice(0, k)];
   }
 
-  // Лот закрито: найбільша ставка купує (рівні — у кого пріоритет цього лоту); усі ставки відкриваються
+  // Лот закрито. Усі ставки на обох — від найбільшої: найбільша купує свого гравця; хто купив, у цьому лоті більше
+  // нічого не отримує; другого — найбільша ставка серед решти. Платиш свою ставку. Рівні — у кого пріоритет лоту.
   close() {
     if (this.phase !== 'bid' && !this.lot?.auto) return;
     clearTimeout(this.timer);
-    const { p, auto } = this.lot;
+    const { players, eligible, auto } = this.lot;
     const order = this.priority();
-    // пасу немає: хто міг узяти гравця, але не поставив до кінця таймера, — ставить мінімум
-    if (!auto) for (const s of this.lot.eligible) if (this.seats[s] && !this.bids.has(s)) this.bids.set(s, { amount: MIN_BID, t: Date.now(), auto: true });
-    const offers = [...this.bids].filter(([s, b]) => b.amount > 0 && this.seats[s]).sort((a, b) => b[1].amount - a[1].amount || order.indexOf(a[0]) - order.indexOf(b[0]));
-    const all = Object.fromEntries([...this.bids].map(([s, b]) => [s, b.amount]));
-    if (offers.length) {
-      const [seat, b] = offers[0];
-      const slot = this.freeSlots(seat).find((i) => fits(p, this.slots[i]));
-      this.squads[seat].push({ slot, id: p.id, price: b.amount });
-      this.budgets[seat] -= b.amount;
-      this.lastLot = { id: p.id, winner: seat, price: b.amount, bids: all, auto, priority: order };
-      this.news.unshift({ id: p.id, winner: seat, price: b.amount, auto });
-      this.news = this.news.slice(0, 6);
-      this.unsoldRun = 0;
-    } else {
-      this.lastLot = { id: p.id, winner: -1, price: 0, bids: all, unsold: true };
-      this.unsoldRun++;
+    // пасу немає: хто міг торгуватись, але не поставив до кінця таймера, — ставить мінімум на кожного свого
+    if (!auto) {
+      for (const s of this.bidders()) {
+        if (this.seats[s] && !this.bids.has(s)) this.bids.set(s, { amounts: players.map((p, i) => (eligible[i].includes(s) ? MIN_BID : null)), t: Date.now(), auto: true });
+      }
     }
+    const offers = [];
+    for (const [seat, b] of this.bids) {
+      if (!this.seats[seat]) continue;
+      b.amounts.forEach((v, i) => { if (v > 0) offers.push({ seat, i, v }); });
+    }
+    offers.sort((a, b) => b.v - a.v || order.indexOf(a.seat) - order.indexOf(b.seat));
+    const items = players.map((p, i) => ({
+      id: p.id, player: this.lotPlayer(p), winner: -1, price: 0,
+      bids: Object.fromEntries([...this.bids].filter(([, b]) => b.amounts[i] != null).map(([s, b]) => [s, b.amounts[i]])),
+    }));
+    const won = new Set();
+    for (const o of offers) {
+      const item = items[o.i];
+      if (item.winner !== -1 || won.has(o.seat)) continue;
+      const slot = this.freeSlots(o.seat).find((k) => fits(players[o.i], this.slots[k]));
+      if (slot == null) continue;
+      item.winner = o.seat;
+      item.price = o.v;
+      won.add(o.seat);
+      this.squads[o.seat].push({ slot, id: players[o.i].id, price: o.v });
+      this.budgets[o.seat] -= o.v;
+      this.news.unshift({ id: players[o.i].id, winner: o.seat, price: o.v, auto });
+    }
+    this.news = this.news.slice(0, 6);
+    // непроданий (усі, хто міг, уже купили іншого) — повертається в пул
+    items.forEach((it, i) => { if (it.winner === -1) { it.unsold = true; this.used.delete(players[i].id); } });
+    if (items.some((it) => it.winner !== -1)) this.unsoldRun = 0; else this.unsoldRun++;
+    this.lastLot = { items, auto, priority: order };
     this.phase = 'sold';
-    this.lastLot.player = this.lotPlayer(p);
     const ms = auto ? AUTO_MS : SOLD_MS;
     this.deadline = Date.now() + ms;
     this.timer = setTimeout(() => this.nextLot(), ms);
@@ -332,11 +364,14 @@ class WindowRoom extends BaseRoom {
 
   publicState() {
     const lot = this.lot && this.phase === 'bid' ? {
-      no: this.lotNo, player: this.lotPlayer(this.lot.p), eligible: this.lot.eligible,
-      // хто виграє при рівних ставках: перший у черзі пріоритету серед тих, хто може взяти гравця
-      tieWinner: this.priority().find((s) => this.lot.eligible.includes(s)),
-      // місце, на яке піде гравець у кожного, хто може його взяти
-      types: [...new Set(this.slots.filter((t) => fits(this.lot.p, t)))].map((t) => SLOT_NAMES[t]),
+      no: this.lotNo,
+      players: this.lot.players.map((p) => this.lotPlayer(p)),
+      eligible: this.lot.eligible, // [[хто може взяти першого], [другого]]
+      bidders: this.bidders(),
+      // хто виграє при рівних ставках: перший у черзі пріоритету серед тих, хто торгується
+      tieWinner: this.priority().find((s) => this.bidders().includes(s)),
+      // місце, на яке піде кожен гравець
+      types: this.lot.players.map((p) => [...new Set(this.slots.filter((t) => fits(p, t)))].map((t) => SLOT_NAMES[t])),
     } : null;
     const state = {
       code: this.code,
@@ -380,7 +415,7 @@ class WindowRoom extends BaseRoom {
 
   // Свою ставку бачить лише сам гравець
   privateState(seat) {
-    return { myBid: this.bids.get(seat)?.amount ?? null };
+    return { myBids: this.bids.get(seat)?.amounts ?? null };
   }
 }
 
