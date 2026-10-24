@@ -170,8 +170,18 @@
       : L('Остання група — підказка не потрібна', 'Last group — no hint needed');
     // скільки зараз: знайдені групи − помилки − підказки (+10, якщо досі без помилок і знайдеш усі)
     const now = Math.max(0, mine.found.length * s.points.group - mine.mistakes * s.points.mistake - (s.myHintCost || 0));
-    $('#score-now').innerHTML = over ? '' : L(`Зараз у тебе <b>${now}</b> · група +${s.points.group}${mine.mistakes ? '' : ` · усі без помилок — ще +${s.points.perfect}`}${s.myHintCost ? ` · підказки −${s.myHintCost}` : ''}`,
-      `You have <b>${now}</b> now · group +${s.points.group}${mine.mistakes ? '' : ` · all without a mistake — another +${s.points.perfect}`}${s.myHintCost ? ` · hints −${s.myHintCost}` : ''}`);
+    // розклад: «5 = 25 за групи − 5 за помилки − 15 за підказки» — щоб було видно, з чого число
+    const nf = mine.found.length;
+    const parts = [
+      nf ? L(`${nf * s.points.group} за ${nf === 1 ? 'групу' : 'групи'}`, `${nf * s.points.group} for ${nf === 1 ? 'the group' : 'groups'}`) : '',
+      mine.mistakes ? `− ${mine.mistakes * s.points.mistake} ${L(`за ${mine.mistakes === 1 ? 'помилку' : 'помилки'}`, mine.mistakes === 1 ? 'for a mistake' : 'for mistakes')}` : '',
+      s.myHintCost ? `− ${s.myHintCost} ${L('за підказки', 'for hints')}` : '',
+    ].filter(Boolean);
+    // ще жодної групи — штрафи віднімуться від майбутніх: «0 · −5 за помилку — віднімуться від груп»
+    const sum = nf ? (parts.length > 1 ? ` = ${parts.join(' ')}` : '')
+      : parts.length ? ` · ${parts.join(' ')} ${L('— віднімуться від груп', '— taken off your groups')}` : '';
+    $('#score-now').innerHTML = over ? '' : L(`Зараз у тебе <b>${now}</b>${sum} · наступна група +${s.points.group}${mine.mistakes ? '' : ` · усі без помилок — ще +${s.points.perfect}`}`,
+      `You have <b>${now}</b> now${sum} · next group +${s.points.group}${mine.mistakes ? '' : ` · all without a mistake — another +${s.points.perfect}`}`);
     const r = s.myResult;
     $('#play-hint').textContent = r
       ? (r.found === 4 ? L(`✓ Усі чотири! +${r.points}. Чекаємо інших…`, `✓ All four! +${r.points}. Waiting for others…`)
