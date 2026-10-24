@@ -24,7 +24,6 @@ function register({ app, io }) {
       start: (room, seat) => room.start(seat),
       formation: (room, seat, payload) => room.setFormation(seat, payload),
       bid: (room, seat, payload) => room.bid(seat, payload),
-      pass: (room, seat) => room.pass(seat),
     },
     roomInfo: (room) => ({ solo: false, options: room.options }),
   });

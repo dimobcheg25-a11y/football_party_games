@@ -158,10 +158,10 @@
           <button type="button" class="chip" data-d="5">+5</button>
           <button type="button" class="chip" data-d="10">+10</button>
           <span class="grow"></span>
-          <button type="button" class="btn btn-secondary" id="pass-btn">${L('Пас', 'Pass')}</button>
           <button class="btn btn-primary btn-lg" id="bid-btn">${L('Ставлю', 'Bid')}</button>
         </div>
         <p class="hint" id="bid-max"></p>
+        <p class="hint" id="bid-tie"></p>
         <p class="hint" id="bid-status"></p>
       </form>`;
   }
@@ -182,10 +182,6 @@
       const res = await emit('bid', { amount });
       if (res.error) g.toast(res.error, 'bad');
     });
-    $('#pass-btn').addEventListener('click', async () => {
-      const res = await emit('pass');
-      if (res.error) g.toast(res.error, 'bad');
-    });
     if (!matchMedia('(pointer: coarse)').matches) input.focus();
   }
 
@@ -201,10 +197,12 @@
     const empty = s.slots.length - s.squads[mySeat].length;
     $('#bid-max').innerHTML = L(`Можна до <b>${money(myMax())}</b> = ${money(s.budgets[mySeat])} у бюджеті − ${empty - 1} ${window.I18n.plural(empty - 1, ['порожнє місце', 'порожні місця', 'порожніх місць'], [])} після цього × 1 млн`,
       `Up to <b>${money(myMax())}</b> = ${money(s.budgets[mySeat])} budget − ${empty - 1} empty ${empty - 1 === 1 ? 'slot' : 'slots'} after this × €1M`);
+    const tw = s.lot.tieWinner;
+    $('#bid-tie').innerHTML = tw === mySeat ? L('Рівні ставки — <b>виграєш ти</b> (пріоритет цього лоту; далі він переходить до наступного)', 'Tied bids — <b>you win</b> (this lot’s priority; it moves on to the next player)')
+      : L(`Рівні ставки — виграє <b>${escapeHtml(seatName(tw))}</b> (пріоритет іде по колу)`, `Tied bids — <b>${escapeHtml(seatName(tw))}</b> wins (priority rotates)`);
     const mine = s.myBid;
-    $('#bid-status').innerHTML = mine == null ? others
-      : mine === 0 ? `${L('Ти пасуєш', 'You pass')} · ${L('можна передумати', 'you can change your mind')} · ${others}`
-        : `${L('Твоя ставка', 'Your bid')}: <b>${money(mine)}</b> · ${L('можна змінити', 'you can change it')} · ${others}`;
+    $('#bid-status').innerHTML = mine == null ? `${L('Пасу немає: не поставиш до кінця часу — ставка 1 млн.', 'No passing: no bid by the end of the timer means €1M.')} ${others}`
+      : `${L('Твоя ставка', 'Your bid')}: <b>${money(mine)}</b> · ${L('можна змінити', 'you can change it')} · ${others}`;
     $('#bid-btn').textContent = mine > 0 ? L('Змінити', 'Change') : L('Ставлю', 'Bid');
   }
 
@@ -215,9 +213,9 @@
     const verdict = lot.unsold ? `<b class="stamp-sold off">${L('Не продано', 'Unsold')}</b>`
       : `<b class="stamp-sold ${reduced ? '' : 'hit'}">${lot.auto ? L('Без торгів', 'No contest') : 'HERE WE GO'}</b>`;
     const who = lot.unsold ? L('Ніхто не поставив — гравець іде далі', 'Nobody bid — the player moves on')
-      : `<span class="dot-p" style="${seatStyle(lot.winner)}"></span>${escapeHtml(seatName(lot.winner))} · <b>${money(lot.price)}</b>${lot.auto ? ` · ${L('місце потрібне лише йому', 'only they needed the slot')}` : ''}`;
+      : `<span class="dot-p" style="${seatStyle(lot.winner)}"></span>${escapeHtml(seatName(lot.winner))} · <b>${money(lot.price)}</b>${lot.auto ? ` · ${L('позиція потрібна лише йому — без торгів', 'only they needed this position — no auction')}` : ''}`;
     const bids = Object.entries(lot.bids).map(([k, v]) => [Number(k), v]).sort((a, b) => b[1] - a[1]);
-    const rows = lot.auto ? '' : `<ul class="bids">${bids.map(([seat, v]) => `<li style="${seatStyle(seat)}" class="${seat === lot.winner ? 'win' : ''}"><span class="dot-p"></span><span>${escapeHtml(seatName(seat))}</span><b>${v ? money(v) : L('пас', 'pass')}</b></li>`).join('')}</ul>`;
+    const rows = lot.auto ? '' : `<ul class="bids">${bids.map(([seat, v]) => `<li style="${seatStyle(seat)}" class="${seat === lot.winner ? 'win' : ''}"><span class="dot-p"></span><span>${escapeHtml(seatName(seat))}</span><b>${money(v)}</b></li>`).join('')}</ul>`;
     return `<article class="lot-card sold">
         ${photo(p, 'lot-photo')}
         <div class="lot-body">
@@ -236,7 +234,7 @@
     $('#scoreboard').innerHTML = present().map((i) => {
       let st = '';
       if (s.phase === 'bid') st = !s.lot.eligible.includes(i) ? `<span class="st">${L('не потрібен', 'no slot')}</span>` : s.bidders.includes(i) ? `<span class="st ok">${L('ставку зроблено', 'bid in')}</span>` : `<span class="st thinking">${L('думає…', 'thinking…')}</span>`;
-      if (s.phase === 'sold' && s.lastLot.bids[i] != null && !s.lastLot.auto) st = `<span class="st">${s.lastLot.bids[i] ? money(s.lastLot.bids[i]) : L('пас', 'pass')}</span>`;
+      if (s.phase === 'sold' && s.lastLot.bids[i] != null && !s.lastLot.auto) st = `<span class="st">${money(s.lastLot.bids[i])}</span>`;
       return `<li style="${seatStyle(i)}" class="${i === mySeat ? 'me' : ''} ${s.seats[i].connected ? '' : 'offline'}">
         <span class="dot-p"></span><span class="nm">${escapeHtml(seatName(i))}<small>${s.squads[i].length} ${L('з', 'of')} ${s.slots.length}</small></span>${st}<b>${money(s.budgets[i])}</b></li>`;
     }).join('');

@@ -112,11 +112,13 @@ async function main() {
   assert.strictEqual(bView.myGuess, null, 'свою оцінку бачиш лише ти');
   assert.ok(!JSON.stringify(bView.slots).includes(String(ans)) || bView.slots.length === 0, 'чужих оцінок до табло не видно');
   assert.strictEqual(last.get(a).myGuess, ans);
-  await emit(b, 'guess', { value: ans + 1000 });
+  // «більше» — у межах розумного: для років +5 (рік 2987 сервер не прийме), для чисел +1000
+  const more = st.question.year ? 5 : 1000;
+  await emit(b, 'guess', { value: ans + more });
   await emit(c, 'guess', { value: Math.max(0, ans - 1) === ans ? 0 : ans - 1 });
   st = await nextState(a, (x) => x.phase === 'bet');
   const exact = st.slots.findIndex((x) => x.value === ans);
-  const over = st.slots.findIndex((x) => x.value === ans + 1000);
+  const over = st.slots.findIndex((x) => x.value === ans + more);
   assert.ok(exact > 0 && over > exact && st.slots[0].value === null && st.slots[0].odds === 6, 'табло: «менше за всіх» + оцінки за зростанням');
   assert.deepStrictEqual(st.slots[exact].authors, [0]);
   // ставки: Аня — ALL IN на свою, Борис — на свою + 30, Віра — маркер на Аню
