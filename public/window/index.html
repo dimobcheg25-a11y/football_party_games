@@ -63,7 +63,8 @@
           <p class="hint" id="formation-hint"></p>
         </div>
 
-        <div class="field">
+        <!-- «Сила за» (вартість, голи, асисти, трофеї) — приховано, поки режими переробляються; код на сервері й у app.js лишається -->
+        <div class="field hidden" id="basis-field">
           <span class="field-label" data-en="Strength by">Сила за</span>
           <div class="chips" data-opt="basis" role="radiogroup" aria-label="Сила за" data-en-aria-label="Strength by">
             <button type="button" class="chip" data-val="overall" data-en="⭐ Overall rating">⭐ Загальний рейтинг</button>
@@ -106,10 +107,9 @@
       <h3 data-en="How to play">Як грати</h3>
       <ul class="rules-list">
         <li data-en-html="Everyone has &lt;b&gt;100 million&lt;/b&gt; and the same formation — agree on it in the chat, the host sets it. You need all 11 positions (7 in Mini: a keeper, 2 defenders, 2 midfielders, 2 forwards).">У кожного <b>100 мільйонів</b> і однакова схема — домовтеся в чаті, господар її ставить. Треба зібрати всі 11 позицій (у «Міні» — 7: воротар, 2 захисники, 2 півзахисники, 2 нападники).</li>
-        <li data-en="Players come up at random, line by line — goalkeepers, defenders, midfielders, attack — &lt;b&gt;two at a time&lt;/b&gt;, for positions at least two of you still need. A player only fits his own position.">Гравці випадають рандомом по лініях — воротарі, захисники, півзахисники, атака — <b>по двоє на вибір</b>, на позиції, які ще потрібні щонайменше двом. Гравець підходить лише на свою позицію.</li>
-        <li data-en-html="You bid &lt;b&gt;secretly on both&lt;/b&gt; — what each one is worth to you, from 1 million. You can win only one: the highest bid of all takes its player, the other goes to the highest bid among the rest. You pay your own bid. No passing: no bid by the end of the timer means 1 million each. Tied bids go to whoever has this lot’s priority (it rotates, and you see it before bidding). After each lot everyone sees all the bids. You must keep 1 million for each empty slot.">Ставиш <b>таємно на обох</b> — скільки готовий заплатити за кожного, від 1 мільйона. Виграти можна лише одного: найбільша ставка з усіх купує свого гравця, другого — найбільша ставка серед решти. Платиш свою ставку. Пасувати не можна: не поставив до кінця часу — по 1 мільйону. Рівні ставки — у кого пріоритет цього лоту (він іде по колу, і його видно до ставки). Після лоту всі бачать усі ставки. На кожне порожнє місце треба лишити по 1 мільйону.</li>
-        <li data-en="You never bid against yourself: if only one of you needs a position, the player goes to them with no auction for 5 million.">Сам із собою не торгуєшся: якщо позиція потрібна лише одному, гравець іде йому без торгів за 5 мільйонів.</li>
-        <li data-en-html="Each player has a &lt;b&gt;hidden strength&lt;/b&gt; — from his real career: goals, assists, clean sheets, cards, trophies, awards, the level of his leagues. Or, if you agree, just one stat: peak value, goals, assists or trophies and awards. It is revealed only when the window shuts. Then everyone plays everyone: score, scorers, cards — and a table.">У кожного гравця <b>прихована сила</b> — з його справжньої кар'єри: голи, асисти, сухі матчі, картки, трофеї, нагороди, рівень ліг. Або — за домовленістю — лише один показник: пікова вартість, голи, асисти чи трофеї з нагородами. Її відкривають лише після вікна. Потім усі грають з усіма: рахунок, автори голів, картки — і таблиця.</li>
+        <li data-en-html="Bidding goes &lt;b&gt;one position at a time&lt;/b&gt;: goalkeepers first, then centre-backs, left-back and right-back separately, defensive, central and attacking midfielders, left and right wingers separately, strikers. A lot has players of that position, &lt;b&gt;one more than there are bidders&lt;/b&gt; (three for two of you), of similar fame. Everyone in a lot gets a player — you bid for who gets whom.">Торги йдуть <b>по одній позиції за раз</b>: спершу воротарі, потім центральні захисники, окремо лівий і правий захисник, опорні, центральні, атакувальні, окремо лівий і правий вінгер, нападники. У лоті — гравці цієї позиції, <b>на одного більше, ніж учасників</b> (удвох — троє), схожої відомості. Кожен у лоті отримує по гравцю — торгуєтесь за те, кому хто дістанеться.</li>
+        <li data-en-html="Everyone makes &lt;b&gt;one sealed bid&lt;/b&gt; for the right to &lt;b&gt;pick first&lt;/b&gt;, from 2 million. The highest bid picks anyone and pays its bid; the rest pick in bid order from who is left — 2 million each. The extra player goes back to the pool. No passing: no bid by the end of the timer means 2 million; no pick in 20 seconds means a random one. Tied bids go to whoever has this lot’s priority (it rotates, and you see it before bidding). You must keep 2 million for each empty slot.">Кожен робить <b>одну таємну ставку</b> за право <b>обрати першим</b>, від 2 мільйонів. Найбільша ставка обирає будь-кого й платить свою ставку; решта обирають по черзі ставок із тих, що лишились, — по 2 мільйони. Зайвий гравець повертається в пул. Пасувати не можна: не поставив до кінця часу — ставка 2 мільйони; не обрав за 20 секунд — візьметься випадковий. Рівні ставки — у кого пріоритет цього лоту (він іде по колу, і його видно до ставки). На кожне порожнє місце треба лишити по 2 мільйони.</li>
+        <li data-en-html="Each player has a &lt;b&gt;hidden strength&lt;/b&gt; — from his real career: goals, assists, clean sheets, cards, trophies, awards, the level of his leagues. It is revealed only when the window shuts. Then everyone plays everyone: score, scorers, cards — and a table.">У кожного гравця <b>прихована сила</b> — з його справжньої кар'єри: голи, асисти, сухі матчі, картки, трофеї, нагороди, рівень ліг. Її відкривають лише після вікна. Потім усі грають з усіма: рахунок, автори голів, картки — і таблиця.</li>
       </ul>
     </section>
   </main>
@@ -149,7 +149,7 @@
       </aside>
       <section class="tw-stage" id="stage"></section>
       <aside class="tw-mine">
-        <div class="tw-mine-head"><h3 class="table-title" data-en="Your squad">Твій склад</h3><b class="tw-budget" id="my-budget"></b></div>
+        <div class="tw-mine-head"><div class="squad-tabs" id="squad-tabs" role="tablist" aria-label="Склади" data-en-aria-label="Squads"></div><b class="tw-budget" id="my-budget"></b></div>
         <div class="tw-pitch" id="my-pitch"></div>
       </aside>
     </div>

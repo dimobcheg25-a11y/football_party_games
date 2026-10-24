@@ -56,7 +56,7 @@ async function main() {
       if (mode === 'modern') assert.ok(r.modern, `${p.id}: у сучасному — повні дані`);
     }
     // кожного типу місця вистачає на 8 гравців з найжаднішою схемою
-    for (const t of ['GK', 'CB', 'FB', 'DM', 'CM', 'AM', 'W', 'ST']) {
+    for (const t of ['GK', 'CB', 'LB', 'RB', 'DM', 'CM', 'AM', 'LW', 'RW', 'ST']) {
       const need = 8 * Math.max(...Object.values(FORMATIONS).map((f) => f.filter((x) => x === t).length));
       assert.ok(pool.filter((p) => fits(p, t)).length >= need, `${mode}: гравців на ${t} ≥ ${need}`);
     }
@@ -161,8 +161,12 @@ async function main() {
         if (tied.length > 1) { ties++; assert.strictEqual(first.winner, L.priority.find((q) => tied.includes(q)), 'рівні — за пріоритетом'); }
       }
       for (const it of L.items.slice(1)) assert.strictEqual(it.price, 2, 'далі — по 2 млн');
+      assert.strictEqual(L.items.length, Object.keys(L.bids).length, 'кожен учасник отримує по гравцю');
     }
-    if (x.phase === 'bid' && name === 'a') assert.ok(x.lot.eligible.some((e) => e.length >= 2), 'сам із собою не торгуються');
+    if (x.phase === 'bid' && name === 'a') {
+      assert.strictEqual(x.lot.people.length, 3, 'торгуються всі троє — позиція потрібна всім');
+      assert.strictEqual(new Set(x.lot.types.map((t) => t.join())).size, 1, 'у лоті — гравці однієї позиції');
+    }
     if (x.phase === 'pick' && x.pick.auto && name === 'a' && !acted.has(`auto:${x.lotNo}`)) {
       acted.add(`auto:${x.lotNo}`);
       autoChoices = Math.max(autoChoices, x.lot.players.length);
@@ -192,7 +196,9 @@ async function main() {
   }
   const ids = Object.values(st.squads).flat().map((x) => x.id);
   assert.strictEqual(new Set(ids).size, ids.length, 'гравець — лише в одному складі');
-  console.log(`✓ вікно: ${lots} лотів (${autos} без торгів — вибір з ${autoChoices} за 5 млн, ${ties} рівних — за пріоритетом), склади 4-3-3 за позиціями, бюджети`);
+  assert.strictEqual(autos, 0, 'лотів без торгів не буває');
+  assert.strictEqual(lots + 1, 11, '4-3-3: 11 лотів (перший — вручну вище) — по одному гравцю кожному за лот');
+  console.log(`✓ вікно: ${lots} лотів (усі з торгами, по позиції за раз, ${ties} рівних — за пріоритетом), склади 4-3-3 за позиціями, бюджети`);
 
   // кінець: сила, знахідка/переплата, матчі всіх з усіма, таблиця
   const r = st.result;

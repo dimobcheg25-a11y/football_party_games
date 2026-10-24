@@ -459,7 +459,7 @@ const scenarios = {
   async window(browser) {
     const p = await person(browser, 'window');
     await p.goto(`${URL}/window/`);
-    await p.waitForSelector('[data-opt="basis"] .chip.active');
+    await p.waitForSelector('[data-opt="mode"] .chip.active');
     await shot(p, 'window-home', { full: true });
     await p.context().close();
 
@@ -489,6 +489,12 @@ const scenarios = {
       }
 
       if (!shotSold && await host.isVisible('.stamp-sold')) { await shot(host, 'window-sold', { full: true }); shotSold = true; }
+      // склад суперника посеред вікна: вкладка над полем
+      if (guard === 12 && await host.isVisible('#squad-tabs .sq-tab:not(.active)')) {
+        await host.click('#squad-tabs .sq-tab:not(.active)');
+        await shot(host, 'window-rival', { full: true });
+        await host.click('#squad-tabs .sq-tab:first-child');
+      }
       await host.waitForTimeout(400);
     }
     await host.waitForSelector('#screen-final:not(.hidden)');

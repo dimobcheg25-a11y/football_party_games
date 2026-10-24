@@ -9,11 +9,13 @@
     overall: L('⭐ Загальний рейтинг', '⭐ Overall rating'), value: L('💶 Пікова вартість', '💶 Peak value'), goals: L('⚽ Голи', '⚽ Goals'),
     assists: L('🎯 Асисти', '🎯 Assists'), trophies: L('🏆 Трофеї й нагороди', '🏆 Trophies & awards'),
   };
+  const BASIS_VISIBLE = false; // режими «Сила за» (вартість/голи/асисти/трофеї) приховано, поки переробляються; показати — true і прибрати hidden з #basis-field
   const MODERN_ONLY = L(' Лише сучасні гравці: у легенд цих даних немає.', ' Modern players only: legends lack this data.');
   const MODES = { all: L('🕰 Усі епохи', '🕰 All eras'), modern: L('📊 Сучасні', '📊 Modern') };
   // лінія поля для типу місця (0 — ворота … 3 — атака); крайні — по краях ряду
-  const LINE_OF = { GK: 0, CB: 1, FB: 1, D: 1, DM: 2, CM: 2, AM: 2, M: 2, W: 3, ST: 3, F: 3 };
-  const WIDE = new Set(['FB', 'W']);
+  const LINE_OF = { GK: 0, CB: 1, LB: 1, RB: 1, D: 1, DM: 2, CM: 2, AM: 2, M: 2, LW: 3, RW: 3, ST: 3, F: 3 };
+  const LEFT = new Set(['LB', 'LW']);
+  const RIGHT = new Set(['RB', 'RW']);
   const ROMANO = `/api/img?u=${encodeURIComponent('https://commons.wikimedia.org/wiki/Special:FilePath/Fabrizio_Romano,_2020_(cropped).jpg?width=200')}`;
 
   let state = null;
@@ -26,7 +28,7 @@
     fixSetup(setup) {
       if (!FORMATIONS[setup.formation]) setup.formation = '433';
       if (!MODES[setup.mode]) setup.mode = 'all';
-      if (!BASES[setup.basis]) setup.basis = 'overall';
+      if (!BASES[setup.basis] || !BASIS_VISIBLE) setup.basis = 'overall'; // вибір «Сила за» поки приховано — лише загальний рейтинг
     },
     hints: {
       formation: {
@@ -46,7 +48,7 @@
     },
     createOptions: (s) => ({ ...s, seconds: Number(s.seconds) }),
     optionList: (o) => [
-      BASES[o.basis] || BASES.overall,
+      ...(o.basis && o.basis !== 'overall' ? [BASES[o.basis]] : []),
       o.basis === 'value' || o.basis === 'assists' ? MODES.modern : MODES[o.mode],
       o.seconds ? L(`⏱ ${o.seconds} с на лот`, `⏱ ${o.seconds} s per lot`) : L('без таймера', 'no timer'),
       L('100 млн у кожного', '€100M each'),
@@ -292,30 +294,40 @@
         const it = s.lastLot.items.find((x) => x.winner === i);
         if (it) st = `<span class="st ok">${escapeHtml(surname(it.player))} · ${money(it.price)}</span>`;
       }
-      return `<li style="${seatStyle(i)}" class="${i === mySeat ? 'me' : ''} ${s.seats[i].connected ? '' : 'offline'}">
+      return `<li style="${seatStyle(i)}" class="${i === mySeat ? 'me' : ''} ${s.seats[i].connected ? '' : 'offline'} ${i === (viewSeat ?? mySeat) ? 'viewing' : ''}" data-seat="${i}" title="${L('Показати склад', 'Show squad')}">
         <span class="dot-p"></span><span class="nm">${escapeHtml(seatName(i))}<small>${s.squads[i].length} ${L('з', 'of')} ${s.slots.length}</small></span>${st}<b>${money(s.budgets[i])}</b></li>`;
     }).join('');
+    $('#scoreboard').querySelectorAll('[data-seat]').forEach((li) => li.addEventListener('click', () => { showSquad(Number(li.dataset.seat)); renderRivals(); }));
   }
 
-  // ── своє поле: ряди від атаки до воріт, на місці — фото, прізвище й ціна; місця під гравців лоту світяться
-  function arrange(idx) {
-    const wide = idx.filter((i) => WIDE.has(state.slots[i]));
-    const mid = idx.filter((i) => !WIDE.has(state.slots[i]));
-    return wide.length ? [wide[0], ...mid, ...wide.slice(1)] : mid;
+  // ── поле: свій склад або будь-якого суперника (вкладки над полем або клік у списку «У кімнаті»);
+  // ряди від атаки до воріт, на місці — фото, прізвище й ціна; на своєму — місця під гравців лоту світяться
+  let viewSeat = null; // чий склад на полі (null — свій)
+  function arrange(idx) { // ліві — зліва, праві — справа, решта посередині
+    const side = (i) => (LEFT.has(state.slots[i]) ? 0 : RIGHT.has(state.slots[i]) ? 2 : 1);
+    return [...idx].sort((a, b) => side(a) - side(b));
   }
   function renderPitch() {
     const s = state;
-    const mine = s.squads[mySeat] || [];
+    if (viewSeat != null && !s.seats[viewSeat]) viewSeat = null;
+    const seat = viewSeat ?? mySeat;
+    const own = seat === mySeat;
+    const tabs = [mySeat, ...present().filter((i) => i !== mySeat)];
+    $('#squad-tabs').innerHTML = tabs.map((i) => `<button type="button" role="tab" class="sq-tab ${i === seat ? 'active' : ''}" aria-selected="${i === seat}" data-seat="${i}" style="${seatStyle(i)}">
+        <span class="dot-p"></span>${i === mySeat ? L('Твій склад', 'Your squad') : escapeHtml(seatName(i))}</button>`).join('');
+    $('#squad-tabs').querySelectorAll('[data-seat]').forEach((b) => b.addEventListener('click', () => showSquad(Number(b.dataset.seat))));
+    const mine = s.squads[seat] || [];
     const bySlot = new Map(mine.map((x) => [x.slot, x]));
     const targets = new Set();
-    if (s.lot && (s.phase === 'bid' || s.phase === 'pick') && !(s.pick?.picks || []).some((x) => x.seat === mySeat)) {
+    if (own && s.lot && (s.phase === 'bid' || s.phase === 'pick') && !(s.pick?.picks || []).some((x) => x.seat === mySeat)) {
       s.lot.types.forEach((names, k) => {
         if (!canTake(k)) return;
         const i = s.slots.map((t, j) => j).find((j) => !bySlot.has(j) && names.includes(s.slotNames[s.slots[j]]));
         if (i != null) targets.add(i);
       });
     }
-    $('#my-budget').textContent = money(s.budgets[mySeat] ?? 0);
+    $('#my-budget').textContent = money(s.budgets[seat] ?? 0);
+    $('#my-pitch').classList.toggle('rival', !own);
     $('#my-pitch').innerHTML = [3, 2, 1, 0].map((line) => {
       const idx = arrange(s.slots.map((t, i) => i).filter((i) => LINE_OF[s.slots[i]] === line));
       return `<div class="p-row">${idx.map((i) => {
@@ -328,6 +340,11 @@
           </div>`;
       }).join('')}</div>`;
     }).join('');
+  }
+
+  function showSquad(seat) {
+    viewSeat = seat === mySeat ? null : seat;
+    renderPitch();
   }
 
   // ── стрічка BREAKING: останні трансфери

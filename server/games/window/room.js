@@ -1,13 +1,14 @@
 // Партія «Трансферне вікно» (2–8): спільна схема, аукціон із таємними ставками по лініях, потім сила складів і міні-ліга.
 // Лоти — випадкові гравці з пулу (500 найвідоміших: усі епохи або лише з повними даними з 2012), по лініях:
-// воротарі → захисники → півзахисники → атака; у лоті — гравець на позицію, яка ще комусь потрібна.
+// воротарі → захисники → півзахисники → атака, усередині — по одній позиції (усі ЦЗ, потім усі КЗ…): у лоті лише гравці цієї позиції,
+// і вона потрібна всім учасникам однаково — кожен отримує по гравцю, торги є за кожне місце.
 // Лот — «торг за право вибору»: гравців на одного більше, ніж учасників (удвох — троє), близької відомості (recognition).
 // Фази: bid (кожен, кому хтось із лоту підходить у вільне місце, таємно ставить MIN_BID…max за право обрати першим;
 // max = бюджет − PICK_PRICE за кожне інше порожнє місце; пасу немає — не поставив, ставка MIN_BID) → pick (по черзі ставок,
 // рівні — пріоритет по колу: перший обирає будь-кого й платить свою ставку, наступні — з тих, що лишились, за PICK_PRICE;
 // час вийшов або офлайн — випадковий) → sold (хто кого взяв і за скільки, усі ставки; хто лишився — назад у пул).
-// Лот — лише на позицію, яку можуть узяти щонайменше двоє (не торгуєшся сам із собою); якщо таких немає — гравець іде тому, кому
-// потрібен: торгів немає, він сам обирає одного з трьох схожих за AUTO_PRICE. Рівні ставки — пріоритет по колу (у кожному лоті — наступний гравець), його видно до ставки.
+// Позиція потрібна лише одному (решта вийшли з кімнати) — торгів немає, він сам обирає одного з трьох схожих за AUTO_PRICE.
+// Рівні ставки — пріоритет по колу (у кожному лоті — наступний гравець), його видно до ставки.
 // Сила гравців (rating.js) прихована до кінця вікна.
 // Кінець: склади з силою, «знахідка» й «переплата» вікна, матчі всіх з усіма (match.js) і таблиця.
 // Схема «Міні» — 7 місць (ВР, 2 захисники, 2 півзахисники, 2 нападники/вінгери), місця універсальні в межах лінії.
@@ -31,30 +32,33 @@ const AUTO_PRICE = 5; // позиція потрібна лише одному �
 const AUTO_CHOICE = 3; // і тоді він обирає одного з трьох схожих
 const ALLOWED_SECONDS = [10, 15, 20, 0]; // 0 — без таймера: торги закриваються, коли всі поставили, вибір чекає того, хто обирає
 const SOLD_MS = Number(process.env.WINDOW_SOLD_MS) || 3500;
-const UNSOLD_LIMIT = 4; // стільки лотів поспіль без ставок — далі лоти лінії розходяться автоматично тим, кому бракує
 
 // Місця схем. Тип місця → які позиції Transfermarkt на нього годяться.
 const FORMATIONS = {
-  '433': ['GK', 'CB', 'CB', 'FB', 'FB', 'DM', 'CM', 'CM', 'W', 'W', 'ST'],
-  '442': ['GK', 'CB', 'CB', 'FB', 'FB', 'CM', 'CM', 'W', 'W', 'ST', 'ST'],
-  '4231': ['GK', 'CB', 'CB', 'FB', 'FB', 'DM', 'DM', 'AM', 'W', 'W', 'ST'],
-  '352': ['GK', 'CB', 'CB', 'CB', 'FB', 'FB', 'DM', 'CM', 'CM', 'ST', 'ST'],
-  '4312': ['GK', 'CB', 'CB', 'FB', 'FB', 'DM', 'CM', 'CM', 'AM', 'ST', 'ST'],
+  '433': ['GK', 'CB', 'CB', 'LB', 'RB', 'DM', 'CM', 'CM', 'LW', 'RW', 'ST'],
+  '442': ['GK', 'CB', 'CB', 'LB', 'RB', 'CM', 'CM', 'LW', 'RW', 'ST', 'ST'],
+  '4231': ['GK', 'CB', 'CB', 'LB', 'RB', 'DM', 'DM', 'AM', 'LW', 'RW', 'ST'],
+  '352': ['GK', 'CB', 'CB', 'CB', 'LB', 'RB', 'DM', 'CM', 'CM', 'ST', 'ST'],
+  '4312': ['GK', 'CB', 'CB', 'LB', 'RB', 'DM', 'CM', 'CM', 'AM', 'ST', 'ST'],
   mini: ['GK', 'D', 'D', 'M', 'M', 'F', 'F'], // міні-футбол: 6 польових + воротар
 };
+// Тип місця → які позиції Transfermarkt на нього годяться. Кожна позиція — окремо (лівий і правий захисник, лівий і правий вінгер):
+// лот — гравці однієї позиції, і вона потрібна всім однаково.
 const SLOT_POS = {
-  GK: ['Goalkeeper'], CB: ['Centre-Back'], FB: ['Left-Back', 'Right-Back'],
+  GK: ['Goalkeeper'], CB: ['Centre-Back'], LB: ['Left-Back'], RB: ['Right-Back'],
   DM: ['Defensive Midfield'], CM: ['Central Midfield'], AM: ['Attacking Midfield'],
-  W: ['Left Winger', 'Right Winger', 'Left Midfield', 'Right Midfield'], ST: ['Centre-Forward', 'Second Striker'],
+  LW: ['Left Winger', 'Left Midfield'], RW: ['Right Winger', 'Right Midfield'], ST: ['Centre-Forward', 'Second Striker'],
 };
 // універсальні місця «Міні»: будь-хто зі своєї лінії
-SLOT_POS.D = [...SLOT_POS.CB, ...SLOT_POS.FB];
+SLOT_POS.D = [...SLOT_POS.CB, ...SLOT_POS.LB, ...SLOT_POS.RB];
 SLOT_POS.M = [...SLOT_POS.DM, ...SLOT_POS.CM, ...SLOT_POS.AM];
-SLOT_POS.F = [...SLOT_POS.W, ...SLOT_POS.ST];
-const LINES = [['GK'], ['CB', 'FB', 'D'], ['DM', 'CM', 'AM', 'M'], ['W', 'ST', 'F']];
+SLOT_POS.F = [...SLOT_POS.LW, ...SLOT_POS.RW, ...SLOT_POS.ST];
+const LINES = [['GK'], ['CB', 'LB', 'RB', 'D'], ['DM', 'CM', 'AM', 'M'], ['LW', 'RW', 'ST', 'F']];
+const TYPE_ORDER = LINES.flat(); // торги йдуть по позиціях у цьому порядку
 const SLOT_NAMES = {
-  GK: T('ВР', 'GK'), CB: T('ЦЗ', 'CB'), FB: T('КЗ', 'FB'), DM: T('ОП', 'DM'), CM: T('ЦП', 'CM'), AM: T('АП', 'AM'), W: T('ВІН', 'W'), ST: T('НАП', 'ST'),
-  D: T('ЗАХ', 'DEF'), M: T('ПЗ', 'MID'), F: T('АТ', 'FWD'),
+  GK: T('ВР', 'GK'), CB: T('ЦЗ', 'CB'), LB: T('ЛЗ', 'LB'), RB: T('ПЗ', 'RB'), DM: T('ОП', 'DM'), CM: T('ЦП', 'CM'), AM: T('АП', 'AM'),
+  LW: T('ЛВ', 'LW'), RW: T('ПВ', 'RW'), ST: T('НАП', 'ST'),
+  D: T('ЗАХ', 'DEF'), M: T('ПІВ', 'MID'), F: T('АТ', 'FWD'),
 };
 const LINE_NAMES = [T('Воротарі', 'Goalkeepers'), T('Захисники', 'Defenders'), T('Півзахисники', 'Midfielders'), T('Атака', 'Attack')];
 
@@ -87,7 +91,6 @@ class WindowRoom extends BaseRoom {
     this.lastLot = null; // { items: [{ id, player, winner, price, order }], leftover: [player], bids: { seat: amount }, auto, priority }
     this.news = []; // стрічка BREAKING: останні продажі
     this.used = new Set();
-    this.unsoldRun = 0;
     this.deadline = null;
     this.result = null;
   }
@@ -175,30 +178,21 @@ class WindowRoom extends BaseRoom {
     this.bids = new Map();
     this.pick = null;
     this.deadline = null;
-    // лінія, у якій комусь ще бракує гравців
-    while (this.line < LINES.length && !this.presentSeats().some((s) => this.freeSlots(s, LINES[this.line]).length)) {
-      this.line++;
-      this.unsoldRun = 0;
-    }
-    if (this.line >= LINES.length) return this.finish();
-    const types = LINES[this.line];
-    const need = this.presentSeats().filter((s) => this.freeSlots(s, types).length);
-    const neededTypes = [...new Set(need.flatMap((s) => this.freeSlots(s, types).map((i) => this.slots[i])))];
-    const candidates = this.pool.filter((p) => !this.used.has(p.id) && neededTypes.some((t) => fits(p, t)));
-    if (!candidates.length) return this.fillRest(need, types);
-    // на торги — лише ті, кого можуть узяти щонайменше двоє; немає таких (позиція потрібна одному) або лоти довго
-    // не продаються — гравець іде автоматично тому, кому потрібен, за AUTO_PRICE
-    const contested = candidates.filter((p) => this.eligibleFor(p).length >= 2);
-    if (!contested.length || this.unsoldRun >= UNSOLD_LIMIT) {
-      const p = rand(contested.length ? contested : candidates);
-      return this.autoSell(rand(this.eligibleFor(p).filter((s) => need.includes(s))), p);
-    }
-    // учасники — хто може взяти когось зі спірних; гравців на одного більше, ніж учасників (удвох — троє)
-    const people = need.filter((s) => contested.some((p) => this.eligibleFor(p).includes(s)));
-    const count = Math.min(MAX_SHOWN, people.length + 1);
-    // близької відомості: якір — випадковий, решта — випадкові з NEAR найближчих до нього за recognition
-    const anchor = rand(contested);
-    const near = contested.filter((p) => p.id !== anchor.id)
+    // торги — по одній позиції за раз (ВР, ЦЗ, КЗ, ОП…): схема в усіх однакова, тож позиція потрібна всім однаково —
+    // кожен учасник отримує по гравцю, і торги є за кожне місце
+    const type = TYPE_ORDER.find((t) => this.presentSeats().some((s) => this.freeSlots(s, [t]).length));
+    if (!type) return this.finish();
+    this.line = LINES.findIndex((l) => l.includes(type));
+    const need = this.presentSeats().filter((s) => this.freeSlots(s, [type]).length);
+    const candidates = this.pool.filter((p) => !this.used.has(p.id) && fits(p, type));
+    if (!candidates.length) return this.fillRest(need, [type]);
+    // позиція потрібна лише одному (решта вийшли з кімнати) — без торгів, сам обирає з трьох за AUTO_PRICE
+    if (need.length < 2) return this.autoSell(need[0], rand(candidates));
+    // гравців на одного більше, ніж учасників (удвох — троє); близької відомості: якір — випадковий,
+    // решта — випадкові з NEAR найближчих до нього за recognition
+    const count = Math.min(MAX_SHOWN, need.length + 1);
+    const anchor = rand(candidates);
+    const near = candidates.filter((p) => p.id !== anchor.id)
       .sort((a, b) => Math.abs(this.fame(a) - this.fame(anchor)) - Math.abs(this.fame(b) - this.fame(anchor)))
       .slice(0, Math.max(NEAR, count - 1));
     const players = [anchor];
@@ -206,8 +200,7 @@ class WindowRoom extends BaseRoom {
     players.sort(() => Math.random() - 0.5); // якір — не завжди перший
     players.forEach((p) => this.used.add(p.id));
     this.lotNo++;
-    const eligible = players.map((p) => this.eligibleFor(p));
-    this.lot = { players, eligible, people: [...new Set(eligible.flat())], auto: false };
+    this.lot = { players, eligible: players.map(() => need), people: need, type, auto: false };
     this.phase = 'bid';
     if (this.options.seconds) {
       const ms = this.options.seconds * 1000;
@@ -226,7 +219,9 @@ class WindowRoom extends BaseRoom {
 
   // Позиція потрібна лише одному: торгів немає, але він сам обирає одного з AUTO_CHOICE схожих за AUTO_PRICE
   autoSell(seat, p) {
-    const own = this.pool.filter((x) => x.id !== p.id && !this.used.has(x.id) && this.freeSlots(seat).some((k) => fits(x, this.slots[k])))
+    const type = this.slots[this.freeSlots(seat).find((k) => fits(p, this.slots[k]))];
+    this.line = LINES.findIndex((l) => l.includes(type));
+    const own = this.pool.filter((x) => x.id !== p.id && !this.used.has(x.id) && fits(x, type))
       .sort((a, b) => Math.abs(this.fame(a) - this.fame(p)) - Math.abs(this.fame(b) - this.fame(p))).slice(0, NEAR);
     const players = [p];
     while (players.length < AUTO_CHOICE && own.length) players.push(own.splice(Math.floor(Math.random() * own.length), 1)[0]);
@@ -364,7 +359,6 @@ class WindowRoom extends BaseRoom {
     const items = this.pick.picks.map((x, n) => ({ id: players[x.i].id, player: this.lotPlayer(players[x.i]), winner: x.seat, price: x.price, order: n }));
     const leftover = players.filter((p, i) => !taken.has(i));
     leftover.forEach((p) => this.used.delete(p.id));
-    if (items.length) this.unsoldRun = 0; else this.unsoldRun++;
     this.lastLot = {
       items, auto: this.lot.auto, priority: this.pick.priority,
       leftover: leftover.map((p) => this.lotPlayer(p)),
