@@ -30,7 +30,7 @@ const pick = (rand, list, weight) => {
   return list[list.length - 1];
 };
 
-// Гравець для матчу: сила, лінія і частоти. rate(p) → сила 40…99 за режимом гри (типово — загальний рейтинг)
+// Гравець для матчу: сила, лінія і частоти. rate(p) → сила (від 40; «сила за» — 40…99) за режимом гри (типово — загальний рейтинг)
 function matchPlayer(p, rate) {
   const base = ratingOf(p) || { rating: 60, group: 'CM' };
   const r = { ...base, rating: rate ? rate(p) ?? base.rating : base.rating };
@@ -42,7 +42,10 @@ function matchPlayer(p, rate) {
   };
 }
 
-const avg = (list) => (list.length ? list.reduce((s, x) => s + x.rating, 0) / list.length : 60);
+// Сила понад 95 (легенди — до ~126) у матчі важить наполовину: розрив видно в числах, але один гравець не робить розгром
+const PEAK = 95;
+const eff = (r) => (r > PEAK ? PEAK + (r - PEAK) / 2 : r);
+const avg = (list) => (list.length ? list.reduce((s, x) => s + eff(x.rating), 0) / list.length : 60);
 // Сила команди: середня і по лініях (воротар рахується в обороні з подвійною вагою)
 function strength(squad) {
   const def = squad.filter((x) => x.line === 'def');

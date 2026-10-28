@@ -383,7 +383,7 @@
   let tab = 'squads';
   let matchNo = 0;
 
-  const ratingCls = (r) => (r >= 90 ? 'r-elite' : r >= 82 ? 'r-good' : r >= 72 ? 'r-mid' : 'r-low');
+  const ratingCls = (r) => (r >= 100 ? 'r-elite r-legend' : r >= 90 ? 'r-elite' : r >= 82 ? 'r-good' : r >= 72 ? 'r-mid' : 'r-low');
   function renderFinal() {
     const s = state;
     const r = s.result;
@@ -423,7 +423,7 @@
       <div class="deals">${deal(r.bargain, 'good', L('Знахідка вікна', 'Bargain of the window'))}${deal(r.overpay, 'bad', L('Переплата', 'Overpay'))}</div>
       <p class="hint center">${r.basis && r.basis !== 'overall'
     ? L(`Сила за режимом «${BASES[r.basis]}»: місце гравця за цим показником серед усіх гравців вікна → 40–99 (число під іменем).`, `Strength by “${BASES[r.basis]}”: the player’s place by this stat among all players in the window → 40–99 (the number under the name).`)
-    : L('Сила 40–99 рахується з реальної кар’єри: голи, асисти, сухі матчі й картки (з 2012), трофеї, особисті нагороди з урахуванням сили ліги того року, «Золотий м’яч», рівень клубів, пікова вартість — з вагами під позицію.', 'Strength 40–99 comes from the real career: goals, assists, clean sheets and cards (since 2012), trophies, individual awards weighted by the strength of that league that year, the Ballon d’Or, club level, peak value — weighted by position.')}</p>`;
+    : L('Сила (від 40, без стелі) рахується з реальної кар’єри: голи, асисти, сухі матчі й картки (з 2012), трофеї, особисті нагороди з урахуванням сили ліги того року, «Золотий м’яч», рівень клубів, пікова вартість — з вагами під позицію. Легенди з видатними досягненнями — понад 100.', 'Strength (from 40, no ceiling) comes from the real career: goals, assists, clean sheets and cards (since 2012), trophies, individual awards weighted by the strength of that league that year, the Ballon d’Or, club level, peak value — weighted by position. Legends with outstanding achievements go above 100.')}</p>`;
   }
 
   function matchesHtml() {

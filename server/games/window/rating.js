@@ -1,4 +1,4 @@
-// «Трансферне вікно»: сила гравця 40…99 залежно від позиції. Гравцям у грі формула не показується — лише число після вікна.
+// «Трансферне вікно»: сила гравця від 40 (стелі немає: легенди — понад 100) залежно від позиції. Гравцям у грі формула не показується — лише число після вікна.
 //
 // Кожен показник → перцентиль серед гравців тієї ж групи позицій (воротарі з воротарями…) у довідковому пулі,
 // потім зважена сума за WEIGHTS групи. Показника немає (легенди до 2012 — без сухих матчів, карток, хвилин) — його вага
@@ -243,6 +243,11 @@ const REF_SIZE = 1500;
 const CALIBRATION = 700; // середній з них у своїй групі = RATING_MID
 const RATING_MID = 76;
 const RATING_STEP = 8; // за одне стандартне відхилення
+// Бонус легендарності: позиційна сила порівнює лише з «своїми» (і стискає верхівку — log, Z_CLIP), тож Мессі й Роберто Карлос
+// однакові. Досягнення (лінійно, без обрізання) порівнюємо з усіма позиціями разом: хто вище LEGACY_FROM відхилень — +LEGACY_STEP за кожне.
+const LEGACY = { ballon: 0.4, awards: 0.3, trophies: 0.15, fame: 0.15 };
+const LEGACY_FROM = 2;
+const LEGACY_STEP = 2.5;
 let cache = null;
 function build() {
   const ref = players.filter((p) => groupOf(p)).map((p) => ({ p, r: recognition(p) }))
@@ -284,7 +289,16 @@ function build() {
     const cal = rows.filter((r) => r.g === g && known.has(r.p.id)).map((r) => r.score);
     const mean = cal.reduce((s, v) => s + v, 0) / (cal.length || 1);
     const sd = Math.sqrt(cal.reduce((s, v) => s + (v - mean) ** 2, 0) / (cal.length || 1)) || 1;
-    for (const r of rows) if (r.g === g) r.rating = Math.max(40, Math.min(99, Math.round(RATING_MID + RATING_STEP * ((r.score - mean) / sd))));
+    for (const r of rows) if (r.g === g) r.base = RATING_MID + RATING_STEP * ((r.score - mean) / sd);
+  }
+  const lst = Object.fromEntries(Object.keys(LEGACY).map((k) => {
+    const vs = rows.map((r) => r.m[k] || 0);
+    const mean = vs.reduce((s, v) => s + v, 0) / vs.length;
+    return [k, { mean, sd: Math.sqrt(vs.reduce((s, v) => s + (v - mean) ** 2, 0) / vs.length) || 1 }];
+  }));
+  for (const r of rows) {
+    r.legacy = Object.entries(LEGACY).reduce((s, [k, w]) => s + w * ((r.m[k] || 0) - lst[k].mean) / lst[k].sd, 0);
+    r.rating = Math.max(40, Math.round(r.base + LEGACY_STEP * Math.max(0, r.legacy - LEGACY_FROM)));
   }
   return new Map(rows.map((r) => [r.p.id, r]));
 }

@@ -222,6 +222,7 @@ input::placeholder { color: color-mix(in srgb, var(--muted) 70%, transparent); }
 .tc-price { font-size: 11px; color: var(--muted); white-space: nowrap; }
 .tc-r { width: 40px; text-align: center; padding: 4px 0; font-size: 15px; }
 .r-elite { background: var(--accent); color: var(--accent-ink); }
+.r-legend { box-shadow: inset 0 0 0 2px var(--live); } /* легенди: сила 100+ */
 .r-good { background: #2a3442; color: var(--text); }
 .r-mid { background: #1a212c; color: var(--text); }
 .r-low { background: #3a1c20; color: #ff9aa0; }

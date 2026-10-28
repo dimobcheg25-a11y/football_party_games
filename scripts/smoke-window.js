@@ -51,9 +51,16 @@ async function main() {
     assert.strictEqual(pool.length, 500, `пул ${mode}: 500`);
     for (const p of pool) {
       const r = R.ratingOf(p);
-      assert.ok(r && r.rating >= 40 && r.rating <= 99, `${p.id}: сила 40…99`);
+      assert.ok(r && r.rating >= 40 && r.rating <= 140, `${p.id}: сила 40…140 (стелі 99 немає, легенди — понад 100)`);
       assert.ok(Object.values(FORMATIONS).flat().some((t) => fits(p, t)), `${p.id}: підходить хоч на одне місце`);
       if (mode === 'modern') assert.ok(r.modern, `${p.id}: у сучасному — повні дані`);
+    }
+    if (mode === 'all') {
+      // бонус легендарності: верхівка не впирається в одну стелю, понад 100 — лише одиниці
+      const rt = (id) => R.ratingOf(byId(id)).rating;
+      assert.ok(rt('lionel-messi') > rt('cristiano-ronaldo') && rt('cristiano-ronaldo') > rt('paolo-maldini') && rt('paolo-maldini') > rt('lilian-thuram'), 'Мессі > Роналду > Мальдіні > Тюрам');
+      const over = pool.filter((p) => R.ratingOf(p).rating > 100).length;
+      assert.ok(over >= 3 && over <= 25, `понад 100 — одиниці (${over})`);
     }
     // кожного типу місця вистачає на 8 гравців з найжаднішою схемою
     for (const t of ['GK', 'CB', 'LB', 'RB', 'DM', 'CM', 'AM', 'LW', 'RW', 'ST']) {
@@ -82,7 +89,8 @@ async function main() {
     }
     assert.strictEqual(m.events.filter((e) => e.type === 'goal' && e.team === 0).length, m.score[0], 'голи в протоколі = рахунок');
   }
-  assert.ok(goals / 400 > 2 && goals / 400 < 3.6, `голів за матч ${goals / 400}`);
+  // A — збірна зірок (з бонусом легендарності сильніша), тож межа ширша, ніж для випадкових складів (там ~3,7)
+  assert.ok(goals / 400 > 2 && goals / 400 < 4.3, `голів за матч ${goals / 400}`);
   assert.ok(reds / 400 < 0.3, `червоних за матч ${reds / 400}`);
   console.log(`✓ матч: seed відтворюється, ${(goals / 400).toFixed(2)} гола і ${(reds / 400).toFixed(2)} червоної за матч`);
 
@@ -204,7 +212,7 @@ async function main() {
   const r = st.result;
   assert.strictEqual(r.teams.length, 3);
   for (const t of r.teams) {
-    assert.ok(t.players.every((x) => x.rating >= 40 && x.rating <= 99 && x.player.name), 'сила кожного гравця відкрита');
+    assert.ok(t.players.every((x) => x.rating >= 40 && x.rating <= 140 && x.player.name), 'сила кожного гравця відкрита');
     assert.ok(t.strength.total > 40 && t.strength.att > 0, 'сила команди й ліній');
   }
   assert.ok(r.bargain && r.overpay && r.bargain.id !== r.overpay.id, 'знахідка й переплата');
