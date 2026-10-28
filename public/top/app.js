@@ -5,7 +5,7 @@
   const CATEGORY_LABELS = {
     transfers: L('💶 Трансфери', '💶 Transfers'), goals: L('⚽ Голи', '⚽ Goals'), assists: L('🎯 Асисти', '🎯 Assists'),
     apps: L('👕 Матчі й кар’єра', '👕 Appearances & career'), cards: L('🟨 Картки', '🟨 Cards'),
-    trophies: L('🏆 Трофеї', '🏆 Trophies'), ballon: L('🥇 Золотий м’яч', '🥇 Ballon d’Or'), height: L('📏 Зріст', '📏 Height'),
+    trophies: L('🏆 Трофеї', '🏆 Trophies'), ballon: L('🥇 Золотий м’яч', '🥇 Ballon d’Or'), awards: L('🏅 Нагороди', '🏅 Awards'), height: L('📏 Зріст', '📏 Height'),
   };
   const MODE_LABELS = { own: L('кожен свій топ', 'everyone their own top'), turns: L('спільний топ по черзі', 'one shared top, taking turns') };
   const LEVEL_LABELS = {

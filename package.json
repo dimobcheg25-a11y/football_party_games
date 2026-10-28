@@ -21,6 +21,7 @@
     "build-honours": "node scripts/build-honours.js",
     "build-assists": "node scripts/build-assists.js",
     "build-ballon": "node scripts/build-ballon.js",
+    "build-awards": "node scripts/build-awards.js",
     "build-nicknames": "node scripts/build-nicknames.js",
     "build-kits": "node scripts/build-kits.js",
     "fetch-category-images": "node scripts/fetch-category-images.js",

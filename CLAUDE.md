@@ -26,10 +26,10 @@ Node 18+, Express + Socket.IO, клієнт — чистий HTML/CSS/JS без 
   Футболіст і роль — лише в `privateState`; хто зайшов посеред матчу — грає з наступного; вихід шпигуна до підрахунку — матч скасовано.
 - `server/games/top/` — «Топ-10»: `tops.js` (усі теми-топи будуються з бази при старті: трансфери — найдорожчі, українців, покупки/продажі
   клубу, покупки клубів ліги, сума за кар'єру, макс. вартість; голи й матчі за клуб, голи за клуби країни, бомбардири й матчі за збірну,
-  бомбардири ЧС/Євро/Копа/ЛЧ/ЛЄ з `tournaments.json`; асисти, гол+пас, рекорди сезону, картки — `stats.json` (з 2012/13);
+  бомбардири ЧС/Євро/Копа/ЛЧ/ЛЄ з `tournaments.json`; категорія `awards` — символічна збірна FIFPRO (скільки разів, за лініями) і Golden Boy (переможці, їх пік вартості й місце в «Золотому м'ячі») з `awards.json`; асисти, гол+пас, рекорди сезону, картки — `stats.json` (з 2012/13);
   «хто найбільше асистував X» / «кому асистував X» (топ-400, `assists.json`, тип `player`); «Золотий м'яч» — `ballon.json`: трійка/десятка/рейтинг, без перемоги,
   українці, збірні, рейтинг окремого року (тип `year`); зріст — найвищі/найнижчі, за позицією, клубами категорій і збірними;
-  трансфери за віком/позицією/збірною/десятиліттям/між лігами; «мандрівники». Категорії: transfers, goals, assists, apps, cards, trophies, ballon, height.
+  трансфери за віком/позицією/збірною/десятиліттям/між лігами; «мандрівники». Категорії: transfers, goals, assists, apps, cards, trophies, ballon, awards, height.
   Рядок топу з `p: null` (гравця немає в базі) — відкритий одразу з `name`, без очок; тема годиться для розміру, якщо таких ≤25% (`fitsSize`);
   до 20 рядків; росію/білорусь не загадуємо; однакові назви клубів — з містом (`CITY`) або країною), `room.js` (серія раундів, топ 5/10/20,
   очки за місце 1→10 (нижчі — більше); режими `own` — кожен свій топ, `turns` — спільний по черзі з життями; життя й таймер (раунду/ходу)
@@ -37,7 +37,7 @@ Node 18+, Express + Socket.IO, клієнт — чистий HTML/CSS/JS без 
   `skipTopic` — господар міняє тему, поки в раунді ніхто нічого не назвав (`state.canSkip`)). Теми вартості — «Пік ринкової вартості» (`maxValue`), трансфери — сума переходу; це сказано в `note`.
 - `server/games/duel/` — «Один на один»: `questions.js` (питання `{ id, group, title, unit, note, value(p), show(v, p), gap }` у 8 групах — особисте (вік, зріст з `facts.json`),
   кар'єра, збірна, гроші, статистика з 2012 (`stats.json`, лише хто почав з 2012), трофеї (`honours`: усього, чемпіонати, ЛЧ; турніри зі збірною — теж звідти;
-  «Золотий м'яч» з `ballon.json`: разів у десятці, найвище місце — значення «100 − місце»), популярність (`rawFame`, перегляди `facts.views`), Instagram
+  «Золотий м'яч» з `ballon.json`: разів у десятці, найвище місце — значення «100 − місце»; разів у збірній FIFPRO — `awards.json`), популярність (`rawFame`, перегляди `facts.views`), Instagram
   (`manual-instagram.js`, пари лише ≥ ×1.3); без даних — питання/група недоступні (`/api/duel/categories`); пул — `poolFor` без росії/білорусі; `makePair` — рівні пар
   легко ≥ ×1.5 / складно ≤ 20 % (або свої абсолютні пороги), однакових значень немає), `room.js` (соло `streak` — переможець лишається, до кінця життів 1/3; соло `rounds` 10/20, +1;
   таймер 5/10/15 с або без нього (і в соло: не встиг — помилка); кімната 2–10 — одночасно, +1 і +1 найшвидшому правильному; числа (`values`) і чужий вибір — лише після `reveal`, свій — `privateState.myPick`).
@@ -82,7 +82,7 @@ Node 18+, Express + Socket.IO, клієнт — чистий HTML/CSS/JS без 
 - `server/games/window/` — «Трансферне вікно» (2–8, лише кімната): `rating.js` (прихована сила 40…99: показники гравця → z у своїй групі позицій (GK/CB/FB/DM/CM/AM/FW)
   серед 1500 найвідоміших, лічильники через log; ваги позицій `WEIGHTS` (погоджено з користувачем) × важливість `IMPORTANCE` (нагороди, «Золотий м'яч», вартість, відомість —
   більше; перемоги, трофеї, рівень клубу — менше); нема показника — вага випадає, `SHRINK` тягне до середнього; нагороди — `awardKind` (світові ×3, континентальні ×2,
-  ліги ×2 × сила ліги того року з `uefa-ranks.json`); `windowPool(mode)` — 500 найвідоміших (`modern` — з повними даними з 2012); `basisTable` — «сила за» одним
+  ліги ×2 × сила ліги того року з `uefa-ranks.json`; FIFPRO World 11 (×3) і Golden Boy (×1,5) — з `awards.json`, однойменні записи «Honours» не рахуються — `awardList`); `windowPool(mode)` — 500 найвідоміших (`modern` — з повними даними з 2012); `basisTable` — «сила за» одним
   показником (вартість/голи/асисти/трофеї+нагороди → місце в пулі; вартість і асисти — лише сучасний пул)), `match.js` (умовний матч: сила ліній, 6 відрізків по 15 хв,
   автори голів/асистів/карток — за частотою гравця, seed; `league` — усі з усіма), `room.js` (схема — господар у лобі (`formation`), «Міні» — 7 універсальних місць; позиції — окремо: ВР, ЦЗ, ЛЗ, ПЗ, ОП, ЦП, АП, ЛВ, ПВ, НАП (`SLOT_POS`);
   клієнт: над полем — вкладки складів (свій і кожного суперника, `viewSeat`); вибір «Сила за» приховано (`BASIS_VISIBLE`, `#basis-field`) — лише загальний рейтинг;
@@ -94,7 +94,7 @@ Node 18+, Express + Socket.IO, клієнт — чистий HTML/CSS/JS без 
   (відхилення від прямої ціна→сила), матчі й таблиця; свої ставки — `privateState.myBids`).
 - `server/data/` — спільна база футболістів і категорій для всіх ігор (`index.js` — завантаження, `categories.js`, ручні правки в `manual-tags.js`;
   `derived-tags.js` — категорії з зібраних даних при завантаженні: A100 (+ асисти TM), UCL30, T80, JOURNEY (10+ різних клубів), H190/H170 (зріст, `facts.json`),
-  BDO3/BDO10 (трійка/десятка «Золотого м'яча», `ballon.json`; `home` — не ставляться з BALLON), AS_* (тип `partner`: асистував зірці з `partnerOf`, фото категорії —
+  BDO3/BDO10 (трійка/десятка «Золотого м'яча», `ballon.json`; `home` — не ставляться з BALLON; 1-е місце → ще й BALLON), W11 (символічна збірна FIFPRO) і GBOY (Golden Boy) — `awards.json`, AS_* (тип `partner`: асистував зірці з `partnerOf`, фото категорії —
   фото зірки; у «Перехресті» — макс. одна, у «Четвірках» — рідше, `RARE`), і
   `cleanCareers` — прибирає з кар'єр клуби з 0 матчів, крім поточного; клуб, з якого гравець їздив в оренди, ставить після оренд у межах його років;
   той самий клуб двічі поспіль зливає в один етап; той самий об'єкт careers.json бачать усі ігри;
@@ -137,6 +137,7 @@ Node 18+, Express + Socket.IO, клієнт — чистий HTML/CSS/JS без 
   `photo-report` + `approved`) → `manual-shots.js` і `shots.json`, задачі закриває (токен — `git credential fill`);
   `scripts/build-assists.js` → `assists.json` (події матчів transfermarkt-datasets, ~з 2012/13: `to[tm]` — хто асистував гравцю бази (усі), `by[tm]` — кому асистував,
   `duos`; рядок [tm, передач, tm клубу]); `scripts/build-uefa-ranks.js` → `uefa-ranks.json` (коефіцієнти країн УЄФА з 1979 з kassiesa.net: { рік: { країна: [місце, частка від лідера] } } — сила ліги того року);
+  `scripts/build-awards.js` → `awards.json` (`fifpro` { рік: [[id | null, GK/DF/MF/FW, ім'я]] } — FIFA FIFPRO Men's World 11 з 2005; `goldenBoy` { рік: [id | null, ім'я] } з 2003; en.wikipedia);
   `scripts/build-ballon.js` → `ballon.json` ({ рік: [[id | null, місце, очки | null, ім'я]] }, статті «YYYY Ballon d'Or» en.wikipedia;
   2010–15 — без очок; росіян/білорусів (і радянських, народжених там) немає); `scripts/build-kits.js` → `kits.json` (шаблон {{Football kit}}: `match[id]` — форма в матчі,
   `team[qid]` — основна + `away`; { body, arms, pattern — файл Commons «Kit body_…png» }); зріст, якого немає у Wikidata, — `build-facts --tm` (Transfermarkt);
@@ -262,7 +263,7 @@ actions: { start, guess, ... : (room, seat, payload) => ({ ok } | { error }) }, 
 
 ## Команди
 - `npm test` — прогін усіх перевірок (~3 хв). Обов'язково перед комітом; запускати у фоні, вивід — у файл і `grep ПРОЙШЛИ|✗`.
-- Оновити базу: `npm run build-players` (≈15 хв) → `npm run build-careers` (≈10 хв; кар'єри з таблиць en.wikipedia) → `npm run fetch-photos`; `npm run build-transfers` (≈1 хв); `npm run build-tournaments` (≈1 хв); `npm run build-stats` (≈2 хв, після build-transfers); `npm run build-coaches` (≈1 хв); `npm run build-names-en` (≈5 хв, англійські назви клубів, після build-careers); `npm run build-honours` (≈4 хв, трофеї й особисті нагороди з роками — `ind`); `npm run build-uefa-ranks` (≈30 с, сила ліг за роками); `npm run build-facts` (≈10 хв: зріст, дата народження, перегляди Вікіпедії → `facts.json`; `-- --tm` — лише дописати зріст з Transfermarkt, ≈10 с); `npm run build-assists` (≈1 хв, після build-transfers); `npm run build-ballon` (≈2 хв); `npm run build-kits` (≈2 хв, після build-lineups); `npm run build-nicknames` (≈15 хв, лише кандидати для `manual-nicknames.js`); `npm run build-lineups` (≈3 хв, склади матчів, після build-players і build-careers); `npm run build-shots` (≈20 хв уперше, фото «Фотоархіву», після build-players); `npm run apply-shot-reports` (схвалені звіти гравців про фото). Instagram — вручну в `server/data/manual-instagram.js`.
+- Оновити базу: `npm run build-players` (≈15 хв) → `npm run build-careers` (≈10 хв; кар'єри з таблиць en.wikipedia) → `npm run fetch-photos`; `npm run build-transfers` (≈1 хв); `npm run build-tournaments` (≈1 хв); `npm run build-stats` (≈2 хв, після build-transfers); `npm run build-coaches` (≈1 хв); `npm run build-names-en` (≈5 хв, англійські назви клубів, після build-careers); `npm run build-honours` (≈4 хв, трофеї й особисті нагороди з роками — `ind`); `npm run build-uefa-ranks` (≈30 с, сила ліг за роками); `npm run build-facts` (≈10 хв: зріст, дата народження, перегляди Вікіпедії → `facts.json`; `-- --tm` — лише дописати зріст з Transfermarkt, ≈10 с); `npm run build-assists` (≈1 хв, після build-transfers); `npm run build-ballon` (≈2 хв; після церемонії — перезібрати, нові переможці отримають BALLON самі); `npm run build-awards` (≈20 с, FIFPRO World 11 і Golden Boy); `npm run build-kits` (≈2 хв, після build-lineups); `npm run build-nicknames` (≈15 хв, лише кандидати для `manual-nicknames.js`); `npm run build-lineups` (≈3 хв, склади матчів, після build-players і build-careers); `npm run build-shots` (≈20 хв уперше, фото «Фотоархіву», після build-players); `npm run apply-shot-reports` (схвалені звіти гравців про фото). Instagram — вручну в `server/data/manual-instagram.js`.
 - `npm run dev` — локальний сервер з перезапуском.
 - `npm run ui-check -- [hub|top|spy|guess|duel|allin|path|lineup|archive|sketch|fours|handshake|crossroads] [--mobile]` — справжній Chrome без вікна (playwright-core + встановлений Chrome; окремий процес,
   браузер користувача не чіпає): проходить основні екрани, ловить помилки JS, знімки — у `.shots/` (не в git). Перед пушем UI-змін запускати

@@ -109,6 +109,10 @@ const QUESTIONS = [
     ask: ask((n) => `Скільки разів ${n} потрапляв у десятку «Золотого м’яча»?`, (n) => `How many times did ${n} finish in the Ballon d’Or top 10?`), unit: UNITS.times, tol: { kind: 'abs', w: [0, 1, 2] },
   },
   {
+    id: 'fifpro', group: 'trophies', base: 'fifpro', label: T('Скільки разів у збірній FIFPRO?', 'FIFPRO World 11 selections?'),
+    ask: ask((n) => `Скільки разів ${n} потрапляв у символічну збірну року FIFPRO?`, (n) => `How many times was ${n} named in the FIFPRO World 11?`), unit: UNITS.times, tol: { kind: 'abs', w: [0, 1, 2] },
+  },
+  {
     id: 'wikiLangs', group: 'fame', base: 'wikiLangs', label: T('У скількох Вікіпедіях?', 'In how many Wikipedias?'),
     ask: ask((n) => `${n}: у скількох мовних розділах Вікіпедії є стаття про нього?`, (n) => `In how many Wikipedia languages is there an article about ${n}?`), unit: UNITS.langs, tol: RATIO,
   },

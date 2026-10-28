@@ -4,7 +4,7 @@
 // потім зважена сума за WEIGHTS групи. Показника немає (легенди до 2012 — без сухих матчів, карток, хвилин) — його вага
 // просто випадає, решта ділиться на суму наявних ваг: відсутні дані не штрафують.
 // Дані: stats.json (з 2012/13: хвилини, картки, сухі матчі, перемоги, ЛЧ), careers (голи й матчі за клуби і збірну, усі епохи),
-// honours.json (трофеї й особисті нагороди з роками), ballon.json, transfers.json (пікова вартість), uefa-ranks.json (сила ліг за роками).
+// honours.json (трофеї й особисті нагороди з роками), ballon.json, awards.json (FIFPRO World 11, Golden Boy), transfers.json (пікова вартість), uefa-ranks.json (сила ліг за роками).
 
 const { players } = require('../../data');
 const { careerOf, team, recognition } = require('../path/careers');
@@ -16,6 +16,7 @@ const load = (f, def) => { try { return require(f); } catch { return def; } };
 const stats = load('../../data/stats.json', { players: {} }).players;
 const transfers = load('../../data/transfers.json', {});
 const ballon = load('../../data/ballon.json', {});
+const awards = load('../../data/awards.json', { fifpro: {}, goldenBoy: {} });
 const ranks = load('../../data/uefa-ranks.json', {});
 
 // Позиція Transfermarkt → група з власними вагами. Крайні півзахисники — як атакувальні, вінгери — як нападники.
@@ -130,7 +131,9 @@ const AWARD_COUNTRY = [
 function awardKind(label) {
   if (AWARD_SKIP.test(label)) return [0, null];
   if (AWARD_MONTH.test(label)) return [0.15, null];
+  if (/^golden boy$/i.test(label)) return [1.5, null]; // головна молодіжна нагорода Європи — трохи більше за інші молодіжні
   const young = AWARD_YOUNG.test(label);
+  if (FIFPRO_RESERVE.test(label)) return [0.5, null]; // запасні збірні й номінанти FIFPRO
   if (AWARD_WORLD.test(label)) return [young ? 1 : 3, null];
   if (AWARD_CONT.test(label)) return [young ? 1 : 2, null];
   if (/golden foot/i.test(label)) return [0.5, null]; // нагорода за кар'єру
@@ -140,10 +143,25 @@ function awardKind(label) {
   if (AWARD_LEAGUE.test(label) && country) return [young ? 0.6 : 2, country];
   return [young ? 0.3 : 0.4, null];
 }
-function awardsScore(h) {
-  if (!h || !h.ind) return 0;
+// Символічна збірна FIFPRO і Golden Boy — з awards.json (повні списки), а не з «Honours» статей (там різні назви, пропуски й дублі).
+const FIFPRO_LABEL = /fifpro|^fifa men'?s world (11|xi)$/i;
+const FIFPRO_RESERVE = /fifpro.*(\d(st|nd|rd|th) team|nominee|reserve)/i;
+const GBOY_LABEL = /^golden boy( award)?$/i;
+const fifproYears = new Map();
+for (const [y, team] of Object.entries(awards.fifpro || {})) for (const [id] of team) if (id) (fifproYears.get(id) || fifproYears.set(id, []).get(id)).push(Number(y));
+const goldenBoyYear = new Map(Object.entries(awards.goldenBoy || {}).filter(([, [id]]) => id).map(([y, [id]]) => [id, Number(y)]));
+// Особисті нагороди гравця: [[назва, [роки]]] — null, якщо невідомо нічого
+function awardList(p, h) {
+  const own = [];
+  if (fifproYears.has(p.id)) own.push(['FIFPRO World 11', fifproYears.get(p.id)]);
+  if (goldenBoyYear.has(p.id)) own.push(['Golden Boy', [goldenBoyYear.get(p.id)]]);
+  if (!h?.ind && !own.length) return null;
+  return [...(h?.ind || []).filter(([l]) => !GBOY_LABEL.test(l) && !(FIFPRO_LABEL.test(l) && !FIFPRO_RESERVE.test(l))), ...own];
+}
+function awardsScore(list) {
+  if (!list) return 0;
   let sum = 0;
-  for (const [label, years] of h.ind) {
+  for (const [label, years] of list) {
     const [w, country] = awardKind(label);
     if (!w) continue;
     for (const y of years.length ? years : [null]) sum += country ? w * leagueStrength(country, y) : w;
@@ -211,7 +229,7 @@ function metricsOf(p) {
     caps: c?.nation ? c.nation.a || 0 : 0,
     intlGoals: c?.nation ? c.nation.g || 0 : 0,
     trophies,
-    awards: h ? awardsScore(h) : null,
+    awards: h || awardList(p, h) ? awardsScore(awardList(p, h)) : null,
     ballon: (ballonOf.get(p.id) || 0) + retroBallon(h) || (european === false && after95 < 5 ? null : 0),
     // рейтингом УЄФА покрито менше половини кар'єри (Еусебіо — лише кінець) — картина хибна, краще «невідомо»
     clubLevel: levelApps && covered >= years / 2 ? level / levelApps : null,
@@ -291,9 +309,10 @@ const BASES = {
 // лише рівня ліги й вище (awardKind ≥ 1): без клубних, місячних, молодіжних, «залів слави» й рекордів.
 function trophyCount(p) {
   const h = honoursOf(p);
-  if (!h) return 0;
-  let n = h.total || 0;
-  for (const [label, years] of h.ind || []) {
+  const list = awardList(p, h);
+  if (!h && !list) return 0;
+  let n = h?.total || 0;
+  for (const [label, years] of list || []) {
     const ballonWin = /^(france football'?s? )?ballon d'or$/i.test(label);
     if (ballonWin || awardKind(label)[0] >= 1) n += Math.max(1, years.length);
   }

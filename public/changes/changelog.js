@@ -3,6 +3,16 @@
 // Після кожного помітного для гравців коміту — дописати сюди пункт (дата — день деплою).
 window.CHANGELOG = [
   {
+    date: '2026-10-28',
+    items: [
+      { game: null, uk: '«Золотий м’яч» 2026 уже в базі: Гаррі Кейн тепер серед володарів трофея (у «Перехресті», «Четвірках» і всюди), а весь рейтинг 2026 — у «Топ-10», «Один на один», «All in» і в силі гравців «Трансферного вікна».', en: 'The 2026 Ballon d’Or is in: Harry Kane is now a Ballon d’Or winner (in “Crossroads”, “Four Fours” and everywhere else), and the full 2026 ranking is in “Top 10”, “One on One”, “All in” and in player strength for “Transfer Window”.' },
+      { game: 'top', uk: 'Нова категорія тем «🏅 Нагороди»: хто найчастіше потрапляв у символічну збірну року FIFPRO (усього й окремо захисники, півзахисники, нападники), переможці Golden Boy — від найновішого, за піком вартості й за місцем у «Золотому м’ячі».', en: 'A new topic category “🏅 Awards”: most FIFPRO World 11 selections (overall and by defenders, midfielders, forwards), Golden Boy winners — newest first, by peak value and by Ballon d’Or finish.' },
+      { game: 'duel', uk: 'Нове питання: хто частіше потрапляв у символічну збірну FIFPRO. Таке саме — в «All in».', en: 'A new question: who has more FIFPRO World 11 selections. The same one is in “All in” too.' },
+      { game: 'crossroads', uk: 'Нова категорія «Символічна збірна FIFPRO» (з рівня «Звичайний») — і в «Чотирьох четвірках». Golden Boy тепер точно в усіх переможців.', en: 'A new category “FIFPRO World 11” (from Normal up) — in “Four Fours” too. Golden Boy now covers every winner.' },
+      { game: 'window', uk: '«Трансферне вікно»: символічна збірна FIFPRO і Golden Boy тепер рахуються в силі гравця за повними списками — без дублів і пропусків.', en: '“Transfer Window”: FIFPRO World 11 and Golden Boy now count towards player strength from the full lists — no duplicates or gaps.' },
+    ],
+  },
+  {
     date: '2026-10-24',
     items: [
       { game: 'window', uk: '«Трансферне вікно»: атакувальні півзахисники (Де Брюйне, Мюллер, Ødegaard) тепер виходять на торги й у схемах 4-3-3, 4-4-2 і 3-5-2 — їх можна взяти на місце центрального півзахисника.', en: '“Transfer Window”: attacking midfielders (De Bruyne, Müller, Ødegaard) now come up for auction in 4-3-3, 4-4-2 and 3-5-2 too — they can fill a central midfield slot.' },

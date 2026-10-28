@@ -28,12 +28,18 @@ let tmClubs = {};
 let tournaments = {};
 let stats = { names: {}, comp: {}, club: {} };
 let ballon = {};
+let awards = { fifpro: {}, goldenBoy: {} };
 let facts = {};
 let assists = { names: {}, to: {}, by: {} };
 try {
   ballon = require('../../data/ballon.json');
 } catch {
   // рейтинги «Золотого м'яча» ще не зібрані (npm run build-ballon)
+}
+try {
+  awards = require('../../data/awards.json');
+} catch {
+  // FIFPRO World 11 і Golden Boy ще не зібрані (npm run build-awards)
 }
 try {
   facts = require('../../data/facts.json');
@@ -66,7 +72,7 @@ const SIZES = [5, 10, 20];
 const CATEGORIES = {
   transfers: T('Трансфери', 'Transfers'), goals: T('Голи', 'Goals'), assists: T('Асисти', 'Assists'),
   apps: T('Матчі й кар’єра', 'Appearances & career'), cards: T('Картки', 'Cards'), trophies: T('Трофеї', 'Trophies'),
-  ballon: T('Золотий м’яч', 'Ballon d’Or'), height: T('Зріст', 'Height'),
+  ballon: T('Золотий м’яч', 'Ballon d’Or'), awards: T('Нагороди', 'Awards'), height: T('Зріст', 'Height'),
 };
 // Скільки рядків топу можна відкрити одразу (гравців немає в базі): більше — тема для цього розміру не годиться.
 const MAX_MISSING = 0.25;
@@ -428,6 +434,30 @@ for (const [y, list] of Object.entries(ballon)) {
     p: id ? playerById.get(id) || null : null, name: name || null, value: 100 - place, text: placeT(place), detail: pts ? pointsT(pts) : null,
   })), BALLON_NOTE);
 }
+
+// ── нагороди (awards.json, Вікіпедія): символічна збірна FIFPRO (з 2005) і Golden Boy (з 2003)
+const FIFPRO_NOTE = T('FIFA FIFPRO World 11 — символічна збірна року, за яку голосують самі футболісти (з 2005 року).', 'FIFA FIFPRO Men’s World 11 — the team of the year voted for by players themselves (since 2005).');
+const fifproOf = new Map(); // id → [[рік, позиція]]
+for (const [y, team] of Object.entries(awards.fifpro || {})) {
+  for (const [id, pos] of team) if (id && playerById.get(id)) (fifproOf.get(id) || fifproOf.set(id, []).get(id)).push([Number(y), pos]);
+}
+const fifproCount = (id, title, filter = () => true) => addTopic(id, 'awards', title, [...fifproOf].map(([pid, list]) => {
+  const hits = list.filter(([, pos]) => filter(pos));
+  const text = yearsText(hits);
+  return { p: playerById.get(pid), value: hits.length, text: timesT(hits.length), detail: T(text, text) };
+}), FIFPRO_NOTE);
+fifproCount('fifpro', T('Найбільше разів у символічній збірній FIFPRO', 'Most FIFPRO World 11 selections'));
+fifproCount('fifpro-pos:DF', T('Найбільше разів у збірній FIFPRO — захисником', 'Most FIFPRO World 11 selections as a defender'), (pos) => pos === 'DF');
+fifproCount('fifpro-pos:MF', T('Найбільше разів у збірній FIFPRO — півзахисником', 'Most FIFPRO World 11 selections as a midfielder'), (pos) => pos === 'MF');
+fifproCount('fifpro-pos:FW', T('Найбільше разів у збірній FIFPRO — нападником', 'Most FIFPRO World 11 selections as a forward'), (pos) => pos === 'FW');
+const GBOY_NOTE = T('Golden Boy — нагорода газети Tuttosport найкращому гравцю Європи до 21 року (з 2003).', 'Golden Boy — Tuttosport’s award for the best under-21 player in Europe (since 2003).');
+const goldenBoys = Object.entries(awards.goldenBoy || {}).map(([y, [id]]) => [Number(y), id && playerById.get(id)]).filter(([, p]) => p);
+addTopic('goldenboy', 'awards', T('Переможці Golden Boy — від найновішого', 'Golden Boy winners — newest first'),
+  goldenBoys.map(([y, p]) => ({ p, value: y, text: T(String(y), String(y)), detail: null })), GBOY_NOTE);
+addTopic('goldenboy-value', 'awards', T('Переможці Golden Boy: пік ринкової вартості', 'Golden Boy winners: peak market value'),
+  goldenBoys.filter(([, p]) => transfers[p.id]?.maxValue).map(([y, p]) => ({ p, value: transfers[p.id].maxValue, text: money(transfers[p.id].maxValue), detail: T(`Golden Boy ${y}`, `Golden Boy ${y}`) })), PEAK_NOTE);
+addTopic('goldenboy-ballon', 'awards', T('Переможці Golden Boy: найвище місце в «Золотому м’ячі»', 'Golden Boy winners: best Ballon d’Or finish'),
+  goldenBoys.filter(([, p]) => ballonOf.has(p.id)).map(([, p]) => bestEntry(p)), BALLON_NOTE);
 
 // ── зріст (facts.json: Wikidata, де немає — Transfermarkt) — серед упізнаваних (топ-1300), інакше топ з невідомих велетнів
 const HEIGHT_NOTE = T('Зріст — за Вікіданими (де немає — за Transfermarkt); серед відомих гравців нашої бази.', 'Height per Wikidata (Transfermarkt where missing); among well-known players in our database.');

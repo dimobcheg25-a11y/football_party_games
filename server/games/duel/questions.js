@@ -24,6 +24,11 @@ const ballonRanks = new Map();
 for (const [y, list] of Object.entries(ballon)) for (const [id, place] of list) if (id) (ballonRanks.get(id) || ballonRanks.set(id, []).get(id)).push([Number(y), place]);
 const ballonOf = (p) => ballonRanks.get(p.id) || null;
 const ballonYears = (p, max) => { const ys = ballonOf(p).filter(([, x]) => x <= max).map(([y]) => y); return ys.length > 5 ? `${ys.slice(0, 4).join(', ')}… ${ys[ys.length - 1]}` : ys.join(', ') || null; };
+// символічна збірна FIFPRO (awards.json): id → [роки]
+const awards = tryRequire('../../data/awards.json', { fifpro: {} });
+const fifproYears = new Map();
+for (const [y, team] of Object.entries(awards.fifpro || {})) for (const [id] of team) if (id) (fifproYears.get(id) || fifproYears.set(id, []).get(id)).push(Number(y));
+const shortYears = (ys) => (ys.length > 5 ? `${ys.slice(0, 4).join(', ')}… ${ys[ys.length - 1]}` : ys.join(', '));
 const BALLON_SRC = T('За рейтингами «Золотого м’яча» у Вікіпедії (лише гравці, які хоч раз у них потрапляли).', 'Per the Ballon d’Or rankings on Wikipedia (only players who were ranked at least once).');
 
 const NOW = new Date().getFullYear();
@@ -245,6 +250,14 @@ const QUESTIONS = [
       return { num: place, dec: 0, post: T('-е місце', place === 1 ? 'st' : place === 2 ? 'nd' : place === 3 ? 'rd' : 'th'), detail: years.join(', ') };
     },
     gap: { kind: 'abs', easy: 8, hard: 2 },
+  },
+  {
+    id: 'fifpro', group: 'trophies',
+    title: T('Хто частіше потрапляв у символічну збірну FIFPRO?', 'Who has more FIFPRO World 11 selections?'), unit: T('разів у збірній FIFPRO', 'FIFPRO World 11 selections'),
+    note: T('FIFA FIFPRO World 11 — символічна збірна року за голосуванням футболістів (з 2005; лише гравці, які хоч раз у неї потрапляли).', 'FIFA FIFPRO Men’s World 11 — the team of the year voted by players (since 2005; only players selected at least once).'),
+    value: (p) => fifproYears.get(p.id)?.length || null,
+    show: (v, p) => ({ num: v, dec: 0, detail: shortYears(fifproYears.get(p.id)) }),
+    gap: { kind: 'abs', easy: 3, hard: 1 },
   },
 
   // ── популярність

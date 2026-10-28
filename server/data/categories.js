@@ -100,6 +100,8 @@ const awards = [
   { id: 'TS_L1', level: 'fan', label: 'Найкращий бомбардир сезону Ліги 1', short: 'Бомбардир №1 сезону Ліги 1', icon: '🎯' },
   // Golden Boy — нагорода кращому молодому (до 21) гравцю Європи; у статті головне фото — гравець, тому лише значок
   { id: 'GBOY', level: 'fan', label: 'Golden Boy', icon: '🌟' },
+  // символічна збірна року FIFPRO (FIFA FIFPRO World 11, з 2005; awards.json)
+  { id: 'W11', level: 'normal', label: 'Символічна збірна FIFPRO', short: 'Збірна FIFPRO', icon: '⭐' },
   // рейтинги «Золотого м'яча» (ballon.json): на перетині з самим «Золотим м'ячем» і одне з одним не ставляться — завжди так
   { id: 'BDO3', level: 'normal', label: "Трійка «Золотого м'яча»", short: "Топ-3 Золотого м'яча", imageOf: 'BALLON', icon: '🥉', home: ['BALLON', 'BDO10'] },
   { id: 'BDO10', level: 'fan', label: "Десятка «Золотого м'яча»", short: "Топ-10 Золотого м'яча", imageOf: 'BALLON', icon: '🔟', home: ['BALLON', 'BDO3'] },
@@ -184,7 +186,7 @@ const EN = {
   APL: ['Premier League champion'], CH_IT: ['Italian champion'], CH_ES: ['Spanish champion'], CH_DE: ['German champion'],
   TS_EPL: ['Premier League season top scorer', 'PL top scorer'], TS_SA: ['Serie A season top scorer', 'Serie A top scorer'],
   TS_LL: ['La Liga season top scorer', 'La Liga top scorer'], TS_BL: ['Bundesliga season top scorer', 'Bundesliga top scorer'],
-  TS_L1: ['Ligue 1 season top scorer', 'Ligue 1 top scorer'], GBOY: ['Golden Boy'],
+  TS_L1: ['Ligue 1 season top scorer', 'Ligue 1 top scorer'], GBOY: ['Golden Boy'], W11: ['FIFPRO World 11'],
   G300: ['300+ career goals', '300+ goals'], G50N: ['50+ international goals'], CAPS100: ['100+ international caps'],
   A100: ['100+ assists'], T100: ['€100m+ transfer', 'Transfer €100m+'], T80: ['€80m+ transfer', 'Transfer €80m+'],
   UCL30: ['30+ Champions League goals', '30+ UCL goals'], JOURNEY: ['Journeyman: 10+ clubs', 'Journeyman 10+ clubs'],

@@ -4,7 +4,8 @@
 //   T80   — трансфер за €80+ млн (transfers.json)
 //   JOURNEY — «мандрівник»: 10+ різних клубів у кар'єрі (повернення в той самий клуб — один клуб; careers.json)
 //   H190 / H170 — зріст 190+ / до 170 см (facts.json: Wikidata, де немає — Transfermarkt)
-//   BDO3 / BDO10 — хоч раз у трійці / десятці рейтингу «Золотого м'яча» (ballon.json)
+//   BDO3 / BDO10 — хоч раз у трійці / десятці рейтингу «Золотого м'яча» (ballon.json); 1-е місце — ще й BALLON (нові переможці — без build-players)
+//   W11 — хоч раз у символічній збірній FIFPRO (awards.json); GBOY — переможці Golden Boy (awards.json + список з build-players)
 //   AS_* — віддав зірці гольову передачу (assists.json, Transfermarkt з ~2012); фото категорії — фото зірки
 const load = (file) => {
   try {
@@ -66,6 +67,7 @@ function addDerivedTags(players) {
   const careers = load('./careers.json');
   const facts = load('./facts.json') || {};
   const ballon = load('./ballon.json') || {};
+  const awards = load('./awards.json') || {};
   const assists = load('./assists.json');
   cleanCareers(careers);
   const byId = new Map(players.map((p) => [p.id, p]));
@@ -92,10 +94,13 @@ function addDerivedTags(players) {
   for (const list of Object.values(ballon)) {
     for (const [id, place] of list) {
       if (!id) continue;
+      if (place === 1) byId.get(id)?.tags.add('BALLON');
       if (place <= 3) byId.get(id)?.tags.add('BDO3');
       if (place <= 10) byId.get(id)?.tags.add('BDO10');
     }
   }
+  for (const team of Object.values(awards.fifpro || {})) for (const [id] of team) if (id) byId.get(id)?.tags.add('W11');
+  for (const [id] of Object.values(awards.goldenBoy || {})) if (id) byId.get(id)?.tags.add('GBOY');
   // «асистенти зірки»: категорії з partnerOf (categories.js)
   const { categories } = require('./categories');
   for (const c of categories.filter((x) => x.partnerOf)) {
