@@ -545,9 +545,19 @@ const rec = (p) => {
   if (!recCache.has(p.id)) recCache.set(p.id, recognition(p));
   return recCache.get(p.id);
 };
+// Рейтинг окремого року: гравці можуть бути легендами, але хто саме був у десятці 1995-го, пам'ятають мало —
+// перші 8 років без знижки, далі −2,5 % за рік, не нижче 40 % (2015 — легка, 2005 — середня, 1995 — складна).
+const YEAR_FRESH = 8;
+const YEAR_FADE = 0.025;
+const YEAR_MIN = 0.4;
+const yearFactor = (t) => {
+  if (t.kind !== 'year') return 1;
+  const age = new Date().getFullYear() - Number(t.id.split(':')[1]);
+  return Math.max(YEAR_MIN, Math.min(1, 1 - (age - YEAR_FRESH) * YEAR_FADE));
+};
 for (const t of topics) {
   const head = t.entries.slice(0, 10);
-  t.score = Math.round(head.reduce((s, e) => s + rec(e.p), 0) / head.length);
+  t.score = Math.round((head.reduce((s, e) => s + rec(e.p), 0) / head.length) * yearFactor(t));
 }
 const byScore = [...topics].sort((a, b) => b.score - a.score);
 byScore.forEach((t, i) => (t.level = i < byScore.length * 0.3 ? 'easy' : i < byScore.length * 0.7 ? 'normal' : 'hard'));
