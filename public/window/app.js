@@ -32,10 +32,10 @@
     },
     hints: {
       formation: {
-        mini: L('7 місць: воротар, 2 захисники, 2 півзахисники, 2 нападники чи вінгери — будь-хто зі своєї лінії. Вікно коротше.', '7 slots: a keeper, 2 defenders, 2 midfielders, 2 forwards or wingers — anyone from that line. A shorter window.'),
+        mini: L('7 місць: воротар, 2 захисники, 2 півзахисники, 2 нападники чи вінгери. На місце підходить будь-хто з тієї ж лінії. Торгів менше.', '7 slots: a keeper, 2 defenders, 2 midfielders, 2 forwards or wingers. Anyone from that line fits a slot. Fewer lots.'),
       },
       basis: {
-        overall: L('Сила з усієї кар’єри: голи, асисти, сухі матчі, картки, трофеї, нагороди, рівень ліг — з вагами під позицію.', 'Strength from the whole career: goals, assists, clean sheets, cards, trophies, awards, league level — weighted by position.'),
+        overall: L('Сила з усієї кар’єри: голи, асисти, сухі матчі, картки, трофеї, нагороди, рівень ліг. Для кожної позиції важливе своє.', 'Strength from the whole career: goals, assists, clean sheets, cards, trophies, awards, league level. Each position values different things.'),
         value: L('Сила — лише за піковою ринковою вартістю (Transfermarkt).', 'Strength by peak market value only (Transfermarkt).') + MODERN_ONLY,
         goals: L('Сила — лише за голами за кар’єру: клуби й збірна. Воротарі й захисники тут слабкі.', 'Strength by career goals only: clubs and country. Keepers and defenders are weak here.'),
         assists: L('Сила — лише за асистами з 2012/13 (усі змагання).', 'Strength by assists since 2012/13 only (all competitions).') + MODERN_ONLY,
@@ -81,7 +81,7 @@
     const el = $('#lobby-formation');
     if (!el || state.status !== 'waiting') return;
     const isHost = mySeat === state.host;
-    el.innerHTML = `<span class="field-label">${isHost ? L('Схема — домовтеся в чаті й обери', 'Formation — agree in the chat and pick') : L('Схема (обирає господар)', 'Formation (the host picks)')}</span>
+    el.innerHTML = `<span class="field-label">${isHost ? L('Схема: домовтеся в чаті й обери її тут', 'Formation: agree in the chat and pick it here') : L('Схема (обирає господар)', 'Formation (the host picks)')}</span>
       <div class="chips">${Object.entries(FORMATIONS).map(([k, v]) => `<button type="button" class="chip ${state.options.formation === k ? 'active' : ''}" data-f="${k}" ${isHost ? '' : 'disabled'}>${v}</button>`).join('')}</div>`;
     el.querySelectorAll('[data-f]').forEach((b) => b.addEventListener('click', () => g.act('formation', { formation: b.dataset.f })));
   }
@@ -178,8 +178,8 @@
     const s = state;
     const n = s.lot.players.length;
     return `<form class="bid-form" id="bid-form" autocomplete="off">
-        <p class="bid-rule">${L(`Скільки даси за право <b>обрати першим</b> з ${n}? Найбільша ставка обирає будь-кого й платить свою ставку. Решта обирають по черзі ставок із тих, що лишились, — по <b>${money(s.rules.pick)}</b>. Хто нікому не дістанеться — повернеться в пул.`,
-    `How much is the <b>first pick</b> of ${n} worth to you? The highest bid takes anyone and pays its bid. The rest pick in bid order from who is left — <b>${money(s.rules.pick)}</b> each. Whoever is left over goes back to the pool.`)}</p>
+        <p class="bid-rule">${L(`Скільки ти готовий заплатити, щоб <b>обрати першим</b> із ${n} гравців? Хто поставить найбільше, бере будь-кого й платить свою ставку. Решта обирають із тих, хто лишився, у порядку ставок і платять по <b>${money(s.rules.pick)}</b>. Зайвий гравець ще може випасти пізніше.`,
+    `How much will you pay to <b>pick first</b> from ${n} players? The highest bidder takes anyone and pays their bid. The rest pick from who is left, in bid order, for <b>${money(s.rules.pick)}</b> each. The spare player may come up again later.`)}</p>
         <div class="bid-row">
           <span class="bid-box"><input id="bid-input" type="number" inputmode="numeric" min="${s.rules.min}" step="1" aria-label="${L('Ставка за право першого вибору', 'Bid for the first pick')}" /><span>${EN ? 'M' : 'млн'}</span></span>
           <button type="button" class="chip" data-d="1">+1</button>
@@ -218,22 +218,22 @@
     const waiting = s.lot.people.filter((i) => !s.bidders.includes(i) && s.seats[i]?.connected).length;
     const others = L(`Чекаємо ставок: ${waiting}`, `Waiting for ${waiting} more`);
     if (!eligible()) {
-      panel.innerHTML = `<p class="hint center">${L('Під цих гравців у тебе немає вільного місця — торгуються інші.', 'You have no free slot for these players — the others are bidding.')} ${others}</p>`;
+      panel.innerHTML = `<p class="hint center">${L('Для цих гравців у тебе немає вільного місця, тож торгуються інші.', 'You have no free slot for these players, so the others are bidding.')} ${others}</p>`;
       return;
     }
     const empty = s.slots.length - s.squads[mySeat].length;
-    $('#bid-max').innerHTML = L(`Можна до <b>${money(myMax())}</b> = ${money(s.budgets[mySeat])} у бюджеті − ${empty - 1} ${window.I18n.plural(empty - 1, ['порожнє місце', 'порожні місця', 'порожніх місць'], [])} після цього × ${money(s.rules.pick)}`,
-      `Up to <b>${money(myMax())}</b> = ${money(s.budgets[mySeat])} budget − ${empty - 1} empty ${empty - 1 === 1 ? 'slot' : 'slots'} after this × ${money(s.rules.pick)}`);
+    $('#bid-max').innerHTML = L(`Можна поставити до <b>${money(myMax())}</b>${empty - 1 ? `: у бюджеті ${money(s.budgets[mySeat])}, але на ${empty - 1} ${window.I18n.plural(empty - 1, ['порожнє місце', 'порожні місця', 'порожніх місць'], [])}, що лишаться, треба відкласти по ${money(s.rules.pick)}` : ''}.`,
+      `You can bid up to <b>${money(myMax())}</b>${empty - 1 ? `: you have ${money(s.budgets[mySeat])}, but must keep ${money(s.rules.pick)} for each of the ${empty - 1} empty ${empty - 1 === 1 ? 'slot' : 'slots'} left after this` : ''}.`);
     const tw = s.lot.tieWinner;
     // хто виграє при рівних ставках — помітною плашкою в кольорі гравця
     const tie = $('#bid-tie');
     tie.setAttribute('style', seatStyle(tw));
     tie.classList.toggle('mine', tw === mySeat);
-    tie.innerHTML = `<span class="tie-icon" aria-hidden="true">⚖</span><span>${L('Рівні ставки — першим обирає', 'Tied bids — first pick goes to')}</span>
+    tie.innerHTML = `<span class="tie-icon" aria-hidden="true">⚖</span><span>${L('Якщо ставки рівні, першим обирає', 'If bids tie, first pick goes to')}</span>
       <b class="tie-who"><span class="dot-p"></span>${tw === mySeat ? L('ти', 'you') : escapeHtml(seatName(tw))}</b>
-      <small>${L('пріоритет цього лоту, далі переходить до наступного', 'this lot’s priority, then it moves on')}</small>`;
+      <small>${L('у наступному лоті це право перейде до іншого', 'next lot this passes to someone else')}</small>`;
     const mine = s.myBid;
-    $('#bid-status').innerHTML = mine == null ? `${L(`Пасу немає: не поставиш до кінця часу — ставка ${money(s.rules.min)}.`, `No passing: no bid by the end of the timer means ${money(s.rules.min)}.`)} ${others}`
+    $('#bid-status').innerHTML = mine == null ? `${L(`Пасувати не можна: якщо не поставиш до кінця часу, ставка буде ${money(s.rules.min)}.`, `No passing: if you don’t bid in time, your bid is ${money(s.rules.min)}.`)} ${others}`
       : `${L('Твоя ставка', 'Your bid')}: <b>${money(mine)}</b> · ${L('можна змінити', 'you can change it')} · ${others}`;
     $('#bid-btn').textContent = mine ? L('Змінити', 'Change') : L('Ставлю', 'Bid');
   }
@@ -245,9 +245,9 @@
     if (pk.auto) {
       // позиція потрібна лише одному: торгів немає, обирає сам за фіксовану ціну
       $('#pick-panel').innerHTML = `<p class="bid-rule">${pk.picker === mySeat
-        ? L(`<b>Ця позиція потрібна лише тобі</b> — торгів немає. Обери одного з ${s.lot.players.length} за ${money(pk.price)}: тисни «Забрати» на картці.`, `<b>Only you need this position</b> — no auction. Pick one of ${s.lot.players.length} for ${money(pk.price)}: press “Take” on a card.`)
-        : L(`<b>${escapeHtml(seatName(pk.picker))}</b> обирає без торгів — ця позиція потрібна лише йому (${money(pk.price)}).`, `<b>${escapeHtml(seatName(pk.picker))}</b> picks without an auction — only they need this position (${money(pk.price)}).`)}</p>
-        <p class="hint">${L('Не встиг обрати до кінця часу — візьметься випадковий.', 'Run out of time — a random one is taken.')}</p>`;
+        ? L(`<b>Ця позиція потрібна лише тобі</b>, тож торгів не буде. Обери одного з ${s.lot.players.length} гравців за ${money(pk.price)} — натисни «Забрати» на картці.`, `<b>Only you need this position</b>, so there’s no auction. Pick one of ${s.lot.players.length} players for ${money(pk.price)} — press “Take” on a card.`)
+        : L(`<b>${escapeHtml(seatName(pk.picker))}</b> обирає без торгів за ${money(pk.price)}: ця позиція більше нікому не потрібна.`, `<b>${escapeHtml(seatName(pk.picker))}</b> picks without an auction for ${money(pk.price)}: nobody else needs this position.`)}</p>
+        <p class="hint">${L('Не встигнеш обрати до кінця часу — дістанеться випадковий.', 'Run out of time and you get a random one.')}</p>`;
       return;
     }
     const queue = pk.order.map((seat, n) => {
@@ -255,14 +255,14 @@
       const now = seat === pk.picker;
       return `<li style="${seatStyle(seat)}" class="${now ? 'now' : ''} ${done ? 'done' : ''}"><span class="q-n">${n + 1}</span><span class="dot-p"></span>
         <span>${escapeHtml(seatName(seat))}</span><b>${money(pk.bids[seat])}</b>
-        <small>${done ? `${L('взяв', 'took')} ${escapeHtml(surname(s.lot.players[done.i]))} ${L('за', 'for')} ${money(done.price)}` : now ? L('обирає…', 'picking…') : n === 0 ? L(`платить ${money(pk.bids[seat])}`, `pays ${money(pk.bids[seat])}`) : L(`по ${money(s.rules.pick)}`, `${money(s.rules.pick)}`)}</small></li>`;
+        <small>${done ? `${L('взяв', 'took')} ${escapeHtml(surname(s.lot.players[done.i]))} ${L('за', 'for')} ${money(done.price)}` : now ? L('обирає…', 'picking…') : n === 0 ? L(`платить ${money(pk.bids[seat])}`, `pays ${money(pk.bids[seat])}`) : L(`платить ${money(s.rules.pick)}`, `pays ${money(s.rules.pick)}`)}</small></li>`;
     }).join('');
     const head = pk.picker === mySeat
-      ? L(`<b>Твоя черга обирати</b> — ${pk.picks.length ? `з тих, що лишились, за ${money(pk.price)}` : `будь-кого, за свою ставку ${money(pk.price)}`}. Тисни «Забрати» на картці.`,
-        `<b>Your pick</b> — ${pk.picks.length ? `from who is left, for ${money(pk.price)}` : `anyone, for your bid of ${money(pk.price)}`}. Press “Take” on a card.`)
+      ? L(`<b>Твоя черга обирати</b> ${pk.picks.length ? `з тих, хто лишився, за ${money(pk.price)}` : `будь-кого за свою ставку ${money(pk.price)}`}. Натисни «Забрати» на картці.`,
+        `<b>Your turn to pick</b> ${pk.picks.length ? `from who is left, for ${money(pk.price)}` : `anyone, for your bid of ${money(pk.price)}`}. Press “Take” on a card.`)
       : L(`Обирає <b>${escapeHtml(seatName(pk.picker))}</b>…`, `<b>${escapeHtml(seatName(pk.picker))}</b> is picking…`);
     $('#pick-panel').innerHTML = `<p class="bid-rule">${head}</p><ol class="pick-queue">${queue}</ol>
-      <p class="hint">${L('Черга — за ставками від найбільшої. Не встиг обрати — візьметься випадковий.', 'The order follows the bids, highest first. Run out of time — a random one is taken.')}</p>`;
+      <p class="hint">${L('Обирають по черзі, від найбільшої ставки. Не встигнеш обрати — дістанеться випадковий.', 'Players pick in turn, highest bid first. Run out of time and you get a random one.')}</p>`;
   }
 
   // Після лоту: хто кого взяв і за скільки, усі ставки, хто повернувся в пул
@@ -274,14 +274,14 @@
           <small class="lot-kicker">${escapeHtml(it.player.pos || '')}</small>
           <b class="lot-name">${escapeHtml(nameOf(it.player))}</b>
           <p class="sold-who"><span class="dot-p" style="${seatStyle(it.winner)}"></span>${escapeHtml(seatName(it.winner))} · <b>${money(it.price)}</b></p>
-          ${lot.auto ? `<small class="hint">${L('позиція потрібна лише йому — обрав без торгів', 'only they needed this position — picked without an auction')}</small>` : ''}
+          ${lot.auto ? `<small class="hint">${L('обрав без торгів: позиція більше нікому не була потрібна', 'picked without an auction: nobody else needed this position')}</small>` : ''}
         </div>
         <b class="stamp-sold ${reduced ? '' : 'hit'}">${lot.auto ? L('Без торгів', 'No contest') : 'HERE WE GO'}</b>
       </article>`);
     const back = lot.leftover.map((p) => `<article class="lot-card mini-card back">
         ${photo(p, 'lot-photo')}
         <div class="lot-body"><small class="lot-kicker">${escapeHtml(p.pos || '')}</small><b class="lot-name">${escapeHtml(nameOf(p))}</b>
-          <p class="sold-who">${L('нікому — назад у пул', 'nobody — back to the pool')}</p></div>
+          <p class="sold-who">${L('нікому не дістався — ще може випасти', 'nobody took him — he may come up again')}</p></div>
       </article>`);
     const bids = Object.entries(lot.bids).map(([k, v]) => [Number(k), v]).sort((a, b) => b[1] - a[1]);
     const rows = lot.auto ? '' : `<div class="bid-panel"><p class="field-label">${L('Ставки за право першого вибору', 'Bids for the first pick')}</p>
@@ -418,12 +418,12 @@
         <small class="tc-spent">${L(`Витрачено ${money(t.spent)} з ${money(state.rules.budget)}`, `Spent ${money(t.spent)} of ${money(state.rules.budget)}`)}</small>
       </article>`).join('');
     const find = (id) => r.teams.flatMap((t) => t.players).find((x) => x.player.id === id)?.player;
-    const deal = (d, cls, title) => (d ? `<div class="deal ${cls}"><small>${title}</small>${photo(find(d.id), 'deal-ph')}<span><b>${escapeHtml(nameOf(find(d.id)))}</b> · ${escapeHtml(seatName(d.seat))} · ${money(d.price)} → ${L('сила', 'strength')} ${d.rating}</span></div>` : '');
+    const deal = (d, cls, title) => (d ? `<div class="deal ${cls}"><small>${title}</small>${photo(find(d.id), 'deal-ph')}<span><b>${escapeHtml(nameOf(find(d.id)))}</b> · ${escapeHtml(seatName(d.seat))} · ${money(d.price)} · ${L('сила', 'strength')} ${d.rating}</span></div>` : '');
     return `<div class="team-grid">${cards}</div>
       <div class="deals">${deal(r.bargain, 'good', L('Знахідка вікна', 'Bargain of the window'))}${deal(r.overpay, 'bad', L('Переплата', 'Overpay'))}</div>
       <p class="hint center">${r.basis && r.basis !== 'overall'
-    ? L(`Сила за режимом «${BASES[r.basis]}»: місце гравця за цим показником серед усіх гравців вікна → 40–99 (число під іменем).`, `Strength by “${BASES[r.basis]}”: the player’s place by this stat among all players in the window → 40–99 (the number under the name).`)
-    : L('Сила (від 40, без стелі) рахується з реальної кар’єри: голи, асисти, сухі матчі й картки (з 2012), трофеї, особисті нагороди з урахуванням сили ліги того року, «Золотий м’яч», рівень клубів, пікова вартість — з вагами під позицію. Легенди з видатними досягненнями — понад 100.', 'Strength (from 40, no ceiling) comes from the real career: goals, assists, clean sheets and cards (since 2012), trophies, individual awards weighted by the strength of that league that year, the Ballon d’Or, club level, peak value — weighted by position. Legends with outstanding achievements go above 100.')}</p>`;
+    ? L(`Сила тут — лише за показником «${BASES[r.basis]}»: що вище гравець за ним серед усіх у вікні, то ближче до 99, найслабший — 40. Число — під іменем.`, `Strength here is by “${BASES[r.basis]}” only: the higher a player ranks on it among everyone in the window, the closer to 99; the weakest is 40. The number is under the name.`)
+    : L('Сила рахується зі справжньої кар’єри: голи, асисти, сухі матчі й картки (з 2012), трофеї, особисті нагороди (з поправкою на силу ліги того року), «Золотий м’яч», рівень клубів, пікова вартість. Для кожної позиції важливе своє. Найменша сила — 40, а легенди з видатними досягненнями мають понад 100.', 'Strength comes from the real career: goals, assists, clean sheets and cards (since 2012), trophies, individual awards (adjusted for that year’s league strength), the Ballon d’Or, club level, peak value. Each position values different things. The lowest is 40, and legends with outstanding achievements go above 100.')}</p>`;
   }
 
   function matchesHtml() {

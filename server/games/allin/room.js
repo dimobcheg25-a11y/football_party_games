@@ -224,7 +224,7 @@ class AllinRoom extends BaseRoom {
   bet(seat, { bets } = {}) {
     if (this.status !== 'playing' || this.phase !== 'bet') return { error: T('Ставки зараз не приймаються', 'Bets are closed right now') };
     if (this.ready.has(seat)) return { error: T('Ставки вже зроблено', 'Your bets are locked in') };
-    if (!Array.isArray(bets) || bets.length !== 2) return { error: T('Два маркери — дві ставки', 'Two markers — two bets') };
+    if (!Array.isArray(bets) || bets.length !== 2) return { error: T('Потрібні ставки для обох маркерів', 'Both markers need a bet') };
     const clean = bets.map((b) => {
       const slot = Number.isInteger(b?.slot) && b.slot >= 0 && b.slot < this.slots.length ? b.slot : -1;
       return { slot, extra: slot === -1 ? 0 : Math.max(0, Math.floor(Number(b?.extra) || 0)) };

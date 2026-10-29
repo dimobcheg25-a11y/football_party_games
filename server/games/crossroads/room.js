@@ -178,7 +178,7 @@ class Room extends BaseRoom {
   move(seat, cell, playerId) {
     const n = this.cfg.size;
     if (this.status !== 'playing') return { error: T('Гра не йде', 'The game is not in progress') };
-    if (seat !== this.turn) return { error: T('Зараз не ваш хід', "It's not your turn") };
+    if (seat !== this.turn) return { error: T('Зараз не твій хід', "It's not your turn") };
     if (!Number.isInteger(cell) || cell < 0 || cell >= n * n) return { error: T('Невірна клітинка', 'Invalid cell') };
     if (this.board[cell]) return { error: T('Клітинка вже зайнята', 'That cell is already taken') };
     const player = playerById.get(playerId);
@@ -223,7 +223,7 @@ class Room extends BaseRoom {
   }
 
   skip(seat) {
-    if (this.status !== 'playing' || seat !== this.turn) return { error: T('Зараз не ваш хід', "It's not your turn") };
+    if (this.status !== 'playing' || seat !== this.turn) return { error: T('Зараз не твій хід', "It's not your turn") };
     this.touch();
     this.missed[seat] = 0;
     this.event({ type: 'skip', seat });

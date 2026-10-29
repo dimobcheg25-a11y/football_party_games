@@ -26,11 +26,11 @@ window.RoomClient = (() => {
     ERA: { all: L('Усі гравці', 'All players'), modern: L('Сучасні', 'Current'), retired: L('Завершили кар’єру', 'Retired') },
     DIFF: { easy: L('🟢 Легкий', '🟢 Easy'), normal: L('🟡 Звичайний', '🟡 Normal'), fan: L('🟣 Фанат', '🟣 Fan'), hard: L('🔴 Складний', '🔴 Hard'), expert: L('⚫ Експерт', '⚫ Expert') },
     DIFFICULTY_HINTS: {
-      easy: L('Топ-400 найвідоміших: зірки й основні гравці топ-клубів.', 'Top 400 most famous: stars and regulars of top clubs.'),
-      normal: L('Топ-800: відомі гравці топ-ліг і збірних (українців — трохи більше).', 'Top 800: well-known players from top leagues and national teams (a few more Ukrainians).'),
-      fan: L('Топ-1300: для тих, хто дивиться футбол щотижня.', 'Top 1300: for those who watch football every week.'),
-      hard: L('Топ-1900: включно з гравцями УПЛ 2000-х і середняками топ-ліг.', 'Top 1900: including Ukrainian league players of the 2000s and mid-table regulars.'),
-      expert: L('Уся база — включно з тими, кого пам’ятають лише справжні фанати.', 'The whole database — including players only true fans remember.'),
+      easy: L('400 найвідоміших футболістів: зірки й основні гравці топ-клубів.', 'The 400 most famous footballers: stars and regulars of top clubs.'),
+      normal: L('800 найвідоміших: гравці топ-ліг і збірних, а українців трохи більше.', 'The 800 most famous: players from top leagues and national teams, with a few more Ukrainians.'),
+      fan: L('1300 найвідоміших — для тих, хто дивиться футбол щотижня.', 'The 1300 most famous — for those who watch football every week.'),
+      hard: L('1900 найвідоміших, серед них гравці УПЛ 2000-х і середняки топ-ліг.', 'The 1900 most famous, including Ukrainian league players of the 2000s and mid-table regulars.'),
+      expert: L('Усі гравці з нашої бази, навіть ті, кого пам’ятають лише справжні фанати.', 'Everyone in our database, even players only true fans remember.'),
     },
   };
   const SEAT_COLORS = ['#4fb3ff', '#ff6b8b', '#ffb547', '#a98bff', '#5fe0b5', '#ff8a4c', '#e0e86a', '#f08fe0', '#7fd4ff', '#c7a6ff'];
@@ -267,7 +267,7 @@ window.RoomClient = (() => {
         const note = $('#invite-note');
         note.classList.remove('hidden');
         if (!info.found) {
-          note.textContent = L('Цієї кімнати вже немає — створи свою гру.', 'This room no longer exists — start your own game.');
+          note.textContent = L('Цієї кімнати вже немає. Створи свою гру.', 'This room no longer exists. Start your own game.');
           inviteCode = null;
           history.replaceState(null, '', location.pathname);
           return renderHome();
@@ -330,8 +330,8 @@ window.RoomClient = (() => {
         : count > 1 ? L(`Почати гру (${count} ${players(count)})`, `Start game (${count} ${players(count)})`) : L('Почати гру', 'Start game');
       $('#lobby-wait').textContent = !isHost ? L(`Чекаємо, поки ${s.seats[s.host]?.name || 'господар'} почне гру.`, `Waiting for ${s.seats[s.host]?.name || 'the host'} to start.`)
         : !enough ? L(`Надішли запрошення друзям: зараз ${count} з ${min}.`, `Send the invite to friends: ${count} of ${min} so far.`)
-          : count > 1 ? L('Можна починати — або дочекайтесь ще когось.', 'Ready to start — or wait for more friends.')
-            : L('Надішли запрошення друзям. Хто зайде пізніше — приєднається до гри, що вже йде.', 'Send the invite to friends. Anyone who joins later will jump into the game in progress.');
+          : count > 1 ? L('Можна починати або дочекатися ще когось.', 'You can start now or wait for more friends.')
+            : L('Надішли запрошення друзям. Хто зайде пізніше, приєднається до гри, яка вже йде.', 'Send the invite to friends. Anyone who joins later will jump into the game in progress.');
     }
 
     $('#copy-link').addEventListener('click', async () => {

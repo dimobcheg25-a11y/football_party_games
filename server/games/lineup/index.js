@@ -7,8 +7,8 @@ const { T, localize, langOf } = require('../../core/i18n');
 const meta = {
   id: 'lineup',
   title: T('Склад матчу', 'Match Lineup'),
-  description: T('Схема легендарного матчу без прізвищ: номери, прапори, клуби — назви, хто вийшов на поле, і тренерів.',
-    'The team sheet of a legendary match without names: numbers, flags, clubs — name who played and the coaches.'),
+  description: T('Склад легендарного матчу без прізвищ — лише номери, прапори й клуби. Згадай, хто вийшов на поле і хто тренував.',
+    'The team sheet of a legendary match without names — just numbers, flags and clubs. Remember who played and who managed.'),
   solo: true,
   friends: '2–8',
   emoji: '📋',

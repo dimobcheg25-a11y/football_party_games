@@ -20,8 +20,8 @@
       if (!DIFF_LABELS[setup.difficulty]) setup.difficulty = 'normal';
     },
     onSetup(setup) {
-      $('#points-rule').textContent = L(`з першої спроби — 100, далі рівномірно менше — до 10 за останню (${setup.attempts})`,
-        `100 for the first attempt, then evenly less — down to 10 for the last one (${setup.attempts})`);
+      $('#points-rule').textContent = L(`100 за першу спробу, з кожною наступною трохи менше, за останню, ${setup.attempts}-у, — 10`,
+        `100 for the first attempt, a bit less for each next one, and 10 for the last (attempt ${setup.attempts})`);
     },
     createOptions: (s) => ({ ...s, rounds: Number(s.rounds), attempts: Number(s.attempts), turnSeconds: Number(s.turnSeconds) }),
     optionList: (o) => [ERA_LABELS[o.era], DIFF_LABELS[o.difficulty], L(`${o.attempts} спроб`, `${o.attempts} attempts`),

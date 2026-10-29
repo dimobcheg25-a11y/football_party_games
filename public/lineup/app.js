@@ -34,10 +34,13 @@
     },
     onSetup(setup) {
       $('#mode-hint').textContent = setup.mode === 'turns'
-        ? L('Одне поле на всіх, називаєте по черзі. Помилка або пас — мінус життя.', 'One pitch for everyone, you take turns naming. A miss or a pass costs a life.')
-        : L('Усі заповнюють свій склад одночасно; чужих відповідей не видно — лише скільки знайшли.', 'Everyone fills in their own sheet at the same time; you only see how many others found.');
+        ? L('Одне поле на всіх, називаєте по черзі. За помилку чи пас втрачаєш життя.', 'One sheet for everyone, you take turns naming players. A miss or a pass costs you a life.')
+        : L('Кожен заповнює свій склад, усі водночас. Чужих відповідей не видно — лише скільки хто знайшов.', 'Everyone fills in their own sheet at the same time. You can’t see others’ answers — only how many they’ve found.');
       $('#lives-inf').classList.toggle('hidden', setup.mode === 'turns');
-      $('#round-time-field').classList.toggle('hidden', setup.mode === 'turns');
+      // час на раунд діє і в соло (соло — завжди «кожен свій»), тож поле не ховаємо — лише підписуємо
+      const timeLabel = $('#round-time-field .field-label');
+      timeLabel.dataset.base ??= timeLabel.textContent;
+      timeLabel.textContent = setup.mode === 'turns' ? L(`${timeLabel.dataset.base} у соло`, `${timeLabel.dataset.base} (solo)`) : timeLabel.dataset.base;
       $('#turn-time-field').classList.toggle('hidden', setup.mode !== 'turns');
       $('#categories-hint').textContent = setup.categories.includes('metalist') && setup.categories.length === 1
         ? L('Єврокубкові вечори Металіста 2008–2013: Бешикташ, Сампдорія, Динамо, Олімпіакос, Зальцбург, Спортінг, Леверкузен…', 'Metalist’s European nights 2008–2013: Beşiktaş, Sampdoria, Dynamo, Olympiacos, Salzburg, Sporting, Leverkusen…')
@@ -160,7 +163,7 @@
     } else $('#turn-line').innerHTML = '';
     $('#answer-hint').textContent = s.mine?.done && !voted
       ? L(`Твій склад закрито: ${found} з ${s.total}. Чекаємо інших…`, `Your sheet is closed: ${found} of ${s.total}. Waiting for others…`)
-      : L(`Знайдено ${found} з ${s.total}. Натисни на футболку — підказки для неї.`, `Found ${found} of ${s.total}. Tap a shirt for hints on it.`);
+      : L(`Знайдено ${found} з ${s.total}. Натисни на футболку, щоб узяти підказку.`, `Found ${found} of ${s.total}. Tap a shirt to get a hint.`);
   }
 
   // ── дві команди: поле з футболками, заміни, тренер
@@ -241,8 +244,8 @@
     bar.classList.remove('hidden');
     if (!sl || answerOf(sl)) {
       bar.classList.add('idle');
-      bar.innerHTML = `<span class="hb-title">💡 ${L('<b>Підказки:</b> натисни на футболку гравця (або тренера) — і візьми підказку саме для нього: вік, кількість літер, перша літера. Кожна — мінус 1 очко за цього гравця.',
-        '<b>Hints:</b> tap a player’s (or the coach’s) shirt to get a hint for exactly him: age, number of letters, first letter. Each costs 1 point for that player.')}</span>`;
+      bar.innerHTML = `<span class="hb-title">💡 ${L('<b>Не знаєш когось?</b> Натисни на його футболку (або на тренера) — покажемо вік, кількість літер у прізвищі чи першу літеру. Кожна підказка забирає 1 очко за цього гравця.',
+        '<b>Stuck on someone?</b> Tap his shirt (or the coach) — we’ll show his age, the number of letters in his surname or the first letter. Each hint takes 1 point off that player.')}</span>`;
       return;
     }
     bar.classList.remove('idle');
@@ -252,7 +255,7 @@
     const can = s.options.mode === 'turns' ? s.active === mySeat : canAnswer();
     const where = sl.club ? ` · ${sl.club.name}` : '';
     const who = sl.coach ? L(`тренера (${team.name})`, `the coach (${team.name})`) : L(`№${sl.num} (${team.name}${where})`, `#${sl.num} (${team.name}${where})`);
-    bar.innerHTML = `<span class="hb-title">${L('Підказка для', 'Hint for')} <b>${escapeHtml(who)}</b> · ${L('зараз', 'now')} <b>+${value}</b></span>
+    bar.innerHTML = `<span class="hb-title">${L('Підказка для', 'Hint for')} <b>${escapeHtml(who)}</b> · ${L('вгадаєш зараз —', 'guess now —')} <b>+${value}</b></span>
       <span class="hb-btns">${['age', 'letters', 'first'].filter((k) => k !== 'age' || sl.canAge).map((k) => hints[k] != null
         ? `<span class="hb-got">${HINT_LABELS[k]}: <b>${escapeHtml(String(hints[k]))}</b></span>`
         : `<button type="button" class="hint-btn" data-hint="${k}" ${can ? '' : 'disabled'}>💡 ${HINT_LABELS[k]} <b>−1</b></button>`).join('')}</span>`;
@@ -379,8 +382,8 @@
   $('#finish-btn').addEventListener('click', async () => {
     const s = state;
     const found = s.options.mode === 'turns' ? s.found : s.mine?.found.length || 0;
-    const note = s.solo ? L(`Матч відкриється. Ти знайшов ${found} з ${s.total} — ці очки лишаться.`, `The match will be revealed. You found ${found} of ${s.total} — you keep those points.`)
-      : L('Коли «Досить» натиснуть усі, матч відкриється, а знайдені очки лишаться.', 'When everyone presses “That’s it”, the match is revealed and the points found stay.');
+    const note = s.solo ? L(`Покажемо весь склад. Ти знайшов ${found} з ${s.total} — ці очки залишаться.`, `We’ll show the full lineups. You found ${found} of ${s.total} — you keep those points.`)
+      : L('Коли «Досить» натиснуть усі, покажемо весь склад, а набрані очки залишаться.', 'Once everyone presses “That’s it”, we show the full lineups, and you keep the points you’ve earned.');
     if (await ask(L('Більше нікого не згадаєш?', 'Can’t remember anyone else?'), { note, ok: L('🏁 Досить', '🏁 That’s it') })) g.act('finishRound');
   });
 

@@ -27,7 +27,7 @@ window.Rules = (() => {
     lines: {
       size: 6, win: 3, scoring: 'points', maxPlayers: 4,
       title: L('Збір ліній', 'Line hunt'), sub: L('6×6 · очки за трійки', '6×6 · points for threes'),
-      short: L('Гра до кінця поля. Кожна трійка в ряд — очко.', 'Play until the board is full. Every three in a row is a point.'),
+      short: L('Граємо, доки є вільні клітинки. Кожна трійка в ряд — очко.', 'Play while there are free cells. Every three in a row is a point.'),
       sample: [12, 13, 14, 15],
     },
   };
@@ -54,13 +54,13 @@ window.Rules = (() => {
     mix: {
       label: L('Мікс', 'Mix'), dot: 'mix',
       short: L('Усі категорії разом', 'All categories together'),
-      rule: L('Усі категорії гри разом — від Реала й Кубка світу до академії Ліона й Про-ліги ОАЕ — без обмежень на «очевидні» відповіді. Режим для максимальної різноманітності. У кожній клітинці щонайменше 4 відповіді.',
-        'Every category in the game — from Real Madrid and the World Cup to the Lyon academy and the UAE Pro League — with no limits on "obvious" answers. The mode for maximum variety. Every cell has at least 4 answers.'),
+      rule: L('Усі категорії гри разом — від Реала й Кубка світу до академії Ліона й Про-ліги ОАЕ — і без обмежень на «очевидні» відповіді. Найрізноманітніший режим. У кожній клітинці щонайменше 4 відповіді.',
+        'Every category in the game — from Real Madrid and the World Cup to the Lyon academy and the UAE Pro League — with no limits on "obvious" answers. The most varied mode. Every cell has at least 4 answers.'),
     },
     hard: {
       label: L('Складний', 'Hard'), dot: 'hard',
-      short: L('Нешаблонні клуби, мало очевидних відповідей', 'Unusual clubs, few obvious answers'),
-      rule: L('Додаються Аякс, Порту, Бенфіка, Севілья, Валенсія, Наполі, Рома, Металіст, Дніпро, Бельгія, Хорватія, Уругвай, Кубок Америки, Ліга Європи, Золота бутса і 100+ передач. Більшість категорій нешаблонні, у клітинці 3–15 відповідей і майже немає очевидних зірок.',
+      short: L('Незвичні клуби, мало очевидних відповідей', 'Unusual clubs, few obvious answers'),
+      rule: L('Додаються Аякс, Порту, Бенфіка, Севілья, Валенсія, Наполі, Рома, Металіст, Дніпро, Бельгія, Хорватія, Уругвай, Кубок Америки, Ліга Європи, Золота бутса і 100+ передач. Більшість категорій незвичні, у клітинці 3–15 відповідей і майже немає очевидних зірок.',
         'Adds Ajax, Porto, Benfica, Sevilla, Valencia, Napoli, Roma, Metalist, Dnipro, Belgium, Croatia, Uruguay, Copa América, Europa League, Golden Shoe and 100+ assists. Most categories are unusual, each cell has 3–15 answers and hardly any obvious stars.'),
     },
   };
@@ -80,7 +80,7 @@ window.Rules = (() => {
     'Правильно — клітинка твоя. Помилився — хід переходить далі, а гра покаже, яку умову не виконано.',
     'Не встиг за відведений час — хід переходить далі.',
     'Кожного футболіста можна використати лише <b>один раз</b> за гру. Повтор не зараховується, але й хід не втрачається.',
-    'Числа в порожній клітинці: «6 / 14» — 6 відомих гравців і 14 усіх, кого зарахує гра (є й маловідомі чи гравці давніх часів). Коли підходящого гравця ставлять в іншу клітинку, числа зменшуються.',
+    'Числа в порожній клітинці, наприклад «6 / 14», означають: підходять 6 відомих гравців, а всього гра зарахує 14 (серед них є маловідомі й гравці давніх часів). Коли когось із них ставлять в іншу клітинку, числа зменшуються.',
     'Після гри відповіді на незайняті клітинки не показуються — щоб сітки лишалися цікавими.',
     'Позиції — за основною роллю гравця. Вінгери (Ямаль, Неймар, Сака, Куарежма) рахуються і нападниками, і півзахисниками.',
   ], [
@@ -89,7 +89,7 @@ window.Rules = (() => {
     'Right — the cell is yours. Wrong — the turn passes on, and the game shows which condition wasn\'t met.',
     'Run out of time — the turn passes on.',
     'Each footballer can be used only <b>once</b> per game. A repeat doesn\'t count, but you don\'t lose your turn either.',
-    'Numbers in an empty cell: "6 / 14" means 6 well-known players and 14 in total that the game accepts (including lesser-known and old-time players). When a fitting player is placed in another cell, the numbers go down.',
+    'Numbers in an empty cell, like "6 / 14", mean 6 well-known players fit, and the game accepts 14 in total (including lesser-known and old-time players). When one of them is placed in another cell, the numbers go down.',
     'After the game, answers for empty cells aren\'t shown — so the grids stay interesting.',
     'Positions follow a player\'s main role. Wingers (Yamal, Neymar, Saka, Quaresma) count as both forwards and midfielders.',
   ]);
@@ -102,9 +102,9 @@ window.Rules = (() => {
 
   const ACTIONS = L([
     '<b>Пропустити хід</b> — якщо не знаєш відповіді.',
-    '<b>Нічия</b> — пропозицію бачать інші; вона діє, коли погодились усі. У «Зборі ліній» замість нічиєї — <b>Завершити гру</b>: рахуються очки на цей момент.',
+    '<b>Нічия</b> — інші бачать твою пропозицію, а нічия настає, коли погодяться всі. У «Зборі ліній» замість нічиєї — <b>Завершити гру</b>: рахуються очки на цей момент.',
     '<b>Здатися</b> — удвох це перемога суперника, утрьох і вчотирьох — ти вибуваєш із партії.',
-    'Якщо хтось втратив з\'єднання (закрив вкладку, пропав інтернет), гра триває. Виключити його можна, лише коли він офлайн щонайменше 2 хвилини <b>і</b> заважає грі — зараз його хід або він пропустив 2 ходи поспіль.',
+    'Якщо хтось втратив з\'єднання (закрив вкладку, пропав інтернет), гра триває. Виключити його можна, лише якщо він не в мережі щонайменше 2 хвилини <b>і</b> гра через нього стоїть: зараз його хід або він уже пропустив 2 ходи поспіль.',
     '<b>Реванш</b> починається, коли погодились усі. Черговість ходів у ньому — знову за жеребом.',
   ], [
     '<b>Skip turn</b> — if you don\'t know the answer.',

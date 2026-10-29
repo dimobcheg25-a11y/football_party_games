@@ -212,9 +212,9 @@ class HandshakeRoom extends BaseRoom {
     const chain = this.chainOf(seat);
     const last = chain[chain.length - 1];
     const mine = this.hints.get(seat) || [];
-    if (mine.some((h) => h.after === last && (h.kind || 'club') === kind)) return { error: T('Ця підказка для цієї ланки вже є', 'You already have this hint for this link') };
+    if (mine.some((h) => h.after === last && (h.kind || 'club') === kind)) return { error: T('Цю підказку ти вже взяв', 'You already took this hint') };
     const path = shortestPath(last, this.pair.finish.id);
-    if (!path || path.length < 2) return { error: T('Звідси до фінішу шляху немає', 'There is no way to the finish from here') };
+    if (!path || path.length < 2) return { error: T('Від цього гравця до фінішу шляху немає', 'There is no way from this player to the finish') };
     if (kind === 'club') mine.push({ after: last, kind, ...hintClub(last, this.pair.finish.id) });
     else {
       const p = playerById.get(path[1]);

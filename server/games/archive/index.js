@@ -11,8 +11,8 @@ const { T, localize, langOf } = require('../../core/i18n');
 const meta = {
   id: 'archive',
   title: T('Фотоархів', 'Photo Archive'),
-  description: T('Матчеве фото закрите сіткою 5×5: відкривай квадратики й назви всіх загаданих гравців — що менше відкрив, то більше очок.',
-    'A match photo hidden under a 5×5 grid: open tiles and name every player we ask for — the fewer you open, the more points.'),
+  description: T('Фото з матчу закрите сіткою 5×5. Відкривай квадратики й називай, хто на фото. Що менше відкриєш, то більше очок.',
+    'A match photo hidden under a 5×5 grid. Open tiles and name who’s in it. The fewer you open, the more you score.'),
   solo: true,
   friends: '2–8',
   emoji: '📷',

@@ -187,11 +187,11 @@ function rank(entries) {
 }
 
 const NOTES = {
-  transfers: T('Сума, яку клуб заплатив за перехід (не ринкова вартість). За Transfermarkt; переходи до ~2012 року — не всі.', 'The fee a club paid for the transfer (not market value). Per Transfermarkt; transfers before ~2012 are incomplete.'),
-  goals: T('Голи в чемпіонатах (без кубків і єврокубків) — за таблицями кар’єри у Вікіпедії.', 'League goals (no cups or European competitions) — from Wikipedia career tables.'),
-  apps: T('Матчі в чемпіонатах — за таблицями кар’єри у Вікіпедії.', 'League appearances — from Wikipedia career tables.'),
-  nation: T('Офіційні матчі за збірну — за Вікіпедією.', 'Official international matches — per Wikipedia.'),
-  trophies: T('Скільки разів виграв — за розділом «Honours» статті гравця у Вікіпедії; трофеї тренером не рахуються.', 'Number of wins — per the Honours section of the player’s Wikipedia article; titles as a manager are not counted.'),
+  transfers: T('Скільки клуб заплатив за перехід (це не ринкова вартість). Дані з Transfermarkt, і переходів до 2012 року там бракує.', 'The fee a club paid for the move (not market value). Data from Transfermarkt, which is missing some transfers before 2012.'),
+  goals: T('Лише голи в чемпіонатах, без кубків і єврокубків. Дані з таблиць кар’єри у Вікіпедії.', 'League goals only, no cups or European competitions. Data from Wikipedia career tables.'),
+  apps: T('Лише матчі в чемпіонатах. Дані з таблиць кар’єри у Вікіпедії.', 'League appearances only. Data from Wikipedia career tables.'),
+  nation: T('Офіційні матчі за збірну, дані з Вікіпедії.', 'Official international matches, data from Wikipedia.'),
+  trophies: T('Скільки разів гравець виграв трофей — за статтею про нього у Вікіпедії. Трофеї, виграні тренером, не рахуються.', 'How many times the player won a trophy, from his Wikipedia article. Titles won as a manager don’t count.'),
 };
 // Клуби, які стануть темами: зіставлені клуби Transfermarkt і відомі клуби з голами/матчами. Серед них шукаємо однакові назви.
 const knownClub = (qid, map) => teams[qid] && !teams[qid].national && !BANNED.has(leagueOf(qid))
@@ -213,7 +213,7 @@ function addTopic(id, category, title, entries, note = NOTES[category]) {
 }
 
 // ── трансфери
-const PEAK_NOTE = T('Найвища оцінка Transfermarkt за всю кар’єру — не поточна вартість і не сума трансферу.', 'The highest Transfermarkt valuation over the whole career — not the current value and not a transfer fee.');
+const PEAK_NOTE = T('Найвища оцінка гравця на Transfermarkt за всю кар’єру. Це не поточна вартість і не сума трансферу.', 'The player’s highest Transfermarkt valuation over his whole career. Not his current value and not a transfer fee.');
 addTopic('fees', 'transfers', T('Найдорожчі трансфери в історії', 'Most expensive transfers ever'), fees.map(feeEntry));
 addTopic('fees-ua', 'transfers', T('Найдорожчі трансфери українців', 'Most expensive Ukrainian transfers'), fees.filter((f) => ukr(f.p)).map(feeEntry));
 addTopic('total-fees', 'transfers', T('Найбільша сума трансферів за кар’єру', 'Highest total transfer fees in a career'), players.filter((p) => transfers[p.id]?.totalFees)
@@ -233,7 +233,7 @@ for (const [code, name] of Object.entries(TM_LEAGUES)) {
 }
 
 // ── трансфери за віком, позицією, збірною, десятиліттям, між лігами
-const AGE_NOTE = T('За Transfermarkt; вік — приблизно (рік сезону мінус рік народження).', 'Per Transfermarkt; age is approximate (season year minus birth year).');
+const AGE_NOTE = T('Дані з Transfermarkt. Вік приблизний: рік сезону мінус рік народження.', 'Data from Transfermarkt. Age is approximate: the season year minus the birth year.');
 addTopic('fees-age:u21', 'transfers', T('Найдорожчі трансфери гравців до 21 року', 'Most expensive transfers of players under 21'), fees.filter((f) => ageAt(f) != null && ageAt(f) <= 20).map(feeEntry), AGE_NOTE);
 addTopic('fees-age:30', 'transfers', T('Найдорожчі трансфери гравців від 30 років', 'Most expensive transfers of players aged 30+'), fees.filter((f) => ageAt(f) >= 30).map(feeEntry), AGE_NOTE);
 const POS_GROUPS = {
@@ -242,8 +242,8 @@ const POS_GROUPS = {
   MID: ['півзахисників', ['Defensive Midfield', 'Central Midfield', 'Attacking Midfield', 'Left Midfield', 'Right Midfield'], 'midfielders'],
   FWD: ['нападників і вінгерів', ['Left Winger', 'Right Winger', 'Second Striker', 'Centre-Forward'], 'forwards and wingers'],
 };
-const POS_NOTE = T('Сума, яку клуб заплатив за перехід. За Transfermarkt; позиція — основна, якою гравця знають.', 'The fee a club paid for the transfer. Per Transfermarkt; position — the main one the player is known for.');
-const POS_PEAK_NOTE = T('Найвища оцінка Transfermarkt за всю кар’єру — не поточна вартість і не сума трансферу; позиція — основна, якою гравця знають.', 'The highest Transfermarkt valuation over the whole career — not the current value and not a transfer fee; position — the main one the player is known for.');
+const POS_NOTE = T('Скільки клуб заплатив за перехід, дані з Transfermarkt. Позиція — та, на якій гравця знають.', 'The fee a club paid for the move, data from Transfermarkt. Position is the one the player is known for.');
+const POS_PEAK_NOTE = T('Найвища оцінка гравця на Transfermarkt за всю кар’єру — не поточна вартість і не сума трансферу. Позиція — та, на якій гравця знають.', 'The player’s highest Transfermarkt valuation over his whole career — not his current value and not a transfer fee. Position is the one he’s known for.');
 for (const [key, [word, list, wordEn]] of Object.entries(POS_GROUPS)) {
   const has = (p) => list.includes(transfers[p.id]?.pos);
   addTopic(`fees-pos:${key}`, 'transfers', T(`Найдорожчі трансфери ${word}`, `Most expensive transfers: ${wordEn}`), fees.filter((f) => has(f.p)).map(feeEntry), POS_NOTE);
@@ -286,7 +286,7 @@ for (const [key, title] of Object.entries(TOURNAMENTS)) {
   const cup = key === 'ucl' || key === 'uel';
   const where = cup ? 'в основному турнірі (без кваліфікації)' : 'у фінальних турнірах';
   const whereEn = cup ? 'in the main competition (excluding qualifying)' : 'at final tournaments';
-  addTopic(`tournament:${key}`, 'goals', T(`Найкращі бомбардири ${title}`, `All-time top scorers: ${TOURNAMENTS_EN[key]}`), list, T(`Голи ${where} — за Вікіпедією.`, `Goals ${whereEn} — per Wikipedia.`));
+  addTopic(`tournament:${key}`, 'goals', T(`Найкращі бомбардири ${title}`, `All-time top scorers: ${TOURNAMENTS_EN[key]}`), list, T(`Голи ${where}, дані з Вікіпедії.`, `Goals ${whereEn}, data from Wikipedia.`));
 }
 
 // ── асисти, гол+пас, рекорди сезону й картки (Transfermarkt, з 2012/13)
@@ -313,7 +313,7 @@ const COMP_NAMES_EN = {
   GB1: 'Premier League', ES1: 'La Liga', IT1: 'Serie A', L1: 'Bundesliga', FR1: 'Ligue 1', UKR1: 'UPL', PO1: 'Primeira Liga', NL1: 'Eredivisie',
   TR1: 'Süper Lig', BE1: 'Belgian Pro League', SC1: 'Scottish Premiership', CL: 'Champions League', EL: 'Europa League',
 };
-const STATS_NOTE = T('З сезону 2012/13 — за Transfermarkt.', 'Since the 2012/13 season — per Transfermarkt.');
+const STATS_NOTE = T('Дані з Transfermarkt, починаючи із сезону 2012/13.', 'Data from Transfermarkt, starting with the 2012/13 season.');
 for (const [comp, t] of Object.entries(stats.comp)) {
   const name = COMP_NAMES[comp];
   if (!name) continue;
@@ -341,7 +341,7 @@ for (const [club, t] of Object.entries(stats.club)) {
 addTopic('journeymen', 'apps', T('Найбільше клубів за кар’єру', 'Most clubs in a career'), poolFor('all', 'fan').map((p) => {
   const n = new Set((careerOf(p)?.clubs || []).map((x) => x.t)).size;
   return { p, value: n, text: T(`${n} ${plural3('клуб', 'клуби', 'клубів')(n)}`, en1(n, 'club', 'clubs')), detail: null };
-}), T('Різні клуби в кар’єрі (з орендами) — за Вікіпедією.', 'Different clubs in a career (including loans) — per Wikipedia.'));
+}), T('Скільки різних клубів було в кар’єрі, разом з орендами. Дані з Вікіпедії.', 'How many different clubs in a career, loans included. Data from Wikipedia.'));
 
 // ── голи й матчі за клуби: лише відомі клуби (є категорія в базі) і українські
 // відомі клуби (є категорія в базі) і українські, у яких забивали щонайменше 40 гравців з бази (без нижчих ліг)
@@ -391,9 +391,11 @@ for (const [country, names] of Object.entries(LEAGUE_TITLES)) {
 }
 
 // ── «Золотий м'яч»: рейтинги по роках (ballon.json, Вікіпедія) — скільки разів у трійці / десятці / рейтингу, рейтинг окремого року
-const placeT = (n) => T(`${n}-е місце`, `${n}${n % 10 === 1 && n % 100 !== 11 ? 'st' : n % 10 === 2 && n % 100 !== 12 ? 'nd' : n % 10 === 3 && n % 100 !== 13 ? 'rd' : 'th'} place`);
+// «1-ше, 2-ге, 3-тє, 7-ме, 40-ве, решта -те» — як пишуть порядкові числівники середнього роду
+const ordUk = (n) => (n % 100 >= 11 && n % 100 <= 19 ? 'те' : n % 100 === 40 ? 'ве' : ({ 1: 'ше', 2: 'ге', 3: 'тє', 7: 'ме', 8: 'ме' })[n % 10] || 'те');
+const placeT = (n) => T(`${n}-${ordUk(n)} місце`,`${n}${n % 10 === 1 && n % 100 !== 11 ? 'st' : n % 10 === 2 && n % 100 !== 12 ? 'nd' : n % 10 === 3 && n % 100 !== 13 ? 'rd' : 'th'} place`);
 const pointsT = (n) => T(`${n} ${plural3('бал', 'бали', 'балів')(n)}`, en1(n, 'point', 'points'));
-const BALLON_NOTE = T('За рейтингами «Золотого м’яча» у Вікіпедії (2010–2015 — FIFA Ballon d’Or; 2020-го нагороду не вручали).', 'Per the Ballon d’Or rankings on Wikipedia (2010–2015 — FIFA Ballon d’Or; not awarded in 2020).');
+const BALLON_NOTE = T('За рейтингами «Золотого м’яча» з Вікіпедії. У 2010–2015 роках нагорода називалася FIFA Ballon d’Or, а 2020 року її не вручали.', 'From the Ballon d’Or rankings on Wikipedia. In 2010–2015 the award was called the FIFA Ballon d’Or, and it wasn’t given in 2020.');
 const ballonOf = new Map(); // id → [[рік, місце]]
 for (const [y, list] of Object.entries(ballon)) {
   for (const [id, place] of list) if (id && playerById.get(id)) (ballonOf.get(id) || ballonOf.set(id, []).get(id)).push([Number(y), place]);
@@ -460,7 +462,7 @@ addTopic('goldenboy-ballon', 'awards', T('Переможці Golden Boy: най�
   goldenBoys.filter(([, p]) => ballonOf.has(p.id)).map(([, p]) => bestEntry(p)), BALLON_NOTE);
 
 // ── зріст (facts.json: Wikidata, де немає — Transfermarkt) — серед упізнаваних (топ-1300), інакше топ з невідомих велетнів
-const HEIGHT_NOTE = T('Зріст — за Вікіданими (де немає — за Transfermarkt); серед відомих гравців нашої бази.', 'Height per Wikidata (Transfermarkt where missing); among well-known players in our database.');
+const HEIGHT_NOTE = T('Зріст за Вікіданими, а де їх немає — за Transfermarkt. Беремо лише відомих гравців з нашої бази.', 'Height from Wikidata, or Transfermarkt where it’s missing. Only well-known players from our database.');
 const cmT = (h) => T(`${h} см`, `${h} cm`);
 const heightPool = poolFor('all', 'fan').filter((p) => facts[p.qid]?.h);
 const tall = (list) => list.map((p) => ({ p, value: facts[p.qid].h, text: cmT(facts[p.qid].h), detail: null }));
@@ -487,7 +489,7 @@ for (const c of categoriesList.filter((x) => x.type === 'nation' && x.qid)) {
 }
 
 // ── хто кому асистував (assists.json, Transfermarkt — матчі приблизно з 2012/13): лише про найвідоміших (топ-400)
-const ASSIST_NOTE = T('Гольові передачі в усіх матчах (клуби й збірні) приблизно з сезону 2012/13 — за Transfermarkt.', 'Assists in all matches (club and national team) since about the 2012/13 season — per Transfermarkt.');
+const ASSIST_NOTE = T('Гольові передачі в усіх матчах за клуби й збірні, приблизно із сезону 2012/13. Дані з Transfermarkt.', 'Assists in all club and international matches, from about the 2012/13 season. Data from Transfermarkt.');
 const passesT = (n) => T(`${n} ${plural3('передача', 'передачі', 'передач')(n)}`, en1(n, 'assist', 'assists'));
 const assistClub = (id) => (tmClubs[id] ? clubName(id) : null);
 for (const p of poolFor('all', 'easy')) {

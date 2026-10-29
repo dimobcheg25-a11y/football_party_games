@@ -171,7 +171,7 @@ class PathRoom extends BaseRoom {
   guess(seat, playerId) {
     if (this.status !== 'playing' || this.phase !== 'guess') return { error: T('Зараз не можна відповідати', 'You can’t answer right now') };
     if (this.solved.has(seat)) return { error: ALREADY };
-    if (this.stageDone.has(seat)) return { error: T('На цьому етапі ти вже відповів — чекай наступної підказки', 'You’ve already answered at this stage — wait for the next club') };
+    if (this.stageDone.has(seat)) return { error: T('Спробу на цей клуб уже використано — чекай наступного', 'You’ve used your guess for this club — wait for the next one') };
     const player = playerById.get(playerId);
     if (!player) return { error: T('Обери гравця зі списку', 'Pick a player from the list') };
     const correct = player.id === this.answer.id;

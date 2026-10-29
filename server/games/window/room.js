@@ -259,7 +259,7 @@ class WindowRoom extends BaseRoom {
     const v = Math.floor(Number(amount));
     if (!Number.isFinite(v) || v < MIN_BID) return { error: T(`Мінімальна ставка — ${MIN_BID} млн`, `The minimum bid is €${MIN_BID}M`) };
     const max = this.maxBid(seat);
-    if (v > max) return { error: T(`Можна щонайбільше ${max} млн — решта на порожні місця`, `${max}M at most — the rest is for empty slots`) };
+    if (v > max) return { error: T(`Можна поставити щонайбільше ${max} млн: решту треба лишити на порожні місця`, `You can bid ${max}M at most: keep the rest for your empty slots`) };
     this.bids.set(seat, { amount: v });
     this.touch();
     this.checkProgress();

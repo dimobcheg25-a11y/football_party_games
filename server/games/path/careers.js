@@ -179,7 +179,7 @@ const HINTS = [
   { id: 'nation', label: T('Збірна', 'National team'), steps: 0.6, min: 5 },
   { id: 'born', label: T('Рік народження', 'Year of birth'), steps: 0.3, min: 3 },
   { id: 'height', label: T('Зріст', 'Height'), steps: 0.3, min: 3, has: (p) => !!facts[p.qid]?.h },
-  { id: 'partner', label: T('Найбільше гольових йому віддав', 'Most assists to him from'), steps: 1, min: 8, has: (p) => !!topAssister(p) },
+  { id: 'partner', label: T('Найбільше гольових йому віддав', 'Gave him the most assists'), steps: 1, min: 8, has: (p) => !!topAssister(p) },
   { id: 'nickname', label: T('Прізвисько', 'Nickname'), steps: 1.2, min: 10, has: (p) => !!nicknameOf(p) },
   { id: 'letter', label: T('Перша літера прізвища', 'First letter of surname'), steps: 2, min: 15 },
 ];

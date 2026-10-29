@@ -146,7 +146,7 @@
       if (!('ontouchstart' in window)) input.focus();
     }
     $('#reroll-btn').addEventListener('click', async () => {
-      if (await ask(L('Запропонувати замінити футболіста?', 'Propose replacing the footballer?'), { note: L('Усі проголосують.', 'Everyone will vote.'), ok: L('Запропонувати', 'Propose') })) act('requestReroll');
+      if (await ask(L('Запропонувати замінити футболіста?', 'Propose replacing the footballer?'), { note: L('Усі проголосують, міняти чи ні.', 'Everyone will vote on whether to replace him.'), ok: L('Запропонувати', 'Propose') })) act('requestReroll');
     });
   }
 
@@ -180,9 +180,9 @@
   function spyVerdict() {
     const s = state;
     const name = s.spy === mySeat ? L('Тебе', 'You') : escapeHtml(seatName(s.spy));
-    return s.spyPoints === 0 ? L(`${name} викрили! Шпигун — 0 балів.`, `${name} got caught! The spy gets 0 points.`)
+    return s.spyPoints === 0 ? L(`${name} викрили! Шпигуну — 0 балів.`, `${name} got caught! The spy gets 0 points.`)
       : s.spyPoints === 3 ? L(`${s.spy === mySeat ? 'Тебе' : 'Шпигуна'} майже ніхто не запідозрив: +3.`, `Hardly anyone suspected ${s.spy === mySeat ? 'you' : 'the spy'}: +3.`)
-        : L(`Шпигуна не викрили напевно: +2.`, `The spy wasn’t clearly caught: +2.`);
+        : L(`Шпигуна підозрювали, але так і не викрили: +2.`, `The spy was suspected but not caught: +2.`);
   }
 
   function renderSpyGuessStage(stage) {
@@ -192,7 +192,7 @@
       <p class="verdict">${L('Шпигун', 'The spy is')} — <b style="${seatStyle(s.spy)}" class="pc">${escapeHtml(seatName(s.spy))}</b>. ${spyVerdict()}</p>
       ${votesHtml()}
       ${spy
-        ? `<p><b>${L('Остання спроба:', 'Last chance:')}</b> ${L(`назви футболіста — вгадаєш, ще +${s.spyGuessPoints}. Лише одна спроба.`, `name the footballer — guess right for +${s.spyGuessPoints} more. One try only.`)}</p>
+        ? `<p><b>${L('Останній шанс:', 'Last chance:')}</b> ${L(`назви футболіста. Вгадаєш — отримаєш ще +${s.spyGuessPoints}. Спроба лише одна.`, `name the footballer. Get it right and you get another +${s.spyGuessPoints}. One try only.`)}</p>
            <div class="search"><input id="guess-input" placeholder="${L('Почни вводити прізвище…', 'Start typing a surname…')}" autocomplete="off" /><ul class="suggestions" id="suggestions"></ul></div>
            <button class="btn btn-ghost btn-sm" id="pass-btn">${L('Не знаю', 'I don’t know')}</button>`
         : `<p class="hint">${L('Шпигун пробує вгадати футболіста…', 'The spy is trying to guess the footballer…')}</p>`}
@@ -266,7 +266,7 @@
     if (await ask(L(`Пропустити хід гравця ${seatName(state.active)}?`, `Skip ${seatName(state.active)}’s turn?`), { ok: L('Пропустити', 'Skip') })) act('skipTurn');
   });
   $('#force-vote-btn').addEventListener('click', async () => {
-    if (await ask(L('Перейти до голосування?', 'Go to the vote?'), { note: L('Не чекаючи всіх підказок.', 'Without waiting for all clues.'), ok: L('До голосування', 'To the vote') })) act('forceVote');
+    if (await ask(L('Перейти до голосування?', 'Go to the vote?'), { note: L('Хто ще не дав підказку, уже не встигне.', 'Anyone who hasn’t given a clue yet won’t get to.'), ok: L('До голосування', 'To the vote') })) act('forceVote');
   });
 
   // ── шпигун вгадує: автодоповнення
@@ -307,7 +307,7 @@
     const seats = s.seats.map((x, i) => (x ? i : -1)).filter((i) => i >= 0).sort((a, b) => s.scores[b] - s.scores[a]);
     $('#final-title').textContent = s.winner === mySeat ? L('Ти переміг! 🏆', 'You won! 🏆') : L(`Переміг ${seatName(s.winner)} 🏆`, `${seatName(s.winner)} won 🏆`);
     $('#final-standings').innerHTML = seats.map((i, k) => `<li style="${seatStyle(i)}" class="${i === s.winner ? 'win' : ''}">
-      <span class="place">${k + 1}</span><span class="nm">${escapeHtml(seatName(i))} <small class="muted">${L(`· шпигуном ${s.stats[i].spy}, викрили ${s.stats[i].caught}`, `· spy ${s.stats[i].spy}×, caught ${s.stats[i].caught}×`)}</small></span><span class="val">${points(s.scores[i])}</span></li>`).join('');
+      <span class="place">${k + 1}</span><span class="nm">${escapeHtml(seatName(i))} <small class="muted">${L(`· був шпигуном ${s.stats[i].spy} ${window.I18n.plural(s.stats[i].spy, ['раз', 'рази', 'разів'], [])}, викрили ${s.stats[i].caught}`, `· spy ${s.stats[i].spy} ${window.I18n.plural(s.stats[i].spy, [], ['time', 'times'])}, caught ${s.stats[i].caught}`)}</small></span><span class="val">${points(s.scores[i])}</span></li>`).join('');
     $('#final-history').innerHTML = s.history.map((h, k) => `<li><span class="nm">${k + 1}. ${escapeHtml(pname(h.footballer))}</span>
       <span class="val">🕵️ ${escapeHtml(h.spy === mySeat ? L('Ти', 'You') : h.spyName)} · ${h.spyPoints === 0 ? L('викрили', 'caught') : `+${h.spyPoints}`}${h.guessed ? L(' · вгадав 🎯', ' · guessed 🎯') : ''}</span></li>`).join('');
     const isHost = mySeat === s.host;

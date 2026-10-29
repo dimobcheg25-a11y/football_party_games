@@ -14,8 +14,8 @@
   };
   const LEVEL_DOT = { easy: '🟢', normal: '🟡', hard: '🔴' };
   const MODE_HINTS = {
-    own: L('Усі заповнюють свій топ одночасно; чужих відповідей не видно — лише скільки знайшли.', 'Everyone fills in their own top at the same time; you only see how many others found, not their answers.'),
-    turns: L('Одна дошка на всіх, називаєте по черзі. Помилка або пас — мінус життя.', 'One board for everyone, you take turns naming. A miss or a pass costs a life.'),
+    own: L('Усі заповнюють свій топ одночасно. Чужих відповідей не видно, лише скільки хто знайшов.', 'Everyone fills in their own top at the same time. You don’t see others’ answers, only how many they’ve found.'),
+    turns: L('Одна дошка на всіх, називаєте по черзі. За помилку або пас втрачаєш життя.', 'One board for everyone, you take turns naming. A miss or a pass costs you a life.'),
   };
 
   let state = null;
@@ -32,12 +32,15 @@
     onSetup(setup) {
       $('#mode-hint').textContent = MODE_HINTS[setup.mode];
       $('#lives-inf').classList.toggle('hidden', setup.mode === 'turns');
-      $('#round-time-field').classList.toggle('hidden', setup.mode === 'turns');
+      // час на раунд діє і в соло (соло — завжди «кожен свій»), тож поле не ховаємо — лише підписуємо
+      const timeLabel = $('#round-time-field .field-label');
+      timeLabel.dataset.base ??= timeLabel.textContent;
+      timeLabel.textContent = setup.mode === 'turns' ? L(`${timeLabel.dataset.base} у соло`, `${timeLabel.dataset.base} (solo)`) : timeLabel.dataset.base;
       $('#turn-time-field').classList.toggle('hidden', setup.mode !== 'turns');
     },
     hints: {
       topicLevel: {
-        easy: L('Топи з найвідомішими гравцями — третина тем, де відповіді знає кожен, хто дивиться футбол.', 'Tops full of famous players — the third of topics anyone who watches football can answer.'),
+        easy: L('Теми з найвідомішими гравцями: відповіді знає кожен, хто дивиться футбол.', 'Topics full of famous players: anyone who watches football knows the answers.'),
         normal: L('Середні теми: багато відомих імен, але є й несподівані.', 'Medium topics: plenty of famous names, with a few surprises.'),
         hard: L('Складні теми: менш відомі гравці, ліги й клуби — для справжніх фанатів.', 'Hard topics: lesser-known players, leagues and clubs — for true fans.'),
         mix: L('Теми будь-якої складності впереміш.', 'Topics of any difficulty, mixed.'),
@@ -275,7 +278,7 @@
   function slotHtml(slot, i, extra = '') {
     const by = slot.by?.length && !state.solo
       ? `<span class="by">${slot.by.map((x) => `<i class="dot-p" style="${seatStyle(x)}" title="${escapeHtml(seatName(x))}"></i>`).join('')}</span>` : '';
-    const miss = slot.missing ? `<small class="miss-note">${L('немає в базі — відкрито', 'not in our database — revealed')}</small>` : '';
+    const miss = slot.missing ? `<small class="miss-note">${L('гравця немає в нашій базі, тож відкрили одразу', 'not in our database, so it’s shown right away')}</small>` : '';
     if (!slot.player) {
       // порожнє місце: своя підказка — літера; ні — кнопка з ціною саме цього місця
       const letter = myHints.get(i);
@@ -413,7 +416,7 @@
     if (res.error) return toast(res.error, 'bad');
     if (res.correct) {
       window.Sound.play('ding');
-      toast(L(`${pname(p)} — ${res.places.map((i) => `${i + 1}-е`).join(', ')} місце: +${res.points}`,
+      toast(L(`${pname(p)} — на ${res.places.map((i) => `${i + 1}-му`).join(' і ')} ${res.places.length > 1 ? 'місцях' : 'місці'}: +${res.points}`,
         `${pname(p)} — #${res.places.map((i) => i + 1).join(', #')}: +${res.points}`), 'good');
     } else {
       window.Sound.play('miss');
@@ -427,9 +430,9 @@
     if (!b) return;
     const i = Number(b.dataset.hint);
     const slot = state.slots[i];
-    const ok = await ask(L(`Підказка на ${i + 1}-е місце?`, `Hint for #${i + 1}?`), {
-      note: L(`Покажемо першу літеру прізвища, а ${slot.hintCost} ${ptsWord(slot.hintCost)} знімемо одразу. Якщо потім вгадаєш, отримаєш свої +${slot.points}, тобто в сумі +${slot.points - slot.hintCost}.`,
-        `We’ll show the first letter of the surname and take ${slot.hintCost} ${ptsWord(slot.hintCost)} right away. If you then guess him, you get the usual +${slot.points}, so +${slot.points - slot.hintCost} overall.`),
+    const ok = await ask(L(`Підказка для ${i + 1}-го місця?`, `A hint for #${i + 1}?`), {
+      note: L(`Покажемо першу літеру прізвища й одразу знімемо ${slot.hintCost} ${ptsWord(slot.hintCost)}. Якщо потім вгадаєш, отримаєш за це місце ${slot.points} ${ptsWord(slot.points)}, тож разом вийде ${slot.points - slot.hintCost}.`,
+        `We’ll show the first letter of the surname and take ${slot.hintCost} ${ptsWord(slot.hintCost)} right away. If you then guess him, you get ${slot.points} ${ptsWord(slot.points)} for this place, so ${slot.points - slot.hintCost} in total.`),
       ok: `💡 −${slot.hintCost}`,
     });
     if (!ok) return;
@@ -445,8 +448,8 @@
     const found = state.mine?.found.length || 0;
     const pts = state.roundPoints?.[mySeat] || 0;
     const what = state.solo ? L('Раунд закінчиться, і ти побачиш увесь топ.', 'The round ends and you’ll see the whole top.')
-      : L('Більше відповідати в цьому раунді не зможеш; увесь топ побачиш, коли закінчать інші.', 'You can’t answer any more this round; you’ll see the whole top when the others finish.');
-    const kept = found ? ' ' + L(`Вгадано ${found} з ${state.slots.length} — ці +${pts} залишаться.`, `You found ${found} of ${state.slots.length} — you keep those +${pts}.`) : '';
+      : L('У цьому раунді ти більше не відповідатимеш, а весь топ побачиш, коли закінчать інші.', 'You won’t answer any more this round, and you’ll see the whole top when the others finish.');
+    const kept = found ? ' ' + L(`Ти вже знайшов ${found} з ${state.slots.length}, і ці ${pts} ${ptsWord(pts)} залишаться за тобою.`, `You’ve found ${found} of ${state.slots.length}, and you keep those ${pts} ${ptsWord(pts)}.`) : '';
     if (await ask(L('Здатися й відкрити відповіді?', 'Give up and reveal the answers?'), { note: what + kept, ok: L('🏳️ Здатися', '🏳️ Give up'), danger: true })) emit('giveUp');
   });
 

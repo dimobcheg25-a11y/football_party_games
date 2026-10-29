@@ -25,9 +25,12 @@
     defaults: { category: 'all', difficulty: 'easy', mode: 'own', roundSeconds: '120', turnSeconds: '30', rounds: '10' },
     onSetup(setup) {
       $('#mode-hint').textContent = setup.mode === 'turns'
-        ? L('Одна сітка на всіх: у свій хід відкрий квадратик і назви гравця. Хто назвав — той і отримав очки.', 'One grid for everyone: on your turn open a tile and name a player. Whoever names him gets the points.')
-        : L('У кожного своя сітка на тому самому фото; хто відкрив менше — набрав більше.', 'Everyone has their own grid on the same photo; open fewer tiles to score more.');
-      $('#round-time-field').classList.toggle('hidden', setup.mode === 'turns');
+        ? L('Одна сітка на всіх. У свій хід відкриваєш квадратик і називаєш гравця. Очки отримує той, хто назвав.', 'One grid for everyone. On your turn, open a tile and name a player. Whoever names him gets the points.')
+        : L('Фото в усіх однакове, але кожен відкриває свою сітку. Хто відкриє менше, той набере більше.', 'Everyone gets the same photo but opens their own grid. The fewer tiles you open, the more you score.');
+      // час на раунд діє і в соло (соло — завжди «кожен свій»), тож поле не ховаємо — лише підписуємо
+      const timeLabel = $('#round-time-field .field-label');
+      timeLabel.dataset.base ??= timeLabel.textContent;
+      timeLabel.textContent = setup.mode === 'turns' ? L(`${timeLabel.dataset.base} у соло`, `${timeLabel.dataset.base} (solo)`) : timeLabel.dataset.base;
       $('#turn-time-field').classList.toggle('hidden', setup.mode !== 'turns');
       const n = counts?.[setup.category]?.[setup.difficulty];
       $('#category-hint').textContent = n != null ? L(`Фото для цих налаштувань: ${n}`, `Photos for these settings: ${n}`) : '';
@@ -104,7 +107,7 @@
     const sh = s.shot;
     $('#credit').innerHTML = s.phase === 'reveal'
       ? `<span>${sh.year || ''}</span><a href="${escapeHtml(sh.page)}" target="_blank" rel="noopener">${L('Фото', 'Photo')}: ${escapeHtml(sh.author || L('автор невідомий', 'unknown author'))} · ${escapeHtml(sh.license || '')} · Wikimedia Commons</a>`
-      : `<span>${L('Підпис — після відгадування', 'Caption after guessing')}</span><span>Wikimedia Commons</span>`;
+      : `<span>${L('Підпис покажемо після раунду', 'Caption shown after the round')}</span><span>Wikimedia Commons</span>`;
   }
 
   function canOpen() {
@@ -127,14 +130,22 @@
     return p.photo ? `<img src="${escapeHtml(p.photo)}" alt="" loading="lazy" />` : `<b>${escapeHtml(initials(p.name || '?'))}</b>`;
   }
 
+  // з чого складається ціна гравця: 100, мінус 4 за кожен відкритий квадратик (не менше 10)
+  function worthNote(k) {
+    if (!k) return L('нічого не відкрито — повні 100', 'nothing open — the full 100');
+    const tiles = pl(k, ['відкритий квадратик', 'відкриті квадратики', 'відкритих квадратиків'], ['open tile', 'open tiles']);
+    const base = L(`100 мінус ${4 * k} за ${k} ${tiles}`, `100 minus ${4 * k} for ${k} ${tiles}`);
+    return 100 - 4 * k < 10 ? base + L(' (менше 10 не буває)', ' (never below 10)') : base;
+  }
+
   let shownFound = new Set(); // кого вже показали — «проявлення» лише для нових
   function renderSlots() {
     const s = state;
     const n = s.shot.count;
     const reveal = s.phase === 'reveal';
     $('#ask-head').innerHTML = `<h2>${L(`На фото ${n} ${pl(n, ['гравець', 'гравці', 'гравців'], ['player', 'players'])}`, `${n} ${n === 1 ? 'player' : 'players'} in this shot`)}</h2>
-      <p>${n === 1 ? L('Загадано лише його. На кадрі можуть бути й інші: за них ні очок, ні штрафу.', 'Only he counts. Others may be in the shot too: no points and no penalty for them.')
-    : L('Загадано лише цих — у будь-якому порядку. На кадрі можуть бути й інші: за них ні очок, ні штрафу.', 'Only these count — any order. Others may be in the shot too: no points and no penalty for them.')}</p>`;
+      <p>${n === 1 ? L('Вгадати треба лише його. На кадрі можуть бути й інші люди — за них очок не дають, але й не штрафують.', 'You only need to name him. Other people may be in the shot too — they score nothing, but there’s no penalty either.')
+    : L('Вгадати треба лише їх, у будь-якому порядку. На кадрі можуть бути й інші люди — за них очок не дають, але й не штрафують.', 'You only need to name them, in any order. Other people may be in the shot too — they score nothing, but there’s no penalty either.')}</p>`;
     const found = foundList();
     const cards = reveal
       ? s.shot.targets.map((p) => {
@@ -149,7 +160,7 @@
     const worth = turns() ? s.worth : s.mine?.worth;
     $('#worth').innerHTML = reveal ? (s.shot.others.length
       ? `<span class="also">${L('Також на фото', 'Also in the shot')}: ${s.shot.others.map((p) => escapeHtml(pname(p))).join(', ')}</span>` : '')
-      : `<span>${L('Зараз за гравця', 'Now per player')}:</span><b>${worth}</b><small>100 − 4 × ${openSet().size}</small>`;
+      : `<span>${L('Вгадаєш зараз — за гравця', 'Guess now — per player')}:</span><b>${worth}</b><small>${worthNote(openSet().size)}</small>`;
   }
 
   function slotCard(p, pts, miss, by = []) {
@@ -197,7 +208,7 @@
       $('#free-left').innerHTML = `${L('Без штрафу', 'Free')}: <b>${s.mine?.freeLeft ?? s.freeNeutral}</b> / ${s.freeNeutral}`;
       $('#free-left').title = L('Скільки ще разів можна назвати того, хто міг бути на кадрі, без штрафу', 'How many more times you can name someone who may be in the shot without a penalty');
       $('#answer-hint').textContent = s.mine?.done ? L('Твоє фото закрито. Чекаємо інших…', 'Your photo is done. Waiting for others…')
-        : L('Натискай квадратики, щоб відкрити фото. Хибне ім’я відкриває ще один.', 'Tap tiles to reveal the photo. A wrong name opens one more.');
+        : L('Натискай на квадратики, щоб відкрити фото. Хибне ім’я відкриє ще один.', 'Tap tiles to reveal the photo. A wrong name opens one more.');
     }
   }
 
@@ -207,7 +218,7 @@
       ? s.named.map((n) => ({ ...n }))
       : [...(s.mine?.neutral || []).map((p) => ({ kind: 'neutral', player: p })), ...(s.mine?.wrong || []).map((p) => ({ kind: 'wrong', player: p }))];
     $('#misses').innerHTML = list.length && s.phase === 'guess'
-      ? `<span class="field-label">${L('Названі', 'Named')}</span>${list.map((n) => `<span class="miss ${n.kind}" style="${turns() ? seatStyle(n.seat) : ''}" title="${n.kind === 'neutral' ? L('міг бути на кадрі — не загаданий', 'may be in the shot — not asked for') : ''}">${turns() ? '<i class="dot-p"></i>' : ''}${n.kind === 'neutral' ? '⚪ ' : n.kind === 'wrong' ? '✕ ' : ''}${n.player ? escapeHtml(pname(n.player)) : L('пас', 'pass')}</span>`).join('')}`
+      ? `<span class="field-label">${L('Названі', 'Named')}</span>${list.map((n) => `<span class="miss ${n.kind}" style="${turns() ? seatStyle(n.seat) : ''}" title="${n.kind === 'neutral' ? L('міг бути на кадрі, але загадали не його', 'may be in the shot, but not one we asked for') : ''}">${turns() ? '<i class="dot-p"></i>' : ''}${n.kind === 'neutral' ? '⚪ ' : n.kind === 'wrong' ? '✕ ' : ''}${n.player ? escapeHtml(pname(n.player)) : L('пас', 'pass')}</span>`).join('')}`
       : '';
   }
 
@@ -379,11 +390,11 @@
     } else if (res.result === 'neutral') {
       window.Sound.play('pop');
       toast(res.free
-        ? L(`${nm} — можливо, він і є на кадрі, але його не загадано. Без штрафу (лишилось ${res.left}).`, `${nm} — he may be in the shot, but he isn’t one we ask for. No penalty (${res.left} left).`)
-        : L(`${nm} не загаданий, а безкоштовні відповіді скінчились — відкрито ще квадратик`, `${nm} isn’t asked for, and free answers are used up — one more tile opened`));
+        ? L(`${nm} — можливо, він і є на кадрі, але загадали не його. Без штрафу (таких відповідей лишилось: ${res.left}).`, `${nm} — he may be in the shot, but he isn’t one we asked for. No penalty (free answers left: ${res.left}).`)
+        : L(`${nm} — загадали не його, а відповіді без штрафу вже скінчились. Відкриваємо ще один квадратик`, `${nm} isn’t one we asked for, and your free answers are used up. One more tile opens`));
     } else {
       window.Sound.play('miss');
-      toast(turns() ? L(`${nm} — мимо`, `${nm} — miss`) : L(`${nm} — його тут бути не могло. Відкрито ще квадратик`, `${nm} — he can’t be in this shot. One more tile opened`), 'bad');
+      toast(turns() ? L(`${nm} — мимо`, `${nm} — miss`) : L(`${nm} — його тут бути не могло. Відкриваємо ще один квадратик`, `${nm} — he can’t be in this shot. One more tile opens`), 'bad');
     }
     if (!input.disabled) input.focus();
   }
@@ -393,11 +404,11 @@
   $('#finish-btn').addEventListener('click', async () => {
     const s = state;
     if (turns()) {
-      if (await ask(L('Більше нікого не впізнаєте?', 'Can’t recognise anyone else?'), { note: L('Коли «Досить» натиснуть усі, фото відкриється.', 'When everyone presses “That’s it”, the photo is revealed.'), ok: L('🏁 Досить', '🏁 That’s it') })) g.act('finishRound');
+      if (await ask(L('Більше нікого не впізнаєте?', 'Can’t recognise anyone else?'), { note: L('Коли «Досить» натиснуть усі, покажемо все фото.', 'Once everyone presses “That’s it”, we show the whole photo.'), ok: L('🏁 Досить', '🏁 That’s it') })) g.act('finishRound');
       return;
     }
     const found = s.mine?.found.length || 0;
-    if (await ask(L('Здаєшся?', 'Give up?'), { note: L(`Фото відкриється. Відгадано ${found} з ${s.shot.count} — ці очки лишаться.`, `The photo will be revealed. You got ${found} of ${s.shot.count} — you keep those points.`), ok: L('Здаюсь', 'Give up') })) g.act('finishRound');
+    if (await ask(L('Здаєшся?', 'Give up?'), { note: L(`Покажемо все фото. Ти відгадав ${found} з ${s.shot.count} — ці очки залишаться.`, `We’ll show the whole photo. You got ${found} of ${s.shot.count} — you keep those points.`), ok: L('Здаюсь', 'Give up') })) g.act('finishRound');
   });
 
   // ── підсумок
@@ -441,8 +452,8 @@
           <li><b>🚩</b><span>${L('позначайте неякісні кадри й ті, на яких неможливо вгадати;', 'flag poor-quality shots and ones that are impossible to guess;')}</span></li>
           <li><b>➕</b><span>${L('додавайте футболістів, яких видно на фото, але не підписано.', 'add footballers who are in the photo but not tagged.')}</span></li>
         </ul>
-        <p class="beta-foot">${L('Кожен звіт ми переглядаємо й оновлюємо архів. А ідеї та враження від гри — кнопка «💬 Відгук про гру» внизу.',
-          'We review every report and update the archive. Ideas and thoughts about the game — the “💬 Feedback” button at the bottom.')}</p>
+        <p class="beta-foot">${L('Ми переглядаємо кожен звіт і оновлюємо архів. А ідеями й враженнями від гри діліться через кнопку «💬 Відгук про гру» внизу.',
+          'We review every report and update the archive. Ideas and thoughts about the game are welcome via the “💬 Feedback” button at the bottom.')}</p>
         <div class="confirm-actions"><button type="button" class="btn btn-primary" data-beta-ok>${L('Зрозуміло, до гри!', 'Got it — let’s play!')}</button></div>
       </div>`;
     const close = () => {

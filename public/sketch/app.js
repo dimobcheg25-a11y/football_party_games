@@ -24,14 +24,14 @@
     },
     hints: {
       difficulty: {
-        easy: L('Найвідоміші футболісти (топ-400) і клуби, прості терміни й головні трофеї.',
-          'The most famous footballers (top 400) and clubs, simple terms and the main trophies.'),
-        normal: L('Футболісти до топ-800, більше клубів, терміни й трофеї для тих, хто дивиться футбол.',
-          'Footballers up to the top 800, more clubs, terms and trophies for those who follow football.'),
+        easy: L('Лише найвідоміші футболісти й клуби, прості терміни й головні трофеї.',
+          'Only the most famous footballers and clubs, simple terms and the main trophies.'),
+        normal: L('Більше футболістів і клубів, терміни й трофеї для тих, хто стежить за футболом.',
+          'More footballers and clubs, plus terms and trophies for people who follow football.'),
       },
       drawSeconds: {
-        0: L('Без таймера: очки — за порядком (100, 80, 60…). Не знаєш — «🏳️ Не знаю».',
-          'No timer: points go by order (100, 80, 60…). Stuck? Press “🏳️ No idea”.'),
+        0: L('Без таймера очки йдуть за порядком: хто вгадав першим — 100, другим — 80, далі 60… Не знаєш — тисни «🏳️ Не знаю».',
+          'Without a timer, points go by order: first to guess gets 100, second 80, then 60… Stuck? Press “🏳️ No idea”.'),
       },
     },
     createOptions: (s) => ({ difficulty: s.difficulty, laps: Number(s.laps), drawSeconds: Number(s.drawSeconds) }),
@@ -365,7 +365,7 @@
     else brush.classList.add('hidden');
 
     const input = $('#feed-input');
-    input.placeholder = amDrawer() ? L('Чат (без відповіді!)', 'Chat (no spoilers!)')
+    input.placeholder = amDrawer() ? L('Чат (тільки не підказуй!)', 'Chat (no spoilers!)')
       : iGuessed() ? L('Чат для тих, хто вгадав', 'Chat for those who got it') : L('Твоя відповідь…', 'Your guess…');
     $('#pass-btn').classList.toggle('hidden', !(s.phase === 'draw' && !amDrawer() && !iGuessed()));
     $('#pass-btn').disabled = iPassed();
@@ -505,7 +505,7 @@
       : Math.max(s.points.min, s.points.max - s.points.step * done);
     if (!done) pts += s.points.first;
     el.textContent = L(`вгадаєш зараз — +${pts}`, `guess now — +${pts}`);
-    el.title = done ? '' : L(`разом з +${s.points.first} першому`, `incl. +${s.points.first} for being first`);
+    el.title = done ? '' : L(`з них ${s.points.first} — бонус тому, хто вгадає першим`, `includes ${s.points.first} bonus for guessing first`);
   }
 
   // ── таймер (без таймера — скільки вже малюють)
@@ -522,7 +522,7 @@
     if (!state.deadline) { el.textContent = ''; return; }
     const left = Math.max(0, Math.ceil((state.deadline - g.serverNow()) / 1000));
     el.textContent = state.phase === 'reveal' ? L(`далі через ${left} с`, `next in ${left}s`)
-      : state.phase === 'choose' ? L(`вибір · ${left} с`, `choosing · ${left}s`) : `⏱ ${left}`;
+      : state.phase === 'choose' ? L(`вибір слова · ${left} с`, `picking a word · ${left}s`) : `⏱ ${left}`;
     el.classList.toggle('low', state.phase === 'draw' && left <= 10);
   }
   setInterval(tick, 250);

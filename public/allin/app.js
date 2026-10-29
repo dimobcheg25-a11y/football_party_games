@@ -15,7 +15,7 @@
   let mySeat = -1;
   let groups = null; // доступні групи питань з /api/allin/categories
 
-  const secHint = (n) => L(`${n} с на оцінку й 25 с на ставки. Соло — без таймера.`, `${n} s to guess and 25 s to bet. Solo has no timer.`);
+  const secHint = (n) => L(`${n} секунд, щоб назвати число, і 25 — на ставки. Соло грається без таймера.`, `${n} seconds to name a number and 25 to bet. Solo has no timer.`);
   const g = RoomClient.create({
     id: 'allin',
     title: 'All in',
@@ -114,7 +114,7 @@
     const s = state;
     $('#screen-game').classList.toggle('solo', s.solo);
     $('#round-info').innerHTML = `<b>${L(`Роздача ${s.round} з ${s.rounds}`, `Hand ${s.round} of ${s.rounds}`)}</b>`
-      + (s.mult > 1 ? `<span class="final-round">${L('Фінальна роздача — виграші ×2', 'Final hand — winnings ×2')}</span>` : `<span class="level">${DIFF_LABELS[s.options.difficulty]}</span>`);
+      + (s.mult > 1 ? `<span class="final-round">${L('Остання роздача — виграші подвоюються', 'Last hand — winnings are doubled')}</span>` : `<span class="level">${DIFF_LABELS[s.options.difficulty]}</span>`);
     renderQuestion();
     renderStage();
     $('#reactions').classList.toggle('hidden', s.solo);
@@ -174,7 +174,7 @@
         <div class="chips levels" id="levels">${[0, 1, 2].map((i) => `<button type="button" class="chip" data-level="${i}"><b>${LEVELS[i]}</b> ${escapeHtml(q.ranges[i])} <em>×${s.rules.solo[i] * s.mult}</em></button>`).join('')}</div></div>
       <div class="stake" id="stake"></div>` : '';
     return `<form class="guess-form" id="guess-form" autocomplete="off">
-        <label class="field-label" for="guess-input">${s.solo ? L('Твоя оцінка', 'Your guess') : L('Твоя оцінка — таємно', 'Your guess — secret')}</label>
+        <label class="field-label" for="guess-input">${s.solo ? L('Твоя оцінка', 'Your guess') : L('Твоя оцінка (поки що її ніхто не бачить)', 'Your guess (nobody sees it yet)')}</label>
         <div class="guess-row">
           <input id="guess-input" type="number" inputmode="${q.dec ? 'decimal' : 'numeric'}" min="0" step="${q.dec ? '0.1' : '1'}" placeholder="${q.year ? '2005' : '0'}" />
           <span class="g-unit">${escapeHtml(q.unit)}</span>
@@ -213,14 +213,14 @@
     const s = state;
     if (s.solo) {
       document.querySelectorAll('#levels [data-level]').forEach((b) => b.classList.toggle('active', Number(b.dataset.level) === soloLevel));
-      renderStake($('#stake'), soloExtra, bank(), L(`До маркера (${s.rules.free}) докласти`, `Add to your marker (${s.rules.free})`));
+      renderStake($('#stake'), soloExtra, bank(), L(`Докласти фішок до маркера (у ньому ${s.rules.free})`, `Add chips to your marker (it holds ${s.rules.free})`));
       $('#guess-status').textContent = L(`Влучиш у вилку — отримаєш ${fmt((s.rules.free + soloExtra) * s.rules.solo[soloLevel] * s.mult)}`, `Hit the range and you get ${fmt((s.rules.free + soloExtra) * s.rules.solo[soloLevel] * s.mult)}`);
       return;
     }
     const mine = s.myGuess;
     const waiting = L(`Оцінили ${s.guessed.length} з ${online()}`, `${s.guessed.length} of ${online()} guessed`);
     $('#guess-status').innerHTML = mine != null
-      ? `${L('На столі', 'On the table')}: <b>${escapeHtml(num(mine))}</b> · ${L('можна змінити', 'you can change it')} · ${waiting}`
+      ? `${L('Твоя оцінка', 'Your guess')}: <b>${escapeHtml(num(mine))}</b>, ${L('її ще можна змінити', 'you can still change it')} · ${waiting}`
       : waiting;
     $('#guess-btn').textContent = mine != null ? L('Змінити', 'Change') : L('На стіл', 'On the table');
   }
@@ -335,10 +335,10 @@
     const other = myBets[1 - sel].extra;
     const k = 3 * s.mult;
     const ex = s.rules.free * k;
-    el.innerHTML = `<p class="hint center">${L('Тисни на оцінку, щоб поставити маркер. Свій чи чужий — неважливо.', 'Tap a guess to place a marker. Yours or someone else’s — it doesn’t matter.')}<br>
-        ${L(`Виграє найбільша оцінка, що не більша за відповідь. ×${k} — фішки на маркері множаться на ${k}: ${s.rules.free} → ${ex}.`, `The highest guess not above the answer wins. ×${k} means the chips on your marker are multiplied by ${k}: ${s.rules.free} → ${ex}.`)}</p>
+    el.innerHTML = `<p class="hint center">${L('Натисни на оцінку, щоб поставити на неї маркер. Можна і на свою, і на чужу.', 'Tap a guess to put a marker on it. Yours or someone else’s — either is fine.')}<br>
+        ${L(`Виграє найближча оцінка, яка не більша за відповідь. Число біля «×» — у скільки разів зростуть фішки: при ×${k} маркер із ${s.rules.free} фішок принесе ${ex}.`, `The closest guess that isn’t above the answer wins. The number after “×” is how many times your chips grow: at ×${k} a marker with ${s.rules.free} chips brings ${ex}.`)}</p>
       <div class="markers">${myBets.map((b, m) => `<button type="button" class="marker ${m === sel ? 'active' : ''}" data-m="${m}" style="${seatStyle(mySeat)}">
-          <i class="token mine"><em>${s.rules.free + b.extra}</em></i><span><b>${L('Маркер', 'Marker')} ${m + 1}</b><small>${escapeHtml(slotText(b))}${b.extra ? ` · +${fmt(b.extra)}` : ''}</small>${b.slot >= 0 ? `<small class="m-pay">${L(`виграє → ${fmt(payOf(b))}`, `wins → ${fmt(payOf(b))}`)}</small>` : ''}</span></button>`).join('')}</div>
+          <i class="token mine"><em>${s.rules.free + b.extra}</em></i><span><b>${L('Маркер', 'Marker')} ${m + 1}</b><small>${escapeHtml(slotText(b))}${b.extra ? ` · +${fmt(b.extra)}` : ''}</small>${b.slot >= 0 ? `<small class="m-pay">${L(`якщо виграє: ${fmt(payOf(b))}`, `if it wins: ${fmt(payOf(b))}`)}</small>` : ''}</span></button>`).join('')}</div>
       <div class="stake" id="bet-stake"></div>
       <button type="button" class="btn btn-primary btn-lg" id="done-btn" ${myBets.some((b) => b.slot >= 0) ? '' : 'disabled'}>${L('Ставки зроблено', 'Bets done')}</button>
       <p class="hint center">${L(`У стосі: ${chipsText(bank() - myBets[0].extra - myBets[1].extra)}`, `In your stack: ${chipsText(bank() - myBets[0].extra - myBets[1].extra)}`)} · ${waiting}</p>`;
@@ -392,7 +392,7 @@
         const pay = payOf(b);
         return `<span class="bd-bet won">${on} × ${s.slots[b.slot].odds * s.mult} = ${fmt(pay)} <b>${signed(pay - b.extra)}</b></span>`;
       });
-      if (r.bonus) parts.push(`<span class="bd-bet won">${L('автор оцінки', 'guess author')} <b>${signed(r.bonus)}</b></span>`);
+      if (r.bonus) parts.push(`<span class="bd-bet won">${L('за свою оцінку', 'for the winning guess')} <b>${signed(r.bonus)}</b></span>`);
       return `<li style="${seatStyle(seat)}" class="${seat === mySeat ? 'me' : ''}"><span class="dot-p"></span><span class="bd-name">${escapeHtml(seatName(seat))}</span>
         <span class="bd-bets">${parts.join('') || `<span class="bd-bet">${L('без ставок', 'no bets')}</span>`}</span>
         <b class="bd-net ${r.net > 0 ? 'good' : r.net < 0 ? 'bad' : ''}">${signed(r.net)}</b></li>`;

@@ -173,7 +173,7 @@ class ArchiveRoom extends BaseRoom {
     if (!Number.isInteger(i) || i < 0 || i >= TILES) return { error: T('Такого квадратика немає', 'No such tile') };
     if (this.options.mode === 'turns') {
       if (this.order[this.turn] !== seat) return { error: T('Зараз не твій хід', 'It’s not your turn') };
-      if (this.turnOpened) return { error: T('За хід — один квадратик. Тепер назви гравця або пас', 'One tile per turn. Now name a player or pass') };
+      if (this.turnOpened) return { error: T('За хід можна відкрити лише один квадратик. Тепер назви гравця або пасуй', 'Only one tile per turn. Now name a player or pass') };
       if (this.open.has(i)) return { error: T('Він уже відкритий', 'Already open') };
       this.open.add(i);
       this.turnOpened = true;
@@ -292,7 +292,7 @@ class ArchiveRoom extends BaseRoom {
   skipShot(seat) {
     if (this.status !== 'playing' || this.phase !== 'guess') return { error: NOT_NOW };
     if (seat !== this.host()) return { error: T('Інше фото може обрати господар кімнати', 'Only the host can swap the photo') };
-    if (!this.canSkip()) return { error: T('Фото вже почали відкривати', 'The photo is already being opened') };
+    if (!this.canSkip()) return { error: T('Фото вже почали відкривати — замінити не вийде', 'Someone has already started on this photo — it can’t be swapped') };
     const next = this.randomShot();
     this.resetRound();
     this.beginRound(next);
@@ -376,7 +376,7 @@ class ArchiveRoom extends BaseRoom {
         ...(reveal ? {
           year: s.year, desc: s.desc, author: s.author, license: s.license, page: s.page, file: s.file,
           targets: this.targets.map((id) => ({ ...publicPlayer(playerById.get(id)), by: foundBy(id) })),
-          others: s.who.filter((id) => !this.targets.includes(id)).map((id) => publicPlayer(playerById.get(id))),
+          others: s.who.filter((id) => !this.targets.includes(id) && playerById.has(id)).map((id) => publicPlayer(playerById.get(id))), // гравців росії/білорусі в базі немає
         } : {}),
       } : null,
       open: turns ? [...this.open] : null,

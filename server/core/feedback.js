@@ -21,7 +21,7 @@ function setupFeedback(app, games) {
     const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket.remoteAddress;
     const now = Date.now();
     const times = (recent.get(ip) || []).filter((t) => now - t < 3600e3);
-    if (times.length >= 10) return fail('Забагато відгуків — спробуй пізніше', 'Too much feedback — try again later');
+    if (times.length >= 10) return fail('Забагато відгуків поспіль. Спробуй трохи пізніше.', 'That’s a lot of feedback in a row. Try again a bit later.');
     recent.set(ip, [...times, now]);
 
     const who = String(contact || '').trim().slice(0, 100);

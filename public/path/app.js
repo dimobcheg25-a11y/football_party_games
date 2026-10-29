@@ -34,7 +34,7 @@
     createOptions: (s) => ({ ...s, rounds: Number(s.rounds), turnSeconds: Number(s.turnSeconds) }),
     optionList: (o) => [ERA_LABELS[o.era], DIFF_LABELS[o.difficulty],
       o.start === 'first' ? L('з першого клубу', 'from the first club') : L('з останнього клубу', 'from the last club'),
-      `${o.rounds} ${W.round(o.rounds)}`, o.turnSeconds ? L(`${o.turnSeconds} с на етап`, `${o.turnSeconds}s per club`) : L('без таймера', 'no timer'),
+      `${o.rounds} ${W.round(o.rounds)}`, o.turnSeconds ? L(`${o.turnSeconds} с на клуб`, `${o.turnSeconds}s per club`) : L('без таймера', 'no timer'),
       !o.showYears && L('без років', 'no years'), !o.showStats && L('без матчів і голів', 'no apps & goals')].filter(Boolean),
     onState(s, prev) {
       state = s;
@@ -54,8 +54,8 @@
     if (s.phase === 'guess' && (p.phase !== 'guess' || p.round !== s.round)) window.Sound.play('whistle');
   }
 
-  $('#points-rule').textContent = L('100 за перший клуб, далі рівномірно менше — до 10 за останній (скільки клубів у кар’єрі, видно одразу)',
-    '100 for the first club, then evenly less — down to 10 for the last one (you see how many clubs the career has from the start)');
+  $('#points-rule').textContent = L('100 за перший клуб, з кожним наступним трохи менше, за останній — 10. Скільки клубів у кар’єрі, видно одразу',
+    '100 for the first club, a bit less for each next one, and 10 for the last. You can see from the start how many clubs the career has');
 
   // ── гра
   function stageHtml(st, i, current) {
@@ -101,8 +101,8 @@
     $('#pass-btn').disabled = !!solved || done;
     if (input.disabled) { input.value = ''; renderSuggestions(); }
     $('#answer-hint').textContent = solved
-      ? L(`✓ Вгадав на етапі ${solved.stage + 1}: +${solved.points}. Чекаємо інших…`, `✓ Got it at club ${solved.stage + 1}: +${solved.points}. Waiting for the others…`)
-      : done ? L('Відповідь на цьому етапі вже є — чекай наступного клубу.', 'You’ve answered at this club — wait for the next one.') : '';
+      ? L(`✓ Вгадав на ${solved.stage + 1}-му клубі: +${solved.points}. Чекаємо інших…`, `✓ Got it at club ${solved.stage + 1}: +${solved.points}. Waiting for the others…`)
+      : done ? L('Спробу на цей клуб уже використано — чекай наступного.', 'You’ve used your guess for this club — wait for the next one.') : '';
     renderHints(solved);
 
     // відповідь після раунду
@@ -111,7 +111,7 @@
     if (reveal && s.answer) {
       const a = s.answer;
       const results = s.seats.map((x, i) => (x ? i : -1)).filter((i) => i >= 0)
-        .map((i) => { const r = s.solved[i]; return `<li style="${seatStyle(i)}"><span class="dot-p"></span>${escapeHtml(seatName(i))}<b>${r ? `+${r.points} · ${L('етап', 'club')} ${r.stage + 1}` : L('не вгадав', 'missed')}</b></li>`; }).join('');
+        .map((i) => { const r = s.solved[i]; return `<li style="${seatStyle(i)}"><span class="dot-p"></span>${escapeHtml(seatName(i))}<b>${r ? `+${r.points} · ${L('клуб', 'club')} ${r.stage + 1}` : L('не вгадав', 'missed')}</b></li>`; }).join('');
       const iVoted = s.nextVotes.includes(mySeat);
       rv.innerHTML = `<div class="answer-card">
           <div class="answer-photo">${a.photo ? `<img src="${a.photo}" alt="" />` : `<span>${escapeHtml(initials(a.name))}</span>`}</div>
@@ -136,7 +136,7 @@
     const stagePts = s.points[s.stage];
     const next = s.points[s.stage + 1];
     $('#earn').innerHTML = solved || s.potential == null ? '' : `${L('Вгадаєш зараз —', 'Guess now —')} <b>+${s.potential}</b> ${W.point(s.potential)}` +
-      (s.potential < stagePts ? ` <small>(${L(`${stagePts} за клуб − підказки`, `${stagePts} for the club − hints`)})</small>` : '') +
+      (s.potential < stagePts ? ` <small>(${L(`${stagePts} за цей клуб, мінус ${stagePts - s.potential} за підказки`, `${stagePts} for this club, minus ${stagePts - s.potential} for hints`)})</small>` : '') +
       `<small class="next">${next != null ? L(`на наступному клубі — ${next}`, `at the next club — ${next}`) : L('це останній клуб', 'this is the last club')}</small>`;
     // справжня ціна: очок за відповідь не менше minPoints, тож на останніх клубах підказка знімає менше (або нічого)
     const room = Math.max(0, (s.potential ?? stagePts) - (s.minPoints ?? 0));

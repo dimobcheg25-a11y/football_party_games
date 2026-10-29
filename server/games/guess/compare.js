@@ -259,7 +259,7 @@ function compare(g, t) {
     text: T(gp.label, gp.en), color: samePos ? 'green' : common ? 'yellow' : 'grey',
     note: !samePos && common
       ? (gp.exact && tp.exact ? T(`теж ${GROUPS[common].uk}`, `also a ${GROUPS[common].en}`)
-        : T('та сама лінія; точна позиція одного з них невідома', 'same line; the exact position of one of them is unknown'))
+        : T('та сама лінія, але точна позиція когось із них невідома', 'same line, but the exact position of one of them is unknown'))
       : null,
   };
 
@@ -328,7 +328,7 @@ function compare(g, t) {
   };
 
   if (t.modern) {
-    if (!g.modern) cells.assists = { text: '—', color: 'grey', note: T('почав до 2012 — даних немає', 'started before 2012 — no data') };
+    if (!g.modern) cells.assists = { text: '—', color: 'grey', note: T("почав кар'єру до 2012, даних немає", 'started before 2012, no data') };
     else if (g.assists == null || t.assists == null) cells.assists = { text: g.assists == null ? '?' : String(g.assists), color: 'grey', note: NO_DATA };
     else cells.assists = { text: String(g.assists), ...numberCell(g.assists, t.assists, { yellow: [10, 0.3] }) };
   }

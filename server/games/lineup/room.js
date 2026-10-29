@@ -194,7 +194,7 @@ class LineupRoom extends BaseRoom {
     if (b?.done) return { error: T('Ти вже закінчив цей раунд', 'You’ve already finished this round') };
     const id = player ? player.id : `coach:${coachKey}`;
     const wrongBefore = turns ? this.wrong.some((w) => w.id === id) : b.wrong.includes(id);
-    if (wrongBefore) return { error: T('Його вже називали — його тут немає', 'Already named — not in this match') };
+    if (wrongBefore) return { error: T('Його вже називали — у цьому матчі він не грав', 'Already named — he didn’t play in this match') };
     const hit = this.open().filter((s) => (player && s.pid === player.id) || (coachKey && s.coach && s.coachKey === coachKey));
     const fresh = hit.filter((s) => (turns ? !this.found.has(s.key) : !b.found.has(s.key)));
     if (hit.length && !fresh.length) return { error: T('Він уже на полі', 'Already on the pitch') };
@@ -286,7 +286,7 @@ class LineupRoom extends BaseRoom {
   skipMatch(seat) {
     if (this.status !== 'playing' || this.phase !== 'guess') return { error: NOT_NOW };
     if (seat !== this.host()) return { error: T('Інший матч може обрати господар кімнати', 'Only the host can skip the match') };
-    if (!this.canSkip()) return { error: T('Матч уже почали — пропустити не можна', 'The match is already in play — it can’t be skipped') };
+    if (!this.canSkip()) return { error: T('Матч уже почали вгадувати — замінити не вийде', 'Someone has already started on this match — it can’t be swapped') };
     this.resetRound();
     this.beginRound(this.randomMatch());
     return { ok: true };

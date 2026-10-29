@@ -15,8 +15,8 @@
 const crypto = require('crypto');
 const { T, localize, langOf } = require('./i18n');
 
-const NOT_IN_ROOM = T('Ви не в кімнаті', 'You are not in a room');
-const NOT_PLAYER = T('Ви не гравець цієї кімнати', 'You are not a player in this room');
+const NOT_IN_ROOM = T('Ти не в кімнаті', 'You’re not in a room');
+const NOT_PLAYER = T('Ти не граєш у цій кімнаті', 'You’re not a player in this room');
 const ROOM_TTL_MS = 60 * 60 * 1000; // кімнату без активності видаляємо через годину
 const REACTIONS = ['👍', '😂', '😮', '😡', '🔥', '👏'];
 

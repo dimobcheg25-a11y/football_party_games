@@ -25,11 +25,11 @@ window.Feedback = (() => {
       <form class="sheet ask-sheet fb-sheet" role="dialog" aria-modal="true" aria-labelledby="fb-title">
         <div class="sheet-head"><h3 id="fb-title">${L('💬 Відгук про гру', '💬 Feedback')}</h3>
           <button type="button" class="round-btn" data-fb-close aria-label="${L('Закрити', 'Close')}">✕</button></div>
-        <p class="fb-lead">${L('Що подобається, чого бракує, що зламалось? Ми читаємо кожен відгук — саме з них з’являються нові режими й виправлення.',
+        <p class="fb-lead">${L('Що подобається, чого бракує, що зламалось? Ми читаємо кожен відгук: саме з них беруться нові режими й виправлення.',
           'What do you like, what’s missing, what’s broken? We read every message — that’s where new modes and fixes come from.')}</p>
         <div class="chips fb-kinds" role="radiogroup">${KINDS.map(([k, t]) => `<button type="button" class="chip${k === kind ? ' active' : ''}" data-kind="${k}" aria-pressed="${k === kind}">${t}</button>`).join('')}</div>
         <textarea id="fb-text" rows="5" maxlength="2000" placeholder="${esc(PLACEHOLDER[kind])}"></textarea>
-        <input id="fb-contact" maxlength="100" autocomplete="off" placeholder="${L('Ім’я чи контакт для відповіді — за бажанням', 'Name or contact for a reply — optional')}" />
+        <input id="fb-contact" maxlength="100" autocomplete="off" placeholder="${L('Ім’я чи контакт, якщо хочеш відповіді', 'Your name or contact, if you’d like a reply')}" />
         <p class="fb-error hidden" role="alert"></p>
         <div class="confirm-actions">
           <button type="button" class="btn btn-secondary" data-fb-close>${L('Скасувати', 'Cancel')}</button>
@@ -69,13 +69,13 @@ window.Feedback = (() => {
         const res = await r.json();
         if (res.error) throw new Error(res.error);
       } catch (x) {
-        err.textContent = x.message && !/fetch|JSON/i.test(x.message) ? x.message : L('Не вдалося надіслати — спробуй ще раз', 'Couldn’t send — try again');
+        err.textContent = x.message && !/fetch|JSON/i.test(x.message) ? x.message : L('Не вдалося надіслати. Спробуй ще раз.', 'Couldn’t send it. Please try again.');
         err.classList.remove('hidden');
         $('#fb-send').disabled = false;
         return;
       }
       $('form').innerHTML = `<p class="fb-thanks">${L('Дякуємо! 💛', 'Thank you! 💛')}</p>
-        <small class="ask-note">${L('Відгук отримали — подивимось уже найближчим часом.', 'Got it — we’ll take a look very soon.')}</small>
+        <small class="ask-note">${L('Ми отримали відгук і скоро його подивимось.', 'We got it and will take a look soon.')}</small>
         <div class="confirm-actions"><button type="button" class="btn btn-primary" data-fb-close>${L('Грати далі', 'Back to the game')}</button></div>`;
       $('[data-fb-close]').focus();
     });

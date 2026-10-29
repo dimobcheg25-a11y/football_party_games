@@ -23,14 +23,14 @@
     },
     hints: {
       difficulty: {
-        easy: L('Найвідоміші гравці, між ними — один: «хто грав і з тим, і з тим?»', 'The most famous players with one in between: “who played with both?”'),
-        normal: L('Найвідоміші гравці, між ними — двоє.', 'The most famous players with two in between.'),
-        fan: L('Три-чотири кроки; кінці — відомі гравці топ-ліг і збірних.', 'Three or four steps; the ends are well-known players from top leagues and national teams.'),
+        easy: L('Двоє найвідоміших гравців, а між ними треба знайти одного: хто грав і з тим, і з тим?', 'Two of the most famous players, and you need one in between: who played with both?'),
+        normal: L('Двоє найвідоміших гравців, а між ними треба знайти двох.', 'Two of the most famous players, and you need two in between.'),
+        fan: L('Старт і фініш — відомі гравці топ-ліг і збірних, між ними три-чотири кроки.', 'Start and finish are well-known players from top leagues and national teams, three or four steps apart.'),
       },
     },
     onSetup() {
-      $('#points-rule').textContent = L('100 за найкоротший ланцюжок; −20 за кожну зайву ланку, −10 за помилку, −15 за підказку клубу, −25 за першу літеру (дійшов — щонайменше 10); у кімнаті першому, хто дійшов найкоротшим, — ще +10.',
-        '100 for the shortest chain; −20 per extra link, −10 per mistake, −15 per club hint, −25 per initial (at least 10 if you get there); in a room the first to finish with the shortest chain gets another +10.');
+      $('#points-rule').textContent = L('за найкоротший ланцюжок — 100. Кожна зайва ланка забирає 20, помилка — 10, підказка з клубом — 15, перша літера — 25. Якщо дійшов до фінішу, отримаєш щонайменше 10. У кімнаті той, хто першим дійде найкоротшим шляхом, отримує ще 10.',
+        '100 for the shortest chain. Each extra link costs 20, a mistake 10, the club hint 15, the initial 25. If you reach the finish, you get at least 10. In a room, the first to finish by the shortest way gets 10 more.');
     },
     createOptions: (s) => ({ difficulty: s.difficulty, rounds: Number(s.rounds), mistakes: Number(s.mistakes), turnSeconds: Number(s.turnSeconds) }),
     optionList: (o) => [DIFF_LABELS[o.difficulty],
@@ -99,7 +99,7 @@
     input.disabled = over;
     if (over) { input.value = ''; renderSuggestions(); }
     const lastName = pname(chain[chain.length - 1].player);
-    input.placeholder = L(`${lastName} → хто грав з ним разом?`, `${lastName} → who played with him?`); // імена не відмінюємо
+    input.placeholder = L(`Хто грав разом з ним? (${lastName})`, `Who played with him? (${lastName})`); // імена не відмінюємо
     const max = s.options.mistakes;
     $('#lamps').innerHTML = max
       ? `<span>${L('Помилки', 'Mistakes')}</span>${Array.from({ length: max }, (_, i) => `<i class="${i < s.myMistakes ? 'burnt' : ''}"></i>`).join('')}`
@@ -112,8 +112,8 @@
     $('#letter-btn').textContent = L(`🔤 Перша літера прізвища −${s.points.letter}`, `🔤 Surname initial −${s.points.letter}`);
     $('#letter-btn').disabled = over || !!lettered;
     $('#hint-list').innerHTML = (hinted
-      ? `<li>${hinted.img ? `<img src="${hinted.img}" alt="" />` : ''}${L(`Наступна ланка — через <b>${escapeHtml(hinted.club)}</b>`, `Next link — through <b>${escapeHtml(hinted.club)}</b>`)}</li>` : '')
-      + (lettered ? `<li><span class="hint-letter">${escapeHtml(lettered.letter)}</span>${L(`Прізвище наступної ланки — на <b>${escapeHtml(lettered.letter)}</b>`, `The next link’s surname starts with <b>${escapeHtml(lettered.letter)}</b>`)}</li>` : '');
+      ? `<li>${hinted.img ? `<img src="${hinted.img}" alt="" />` : ''}${L(`Наступного гравця шукай у клубі <b>${escapeHtml(hinted.club)}</b>`, `Look for the next player at <b>${escapeHtml(hinted.club)}</b>`)}</li>` : '')
+      + (lettered ? `<li><span class="hint-letter">${escapeHtml(lettered.letter)}</span>${L(`Прізвище наступного гравця починається на <b>${escapeHtml(lettered.letter)}</b>`, `The next player’s surname starts with <b>${escapeHtml(lettered.letter)}</b>`)}</li>` : '');
     // скільки буде, якщо дійти звідси найкоротшим шляхом — змінюється після помилки, підказки, зайвої ланки
     $('#score-now').innerHTML = !over && s.myPotential != null
       ? L(`Дійдеш звідси найкоротшим шляхом — <b>+${s.myPotential}</b>`, `Reach the finish by the shortest way from here — <b>+${s.myPotential}</b>`) : '';

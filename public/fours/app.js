@@ -27,19 +27,19 @@
     },
     hints: {
       difficulty: {
-        easy: L('Найвідоміші гравці; групи — клуби, збірні, чемпіонати.', 'The most famous players; groups are clubs, nations, leagues.'),
-        normal: L('Відоміші гравці топ-ліг; від клубу до підступної групи — по одній кожного кольору.', 'Well-known players; one group of each colour, from a club to a tricky one.'),
-        fan: L('Ширше коло гравців, більше пасток і складних груп: тренери, академії, роки, тезки.', 'A wider circle of players, more traps and hard groups: coaches, academies, years, namesakes.'),
+        easy: L('Лише найвідоміші гравці, а групи прості: клуби, збірні, чемпіонати.', 'Only the most famous players, and simple groups: clubs, nations, leagues.'),
+        normal: L('Відомі гравці з топових ліг. По одній групі кожного кольору — від простої (наприклад, клуб) до підступної.', 'Well-known players from the top leagues. One group of each colour — from an easy one, like a club, to a tricky one.'),
+        fan: L('Більше гравців, більше пасток і складних груп: тренери, академії, роки народження, тезки.', 'More players, more traps and harder groups: coaches, academies, birth years, namesakes.'),
       },
     },
     onSetup() {
-      $('#points-rule').textContent = L('25 за кожну групу, −5 за помилку, підказки — −5, −10, −15…; усі чотири без помилок — +10; у кімнаті першому, хто розв\'язав, — ще +10.',
-        '25 per group, −5 per mistake, hints −5, −10, −15…; all four without a mistake — +10; in a room the first to solve it gets another +10.');
+      $('#points-rule').textContent = L('25 за кожну групу, мінус 5 за кожну помилку. Підказки коштують 5, потім 10, 15 і так далі. Знайдеш усі чотири без жодної помилки — ще 10 зверху. У кімнаті той, хто розв\'язав першим, отримує ще 10.',
+        '25 for each group, minus 5 for each mistake. Hints cost 5, then 10, 15 and so on. Find all four without a single mistake and get 10 more. In a room, whoever solves it first gets another 10.');
       renderDaily();
     },
     createOptions: (s) => ({ difficulty: s.difficulty, rounds: Number(s.rounds), mistakes: Number(s.mistakes), turnSeconds: Number(s.turnSeconds) }),
     optionList: (o) => o.daily ? [L('Головоломка дня', 'Puzzle of the day')] : [DIFF_LABELS[o.difficulty],
-      o.mistakes ? L(`${o.mistakes} помилки`, `${o.mistakes} mistakes`) : L('помилок без обмеження', 'unlimited mistakes'),
+      o.mistakes ? `${o.mistakes} ${pl(o.mistakes, ['помилка', 'помилки', 'помилок'], ['mistake', 'mistakes'])}` : L('помилок без обмеження', 'unlimited mistakes'),
       `${o.rounds} ${pl(o.rounds, ['головоломка', 'головоломки', 'головоломок'], ['puzzle', 'puzzles'])}`,
       o.turnSeconds ? L(`${o.turnSeconds / 60} хв`, `${o.turnSeconds / 60} min`) : L('без таймера', 'no timer')],
     onState(s, prev) {
@@ -149,7 +149,7 @@
       const p = byId.get(id);
       const link = linkOf.get(id);
       return `<button type="button" class="capsule ${selected.has(id) ? 'on' : ''} ${link != null ? `linked l${link}` : ''}" data-id="${escapeHtml(id)}" ${over ? 'disabled' : ''}>
-        ${link != null ? `<b class="cap-link" title="${L('Підказка: в одній групі', 'Hint: same group')}">${LINKS[link]}</b>` : ''}
+        ${link != null ? `<b class="cap-link" title="${L('Підказка: ці гравці з однієї групи', 'Hint: these players are in the same group')}">${LINKS[link]}</b>` : ''}
         <span class="cap-photo">${photoHtml(p)}</span><span class="cap-name">${escapeHtml(pname(p))}</span></button>`;
     }).join('');
 
@@ -170,18 +170,18 @@
       : L('Остання група — підказка не потрібна', 'Last group — no hint needed');
     // скільки зараз: знайдені групи − помилки − підказки (+10, якщо досі без помилок і знайдеш усі)
     const now = Math.max(0, mine.found.length * s.points.group - mine.mistakes * s.points.mistake - (s.myHintCost || 0));
-    // розклад: «5 = 25 за групи − 5 за помилки − 15 за підказки» — щоб було видно, з чого число
+    // розклад: «5: 25 за групу, мінус 5 за помилку, мінус 15 за підказки» — щоб було видно, з чого число
     const nf = mine.found.length;
-    const parts = [
-      nf ? L(`${nf * s.points.group} за ${nf === 1 ? 'групу' : 'групи'}`, `${nf * s.points.group} for ${nf === 1 ? 'the group' : 'groups'}`) : '',
-      mine.mistakes ? `− ${mine.mistakes * s.points.mistake} ${L(`за ${mine.mistakes === 1 ? 'помилку' : 'помилки'}`, mine.mistakes === 1 ? 'for a mistake' : 'for mistakes')}` : '',
-      s.myHintCost ? `− ${s.myHintCost} ${L('за підказки', 'for hints')}` : '',
+    const fines = [
+      mine.mistakes ? L(`мінус ${mine.mistakes * s.points.mistake} за ${mine.mistakes === 1 ? 'помилку' : 'помилки'}`, `minus ${mine.mistakes * s.points.mistake} for ${mine.mistakes === 1 ? 'a mistake' : 'mistakes'}`) : '',
+      s.myHintCost ? L(`мінус ${s.myHintCost} за підказки`, `minus ${s.myHintCost} for hints`) : '',
     ].filter(Boolean);
-    // ще жодної групи — штрафи віднімуться від майбутніх: «0 · −5 за помилку — віднімуться від груп»
-    const sum = nf ? (parts.length > 1 ? ` = ${parts.join(' ')}` : '')
-      : parts.length ? ` · ${parts.join(' ')} ${L('— віднімуться від груп', '— taken off your groups')}` : '';
-    $('#score-now').innerHTML = over ? '' : L(`Зараз у тебе <b>${now}</b>${sum} · наступна група +${s.points.group}${mine.mistakes ? '' : ` · усі без помилок — ще +${s.points.perfect}`}`,
-      `You have <b>${now}</b> now${sum} · next group +${s.points.group}${mine.mistakes ? '' : ` · all without a mistake — another +${s.points.perfect}`}`);
+    const groups = nf ? L(`${nf * s.points.group} за ${nf === 1 ? 'групу' : 'групи'}`, `${nf * s.points.group} for ${nf === 1 ? 'the group' : 'groups'}`) : '';
+    // ще жодної групи — штрафи віднімуться від майбутніх
+    const sum = nf ? (fines.length ? `: ${[groups, ...fines].join(', ')}` : '')
+      : fines.length ? L(`. Штрафи (${fines.join(', ')}) віднімемо від груп, які знайдеш`, `. Penalties (${fines.join(', ')}) come off the groups you find`) : '';
+    $('#score-now').innerHTML = over ? '' : L(`Зараз у тебе <b>${now}</b>${sum}. Наступна група дасть ще ${s.points.group}${mine.mistakes ? '' : `, а якщо знайдеш усі без помилок — ще ${s.points.perfect} зверху`}.`,
+      `You have <b>${now}</b>${sum}. The next group is worth ${s.points.group}${mine.mistakes ? '' : `, plus ${s.points.perfect} more if you find them all without a mistake`}.`);
     const r = s.myResult;
     $('#play-hint').textContent = r
       ? (r.found === 4 ? L(`✓ Усі чотири! +${r.points}. Чекаємо інших…`, `✓ All four! +${r.points}. Waiting for others…`)
@@ -195,7 +195,7 @@
       const seats = s.seats.map((x, i) => (x ? i : -1)).filter((i) => i >= 0);
       const results = seats.map((i) => {
         const res = s.progress[i]?.result;
-        return `<li style="${seatStyle(i)}"><span class="dot-p"></span>${escapeHtml(seatName(i))}<b>${res ? `${res.found}/4 · ${L('помилок', 'mistakes')} ${res.mistakes}${res.hints ? ` · 💡${res.hints}` : ''} · +${res.points}${res.first ? ' ⚡' : ''}${res.perfect ? ' ✨' : ''}` : '—'}</b></li>`;
+        return `<li style="${seatStyle(i)}"><span class="dot-p"></span>${escapeHtml(seatName(i))}<b>${res ? `${res.found}/4 · ${L('помилок', 'mistakes')}: ${res.mistakes}${res.hints ? ` · 💡${res.hints}` : ''} · +${res.points}${res.first ? ' ⚡' : ''}${res.perfect ? ' ✨' : ''}` : '—'}</b></li>`;
       }).join('');
       const iVoted = s.nextVotes.includes(mySeat);
       rv.innerHTML = `${s.solo ? '' : `<ul class="round-results">${results}</ul>`}
@@ -255,7 +255,7 @@
     if (res.error) toast(res.error, 'bad');
   });
   $('#giveup-btn').addEventListener('click', async () => {
-    if (await ask(L('Здатися в цій головоломці?', 'Give up this puzzle?'), { note: L('Очки — лише за вже знайдені групи.', 'You keep points only for groups already found.'), ok: L('🏳️ Здатися', '🏳️ Give up'), danger: true })) emit('giveUp');
+    if (await ask(L('Здатися в цій головоломці?', 'Give up this puzzle?'), { note: L('Очки залишаться лише за групи, які ти вже знайшов.', 'You keep points only for the groups you’ve already found.'), ok: L('🏳️ Здатися', '🏳️ Give up'), danger: true })) emit('giveUp');
   });
 
   // Таблиця: очки + знайдені групи кольорами й помилки (без імен — щоб не підказати).

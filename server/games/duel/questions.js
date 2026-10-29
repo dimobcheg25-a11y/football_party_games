@@ -69,7 +69,7 @@ const QUESTIONS = [
   {
     id: 'older', group: 'personal',
     title: T('Хто старший?', 'Who is older?'), unit: T('рік народження', 'year of birth'),
-    note: T('Дата народження — з Вікідані; без точної дати — лише рік.', 'Date of birth from Wikidata; year only where the exact date is unknown.'),
+    note: T('Дата народження з Вікіданих. Якщо точної дати немає, порівнюємо лише рік.', 'Date of birth from Wikidata. Where the exact date is unknown, only the year is compared.'),
     // вік у роках (дробовий): з точною датою — точно, лише з роком — середина року
     value(p) {
       const dob = factsOf(p).dob;
@@ -85,7 +85,7 @@ const QUESTIONS = [
   {
     id: 'taller', group: 'personal',
     title: T('Хто вищий?', 'Who is taller?'), unit: T('зріст', 'height'),
-    note: T('Зріст — з Вікіданих.', 'Height from Wikidata.'),
+    note: T('Зріст з Вікіданих.', 'Height from Wikidata.'),
     value: (p) => (factsOf(p).h > 140 && factsOf(p).h < 220 ? factsOf(p).h : null),
     show: (v) => ({ num: v, dec: 0, post: T(' см', ' cm') }),
     gap: { kind: 'abs', easy: 10, hard: 3 },
@@ -95,21 +95,21 @@ const QUESTIONS = [
   {
     id: 'leagueGoals', group: 'career',
     title: T('Хто забив більше голів у чемпіонатах?', 'Who scored more league goals?'), unit: T('голів у чемпіонатах', 'league goals'),
-    note: T('Голи лише в національних чемпіонатах за всю кар’єру — за таблицями кар’єри у Вікіпедії.', 'League goals only, whole career — from Wikipedia career tables.'),
+    note: T('Лише голи в національних чемпіонатах за всю кар’єру, з таблиць кар’єри у Вікіпедії.', 'League goals only, over the whole career, from Wikipedia career tables.'),
     value(p) { const c = careerOf(p); return c && c.clubs.some((x) => x.g != null) ? c.clubs.reduce((s, x) => s + (x.g || 0), 0) : null; },
     show: plain, gap: RATIO,
   },
   {
     id: 'leagueApps', group: 'career',
     title: T('Хто зіграв більше матчів у чемпіонатах?', 'Who played more league games?'), unit: T('матчів у чемпіонатах', 'league games'),
-    note: T('Матчі лише в національних чемпіонатах за всю кар’єру — за таблицями кар’єри у Вікіпедії.', 'League games only, whole career — from Wikipedia career tables.'),
+    note: T('Лише матчі в національних чемпіонатах за всю кар’єру, з таблиць кар’єри у Вікіпедії.', 'League games only, over the whole career, from Wikipedia career tables.'),
     value(p) { const c = careerOf(p); return c && c.clubs.some((x) => x.a != null) ? c.clubs.reduce((s, x) => s + (x.a || 0), 0) : null; },
     show: plain, gap: RATIO,
   },
   {
     id: 'clubs', group: 'career',
     title: T('Хто змінив більше клубів?', 'Who played for more clubs?'), unit: T('клубів за кар’єру', 'clubs in career'),
-    note: T('Різні клуби за кар’єру (з орендами), де зіграно хоча б один матч.', 'Different clubs in a career (loans included) with at least one game.'),
+    note: T('Скільки різних клубів за кар’єру (разом з орендами), де гравець провів хоча б один матч.', 'How many different clubs (loans included) the player had at least one game for.'),
     value(p) { const c = careerOf(p); return c?.clubs.length ? new Set(c.clubs.map((x) => x.t)).size : null; },
     show: plain, gap: { kind: 'abs', easy: 4, hard: 1 },
   },
@@ -126,21 +126,21 @@ const QUESTIONS = [
   {
     id: 'caps', group: 'nation',
     title: T('Хто зіграв більше матчів за збірну?', 'Who has more caps?'), unit: T('матчів за збірну', 'international caps'),
-    note: T('Матчі за головну збірну — за Вікіпедією.', 'Senior national team caps — per Wikipedia.'),
+    note: T('Матчі за національну збірну (не молодіжну), за даними Вікіпедії.', 'Caps for the senior national team, per Wikipedia.'),
     value: (p) => careerOf(p)?.nation?.a ?? null,
     show: plain, gap: RATIO,
   },
   {
     id: 'natGoals', group: 'nation',
     title: T('Хто забив більше за збірну?', 'Who scored more international goals?'), unit: T('голів за збірну', 'international goals'),
-    note: T('Голи за головну збірну — за Вікіпедією.', 'Senior national team goals — per Wikipedia.'),
+    note: T('Голи за національну збірну (не молодіжну), за даними Вікіпедії.', 'Goals for the senior national team, per Wikipedia.'),
     value: (p) => careerOf(p)?.nation?.g ?? null,
     show: plain, gap: RATIO,
   },
   {
     id: 'natRate', group: 'nation',
     title: T('Хто частіше забивав за збірну?', 'Who scored more often for their country?'), unit: T('гола за матч у збірній', 'international goals per game'),
-    note: T('Голи за збірну, поділені на матчі за неї. Лише гравці з 20+ матчами за збірну.', 'International goals divided by caps. Only players with 20+ caps.'),
+    note: T('Голи за збірну, поділені на кількість матчів. Лише ті, хто зіграв за збірну 20 матчів або більше.', 'International goals divided by caps. Only players with at least 20 caps.'),
     value: (p) => { const n = careerOf(p)?.nation; return n && n.a >= 20 && n.g != null ? Math.round((n.g / n.a) * 100) / 100 : null; },
     show: (v) => ({ num: v, dec: 2 }), gap: RATIO,
   },
@@ -164,8 +164,8 @@ const QUESTIONS = [
   },
   {
     id: 'topFee', group: 'money',
-    title: T('Чий найдорожчий трансфер більший?', 'Whose record transfer was bigger?'), unit: T('найдорожчий трансфер', 'record transfer fee'),
-    note: T('Найбільша сума одного переходу гравця — за Transfermarkt (оренди без викупу не рахуються).', 'Largest single transfer fee for the player — per Transfermarkt.'),
+    title: T('За кого заплатили більше за один перехід?', 'Who went for the bigger single transfer fee?'), unit: T('найдорожчий трансфер', 'record transfer fee'),
+    note: T('Найбільша сума, яку за гравця заплатили за один перехід, за даними Transfermarkt. Оренди без викупу не рахуються.', 'The largest fee ever paid for the player in one transfer, per Transfermarkt. Loans without a buy-out don’t count.'),
     value: (p) => transfers[p.id]?.topFee || null,
     show(v, p) { const t = transfers[p.id]; return { ...money(v), detail: t.topFrom ? `${t.topFrom} → ${t.topTo}${t.topSeason ? `, ${t.topSeason}` : ''}` : null }; },
     gap: RATIO,
@@ -173,7 +173,7 @@ const QUESTIONS = [
   {
     id: 'totalFees', group: 'money',
     title: T('За кого заплатили більше за кар’єру?', 'Who cost more in transfer fees overall?'), unit: T('сума всіх трансферів', 'total transfer fees'),
-    note: T('Сума всіх платних переходів гравця — за Transfermarkt (лише ті, хто почав кар’єру з 2008-го: раніші дані неповні).', 'Sum of all paid transfers — per Transfermarkt (only careers from 2008 on: earlier data is incomplete).'),
+    note: T('Сума всіх платних переходів гравця, за даними Transfermarkt. Лише ті, хто почав кар’єру з 2008-го, бо раніші дані неповні.', 'All transfer fees paid for the player added up, per Transfermarkt. Only careers from 2008 on, as earlier data is incomplete.'),
     value: (p) => ((firstYear(p) ?? 0) >= 2008 && transfers[p.id]?.totalFees) || null,
     show(v, p) { const n = transfers[p.id].paid; return { ...money(v), detail: n ? T(`${n} ${n === 1 ? 'трансфер' : n < 5 ? 'трансфери' : 'трансферів'}`, `${n} ${n === 1 ? 'transfer' : 'transfers'}`) : null }; },
     gap: RATIO,
@@ -183,21 +183,21 @@ const QUESTIONS = [
   {
     id: 'assists', group: 'stats',
     title: T('Хто віддав більше гольових передач?', 'Who has more assists?'), unit: T('асистів', 'assists'),
-    note: T('Усі клубні змагання (без збірної) з сезону 2012/13 — за Transfermarkt; лише гравці, що почали кар’єру з 2012-го.', 'All club competitions (no national team) since 2012/13 — per Transfermarkt; only players who started their career in 2012 or later.'),
+    note: T('Усі клубні змагання, без збірної, з сезону 2012/13, за даними Transfermarkt. Лише гравці, які почали кар’єру з 2012-го.', 'All club competitions, national team not included, since 2012/13, per Transfermarkt. Only players who started their career in 2012 or later.'),
     value: (p) => (modern(p) ? statsOf(p)?.t[1] ?? null : null),
     show: plain, gap: RATIO,
   },
   {
     id: 'ga', group: 'stats',
     title: T('У кого більше «гол + пас»?', 'Who has more goals + assists?'), unit: T('голів + асистів', 'goals + assists'),
-    note: T('Голи й асисти в усіх клубних змаганнях (без збірної) з сезону 2012/13 — за Transfermarkt; лише гравці, що почали кар’єру з 2012-го.', 'Goals and assists, all club competitions (no national team) since 2012/13 — per Transfermarkt; only careers from 2012 on.'),
+    note: T('Голи й асисти в усіх клубних змаганнях, без збірної, з сезону 2012/13, за даними Transfermarkt. Лише гравці, які почали кар’єру з 2012-го.', 'Goals and assists in all club competitions, national team not included, since 2012/13, per Transfermarkt. Only careers from 2012 on.'),
     value: (p) => { const s = modern(p) && statsOf(p); return s ? s.t[0] + s.t[1] : null; },
     show: plain, gap: RATIO,
   },
   {
     id: 'yellow', group: 'stats',
     title: T('У кого більше жовтих карток?', 'Who has more yellow cards?'), unit: T('жовтих карток', 'yellow cards'),
-    note: T('Жовті картки в усіх клубних змаганнях (без збірної) з сезону 2012/13 — за Transfermarkt; лише гравці, що почали кар’єру з 2012-го.', 'Yellow cards, all club competitions (no national team) since 2012/13 — per Transfermarkt; only careers from 2012 on.'),
+    note: T('Жовті картки в усіх клубних змаганнях, без збірної, з сезону 2012/13, за даними Transfermarkt. Лише гравці, які почали кар’єру з 2012-го.', 'Yellow cards in all club competitions, national team not included, since 2012/13, per Transfermarkt. Only careers from 2012 on.'),
     value: (p) => (modern(p) ? statsOf(p)?.t[3] ?? null : null),
     show: plain, gap: RATIO,
   },
@@ -222,7 +222,7 @@ const QUESTIONS = [
   },
   {
     id: 'uclTitles', group: 'trophies',
-    title: T('Хто більше разів виграв Лігу чемпіонів?', 'Who has won the Champions League more times?'), unit: T('Ліг чемпіонів', 'Champions League titles'),
+    title: T('Хто більше разів виграв Лігу чемпіонів?', 'Who has won the Champions League more times?'), unit: T('перемог у Лізі чемпіонів', 'Champions League titles'),
     note: withSrc('Кубок європейських чемпіонів і Ліга чемпіонів.', 'European Cup and Champions League.'),
     value: (p) => count(honoursOf(p), 'ucl'),
     show: plain,
@@ -263,7 +263,7 @@ const QUESTIONS = [
   // ── популярність
   {
     id: 'wikiLangs', group: 'fame',
-    title: T('Про кого пишуть більше Вікіпедій?', 'Who is in more Wikipedias?'), unit: T('мовних розділів Вікіпедії', 'Wikipedia languages'),
+    title: T('Про кого є стаття в більшій кількості Вікіпедій?', 'Who has an article in more Wikipedias?'), unit: T('мовних розділів Вікіпедії', 'Wikipedia languages'),
     note: T('У скількох мовних розділах Вікіпедії є стаття про гравця.', 'In how many Wikipedia language editions the player has an article.'),
     value: (p) => p.rawFame || null,
     show: plain, gap: RATIO,

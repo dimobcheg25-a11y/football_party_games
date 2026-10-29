@@ -382,7 +382,7 @@
     $('#turn-symbol').textContent = playing ? SYMBOLS[t] : '🏁';
     if (!playing) {
       $('#turn-title').textContent = L('Гру завершено', 'Game over');
-      $('#turn-sub').textContent = L('Реванш або нова гра — у вікні результату', 'Rematch or a new game — in the result window');
+      $('#turn-sub').textContent = L('Реванш чи нову гру можна почати у вікні з результатом', 'Start a rematch or a new game from the result window');
       document.title = TITLE;
       return;
     }
@@ -580,7 +580,7 @@
       const verb = absent.length > 1 ? L('втратили', 'lost') : L('втратив', 'lost');
       if (kickable.length) {
         const label = totalActive - kickable.length <= 1 ? L('Забрати перемогу', 'Claim the win') : L('Виключити з партії', 'Remove from the game');
-        html = `<span>📡 ${kickable.map((i) => `<b>${escapeHtml(state.seats[i].name)}</b>`).join(', ')} ${L('не повертається і заважає грі', (kickable.length > 1 ? 'are' : 'is') + ' not coming back and holding up the game')}</span>
+        html = `<span>📡 ${kickable.map((i) => `<b>${escapeHtml(state.seats[i].name)}</b>`).join(', ')} ${L('не повертається, і гра стоїть', (kickable.length > 1 ? 'are' : 'is') + ' not coming back and holding up the game')}</span>
            <span class="banner-actions"><button class="btn btn-primary" data-action="claim-win">${label}</button></span>`;
       } else if (absent.some(blocking)) {
         const sec = Math.max(1, Math.ceil(Math.min(...absent.filter(blocking).map(waitLeft)) / 1000));
@@ -622,11 +622,11 @@
         break;
       }
       case 'timeout':
-        toast(`⏱ ${who}: ${L('час вийшов — хід переходить', 'time is up — the turn passes')}`, 'bad');
+        toast(`⏱ ${who}: ${L('час вийшов, хід переходить до наступного', 'time is up, the turn passes on')}`, 'bad');
         Sound.play('miss');
         break;
       case 'skip':
-        toast(`${who}: ${L('пропуск ходу', 'turn skipped')}`);
+        toast(`${who}: ${L('пропускає хід', 'skips the turn')}`);
         break;
       case 'hit':
         if (state.status !== 'playing') break;

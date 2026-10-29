@@ -174,7 +174,7 @@ class TopRoom extends BaseRoom {
   skipTopic(seat) {
     if (this.status !== 'playing' || this.phase !== 'guess') return { error: T('Зараз не можна', 'Not right now') };
     if (seat !== this.host()) return { error: T('Пропустити тему може господар кімнати', 'Only the host can skip the topic') };
-    if (!this.canSkip()) return { error: T('Тему вже почали — пропустити не можна', 'The topic is already in play — it can’t be skipped') };
+    if (!this.canSkip()) return { error: T('Тему вже почали, тепер її не пропустиш', 'The topic is already in play, so it can’t be skipped now') };
     this.resetRound();
     if (this.options.pick === 'host') {
       this.phase = 'pick';
@@ -297,7 +297,7 @@ class TopRoom extends BaseRoom {
   guessTurns(seat, player, places) {
     if (this.order[this.turn] !== seat) return { error: T('Зараз не твій хід', 'It’s not your turn') };
     if (places.some((i) => this.found.has(i))) return { error: T('Він уже на дошці', 'He’s already on the board') };
-    if (this.wrong.some((w) => w.playerId === player.id)) return { error: T('Його вже називали — його немає в топі', 'Already named — he’s not in the top') };
+    if (this.wrong.some((w) => w.playerId === player.id)) return { error: T('Його вже називали, і в топі його немає', 'He’s already been named, and he’s not in the top') };
     let res;
     if (places.length) {
       places.forEach((i) => this.found.set(i, seat));

@@ -29,8 +29,8 @@
     },
     hints: {
       level: {
-        easy: L('Числа сильно різняться — щонайменше в півтора раза.', 'The numbers are far apart — at least one and a half times.'),
-        hard: L('Числа близькі — різниця до 20 %. Тут вирішують деталі.', 'The numbers are close — within 20%. Details decide.'),
+        easy: L('Числа сильно різняться: одне щонайменше в півтора раза більше за інше.', 'The numbers are far apart: one is at least one and a half times the other.'),
+        hard: L('Числа близькі, різниця не більше 20 %. Тут треба знати деталі.', 'The numbers are close, no more than 20% apart. You need to know the details.'),
         mix: L('І очевидні пари, і майже рівні.', 'Both obvious pairs and near ties.'),
       },
       mode: {
@@ -283,7 +283,7 @@
       const best = bestStored();
       if (score > best) store.set(bestKey(), score);
       $('#final-title').textContent = L(`Серія: ${score} ${pl(score, ['перемога', 'перемоги', 'перемог'], [])}`, `Streak: ${score} ${pl(score, [], ['win', 'wins'])}`);
-      $('#final-standings').innerHTML = `<li><span class="nm">${L('Рекорд', 'Best')} (${DIFF_LABELS[s.options.difficulty]}, ${LEVEL_LABELS[s.options.level]}, ${s.options.lives} ${L('пом.', 'mist.')})</span><span class="val">${Math.max(best, score)}${score > best && best ? L(' — новий!', ' — new!') : ''}</span></li>`;
+      $('#final-standings').innerHTML = `<li><span class="nm">${L('Рекорд', 'Best')} (${DIFF_LABELS[s.options.difficulty]}, ${LEVEL_LABELS[s.options.level]}, ${s.options.lives} ${pl(s.options.lives, ['помилка', 'помилки', 'помилок'], ['mistake', 'mistakes'])})</span><span class="val">${Math.max(best, score)}${score > best && best ? L(' — новий!', ' — new!') : ''}</span></li>`;
     } else if (s.solo) {
       $('#final-title').textContent = L(`${score} з ${s.rounds}`, `${score} of ${s.rounds}`);
       $('#final-standings').innerHTML = '';
