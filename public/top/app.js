@@ -250,17 +250,17 @@
     }
     const spent = s.hintSpent?.[mySeat] || 0;
     $('#round-sum').innerHTML = spent ? roundSum(mySeat)
-      : canHint() ? L('💡 Не знаєш когось? «💡 −N» на місці — перша літера прізвища. Очки знімаються одразу, нижче місце — дорожча підказка.',
-        '💡 Stuck? «💡 −N» on a place shows the first letter of the surname. Points are taken right away; lower places cost more.') : '';
+      : canHint() ? L('Не знаєш когось? Натисни 💡 біля місця — покажемо першу літеру прізвища. Скільки це коштує, написано на кнопці.',
+        'Stuck? Tap 💡 next to a place and we’ll show the first letter of the surname. The cost is on the button.') : '';
   }
 
   const signed = (n) => (n < 0 ? `−${-n}` : `+${n}`);
-  // «За раунд: +7 = 12 за гравців − 5 за підказки»
+  // «За раунд: +7 — 12 за вгаданих, мінус 5 за підказки»
   function roundSum(seat) {
     const net = state.roundPoints[seat] || 0;
     const spent = state.hintSpent?.[seat] || 0;
     const head = `${L('За раунд', 'This round')}: <b>${signed(net)}</b>`;
-    return spent ? `${head} = ${L(`${net + spent} за гравців − ${spent} за підказки`, `${net + spent} for players − ${spent} for hints`)}` : head;
+    return spent ? `${head} — ${L(`${net + spent} за вгаданих, мінус ${spent} за підказки`, `${net + spent} for correct answers, minus ${spent} for hints`)}` : head;
   }
 
   // Підказку можна взяти, поки сам граєш у раунді (свій топ не закрито / є життя в черзі).
@@ -283,10 +283,9 @@
         ? `<span class="blank hinted" title="${L('Перша літера прізвища', 'First letter of the surname')}">${escapeHtml(letter)}…</span>`
         : '<span class="blank">?</span>';
       let hint = '';
-      if (letter) hint = `<small class="hint-paid">${L(`💡 −${slot.hintCost} сплачено`, `💡 −${slot.hintCost} paid`)}</small>`;
+      if (letter) hint = `<small class="hint-paid">${L(`підказка −${slot.hintCost}`, `hint −${slot.hintCost}`)}</small>`;
       else if (slot.hintCost && canHint()) {
-        const title = L(`Перша літера прізвища за ${slot.hintCost} ${ptsWord(slot.hintCost)}. Вгадаєш — однаково +${slot.points}, разом +${slot.points - slot.hintCost}.`,
-          `First letter of the surname for ${slot.hintCost} ${ptsWord(slot.hintCost)}. Guess it and you still get +${slot.points}, +${slot.points - slot.hintCost} in total.`);
+        const title = L(`Показати першу літеру прізвища — мінус ${slot.hintCost} ${ptsWord(slot.hintCost)}`, `Show the first letter of the surname — minus ${slot.hintCost} ${ptsWord(slot.hintCost)}`);
         hint = `<button type="button" class="slot-hint" data-hint="${i}" title="${escapeHtml(title)}">💡 −${slot.hintCost}</button>`;
       }
       return `<li class="slot empty-slot ${extra}"><span class="place">${i + 1}</span>${blank}${hint}<span class="pts">+${slot.points}</span></li>`;
@@ -335,7 +334,7 @@
     if (s.phase !== 'reveal') return;
     const seats = s.seats.map((x, i) => (x ? i : -1)).filter((i) => i >= 0).sort((a, b) => (s.roundPoints[b] || 0) - (s.roundPoints[a] || 0));
     const iVoted = s.nextVotes.includes(mySeat);
-    const spentNote = (i) => (s.hintSpent?.[i] ? `<small class="hint-paid">${(s.roundPoints[i] || 0) + s.hintSpent[i]} − ${s.hintSpent[i]} ${L('за 💡', 'for 💡')}</small>` : '');
+    const spentNote = (i) => (s.hintSpent?.[i] ? `<small class="hint-paid">${L(`підказки −${s.hintSpent[i]}`, `hints −${s.hintSpent[i]}`)}</small>` : '');
     bar.innerHTML = `${s.solo ? `<p class="verdict">${roundSum(mySeat)}</p>`
       : `<ul class="round-results">${seats.map((i) => `<li style="${seatStyle(i)}"><span class="dot-p"></span>${escapeHtml(seatName(i))}${spentNote(i)}<b>${signed(s.roundPoints[i] || 0)}</b></li>`).join('')}</ul>`}
       <div class="reveal-actions"><button id="next-btn" class="btn btn-primary btn-lg" ${iVoted ? 'disabled' : ''}>${s.round >= s.rounds ? L('Підсумки', 'Results') : L('Наступна тема →', 'Next topic →')}</button></div>`;
@@ -429,8 +428,8 @@
     const i = Number(b.dataset.hint);
     const slot = state.slots[i];
     const ok = await ask(L(`Підказка на ${i + 1}-е місце?`, `Hint for #${i + 1}?`), {
-      note: L(`Побачиш першу літеру прізвища. Зараз знімемо ${slot.hintCost} ${ptsWord(slot.hintCost)}; вгадаєш — отримаєш +${slot.points}, разом +${slot.points - slot.hintCost}.`,
-        `You’ll see the first letter of the surname. ${slot.hintCost} ${ptsWord(slot.hintCost)} taken now; guess it and you get +${slot.points}, +${slot.points - slot.hintCost} in total.`),
+      note: L(`Покажемо першу літеру прізвища, а ${slot.hintCost} ${ptsWord(slot.hintCost)} знімемо одразу. Якщо потім вгадаєш, отримаєш свої +${slot.points}, тобто в сумі +${slot.points - slot.hintCost}.`,
+        `We’ll show the first letter of the surname and take ${slot.hintCost} ${ptsWord(slot.hintCost)} right away. If you then guess him, you get the usual +${slot.points}, so +${slot.points - slot.hintCost} overall.`),
       ok: `💡 −${slot.hintCost}`,
     });
     if (!ok) return;
@@ -470,7 +469,7 @@
         <span class="place">${k + 1}</span><span class="nm">${escapeHtml(seatName(i))}</span><span class="val">${s.scores[i]} ${pl(s.scores[i], ['очко', 'очки', 'очок'], ['point', 'points'])}</span></li>`).join('');
     }
     $('#final-history').innerHTML = s.history.map((h) => {
-      const spent = h.hints?.[mySeat] ? ` <small class="hint-paid">(💡 −${h.hints[mySeat]})</small>` : '';
+      const spent = h.hints?.[mySeat] ? ` <small class="hint-paid">(${L('підказки', 'hints')} −${h.hints[mySeat]})</small>` : '';
       return `<li><span class="nm">${escapeHtml(h.title)}</span><span class="val">${signed(h.results[mySeat] || 0)}${spent}</span></li>`;
     }).join('');
     const isHost = mySeat === s.host;
