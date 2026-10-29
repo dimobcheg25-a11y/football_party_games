@@ -2,39 +2,20 @@
 // ліміт спроб, повтор гравця, кімната (чужі спроби — лише кольори, кінець раунду, коли всі закінчили), здатися.
 // Запуск: npm test (сервер піднімається сам на випадковому порту).
 
-const { spawn } = require('child_process');
-const path = require('path');
 const assert = require('assert');
+const { smoke } = require('./lib/smoke');
 const { io } = require('socket.io-client');
 const { players, playerById } = require('../server/data');
 
-const PORT = 4000 + Math.floor(Math.random() * 1000);
-const URL = `http://localhost:${PORT}`;
-const GAME = `${URL}/guess`;
+const { GAME, ready, emit, nextState, run, act, URL } = smoke('guess', { GUESS_TEST_ANSWER: '1', GUESS_REVEAL_MS: '400' });
 
-const server = spawn(process.execPath, [path.join(__dirname, '..', 'server', 'index.js')], {
-  env: { ...process.env, PORT, GUESS_TEST_ANSWER: '1', GUESS_REVEAL_MS: '400' },
-  stdio: ['ignore', 'pipe', 'inherit'],
-});
-
-const emit = (s, ev, data) => new Promise((res) => s.emit(ev, data, res));
-const nextState = (s, pred = () => true) =>
-  new Promise((res) => {
-    const h = (st) => { if (pred(st)) { s.off('state', h); res(st); } };
-    s.on('state', h);
-  });
-async function act(s, ev, data, pred) {
-  const st = nextState(s, pred);
-  const res = await emit(s, ev, data);
-  return { res, st: await st };
-}
 // Неправильні відповіді: відомі гравці з кар'єрою, не загаданий.
 const WRONG = ['lionel-messi', 'cristiano-ronaldo', 'andriy-shevchenko', 'neymar', 'zinedine-zidane', 'thierry-henry', 'david-beckham', 'wayne-rooney', 'luka-modric', 'kylian-mbappe', 'kaka']
   .filter((id) => playerById.has(id));
 const wrongIds = (st, n) => WRONG.filter((id) => id !== st.testAnswer).slice(0, n);
 
 async function main() {
-  await new Promise((res) => server.stdout.on('data', (d) => d.toString().includes('запущено') && res()));
+  await ready;
 
   const games = await (await fetch(`${URL}/api/games`)).json();
   assert.ok(games.some((g) => g.id === 'guess'), 'гра є в каталозі');
@@ -198,6 +179,4 @@ async function main() {
   console.log('\nУСІ ПЕРЕВІРКИ «ВГАДАЙ ГРАВЦЯ» ПРОЙШЛИ');
 }
 
-main()
-  .then(() => { server.kill(); process.exit(0); })
-  .catch((e) => { console.error('✗', e); server.kill(); process.exit(1); });
+run(main);

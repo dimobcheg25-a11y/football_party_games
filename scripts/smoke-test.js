@@ -2,27 +2,12 @@
 // режими складності, великі поля, гра утрьох і вчотирьох.
 // Запуск: npm test (сервер піднімається сам на випадковому порту).
 
-const { spawn } = require('child_process');
-const path = require('path');
 const assert = require('assert');
+const { smoke } = require('./lib/smoke');
 const { io } = require('socket.io-client');
 const { players, matches } = require('../server/data');
 
-const PORT = 3000 + Math.floor(Math.random() * 1000);
-const URL = `http://localhost:${PORT}`;
-const GAME = `${URL}/crossroads`; // простір імен socket.io цієї гри
-
-const server = spawn(process.execPath, [path.join(__dirname, '..', 'server', 'index.js')], {
-  env: { ...process.env, PORT, CLAIM_WIN_MS: '1500', FIXED_ORDER: '1' }, // фіксований порядок ходів — щоб сценарії були передбачувані
-  stdio: ['ignore', 'pipe', 'inherit'],
-});
-
-const emit = (s, ev, data) => new Promise((res) => s.emit(ev, data, res));
-const nextState = (s, pred = () => true) =>
-  new Promise((res) => {
-    const h = (st) => { if (pred(st)) { s.off('state', h); res(st); } };
-    s.on('state', h);
-  });
+const { GAME, ready, emit, nextState, run, URL, server } = smoke('crossroads', { CLAIM_WIN_MS: '1500', FIXED_ORDER: '1' }, { port: 3000 }); // фіксований порядок ходів — щоб сценарії були передбачувані
 
 function answerFor(state, cell, exclude = []) {
   const n = state.grid.size;
@@ -39,7 +24,7 @@ function wrongFor(state, cell) {
 }
 
 async function main() {
-  await new Promise((res) => server.stdout.on('data', (d) => d.toString().includes('запущено') && res()));
+  await ready;
   // сайт: каталог ігор, сторінка гри, старі посилання-запрошення ведуть у гру
   const gamesList = await (await fetch(`${URL}/api/games`)).json();
   assert.ok(gamesList.some((g) => g.id === 'crossroads'), 'гра є в каталозі');
@@ -405,12 +390,4 @@ async function main() {
   [a2, b, c, d, e, f].forEach((s) => s.close());
 }
 
-main()
-  .catch((err) => {
-    console.error('✗', err.message);
-    process.exitCode = 1;
-  })
-  .finally(() => {
-    server.kill();
-    if (process.exitCode) process.exit(); // при помилці відкриті сокети не мають тримати процес
-  });
+run(main);

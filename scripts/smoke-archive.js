@@ -3,33 +3,10 @@
 // кімната «кожен свою сітку» (чужих квадратиків не видно), кімната «по черзі» (спершу квадратик, потім відповідь, пас), англійська.
 // Запуск: npm test (сервер піднімається сам на випадковому порту).
 
-const { spawn } = require('child_process');
-const path = require('path');
 const assert = require('assert');
-const { io } = require('socket.io-client');
+const { smoke } = require('./lib/smoke');
 
-const PORT = 4000 + Math.floor(Math.random() * 1000);
-const URL = `http://localhost:${PORT}`;
-const GAME = `${URL}/archive`;
-
-const server = spawn(process.execPath, [path.join(__dirname, '..', 'server', 'index.js')], {
-  env: { ...process.env, PORT, ARCHIVE_TEST_ANSWER: '1', GITHUB_TOKEN: '' },
-  stdio: ['ignore', 'pipe', 'inherit'],
-});
-
-const emit = (s, ev, data) => new Promise((res) => s.emit(ev, data, res));
-const last = new Map();
-const nextState = (s, pred = () => true) =>
-  new Promise((res) => {
-    if (last.has(s) && pred(last.get(s))) return res(last.get(s));
-    const h = (st) => { if (pred(st)) { s.off('state', h); res(st); } };
-    s.on('state', h);
-  });
-function bot(lang) {
-  const s = io(GAME, lang ? { auth: { lang } } : undefined);
-  s.on('state', (st) => last.set(s, st));
-  return s;
-}
+const { GAME, ready, emit, nextState, run, bot, URL } = smoke('archive', { ARCHIVE_TEST_ANSWER: '1', GITHUB_TOKEN: '' });
 
 const { players, playerById } = require('../server/data');
 const { shots, shotById, targetsOf, maybeOnShot } = require('../server/games/archive/shots');
@@ -38,7 +15,7 @@ const outsider = (shot) => players.find((p) => !maybeOnShot(shot, p) && !shot.wh
 const maybe = (shot, targets) => players.find((p) => !targets.includes(p.id) && maybeOnShot(shot, p))?.id;
 
 async function main() {
-  await new Promise((res) => server.stdout.on('data', (d) => d.toString().includes('запущено') && res()));
+  await ready;
 
   const games = await (await fetch(`${URL}/api/games`)).json();
   const meta = games.find((g) => g.id === 'archive');
@@ -180,6 +157,4 @@ async function main() {
   console.log('\nУСІ ПЕРЕВІРКИ «ФОТОАРХІВУ» ПРОЙШЛИ');
 }
 
-main()
-  .then(() => { server.kill(); process.exit(0); })
-  .catch((e) => { console.error('✗', e); server.kill(); process.exit(1); });
+run(main);

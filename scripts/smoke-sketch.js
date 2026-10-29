@@ -4,31 +4,15 @@
 // фігури, заливка, гумка; «не знаю» і «здатися»; гра без таймера (очки за порядком); словник підказок.
 // Запуск: npm test (сервер піднімається сам на випадковому порту).
 
-const { spawn } = require('child_process');
-const path = require('path');
 const assert = require('assert');
+const { smoke } = require('./lib/smoke');
 const { io } = require('socket.io-client');
 
-const PORT = 4000 + Math.floor(Math.random() * 1000);
-const URL = `http://localhost:${PORT}`;
-const GAME = `${URL}/sketch`;
+const { GAME, ready, emit, nextState, run, last, URL } = smoke('sketch', { SKETCH_TEST_ANSWER: '1', SKETCH_REVEAL_MS: '300' });
 
-const server = spawn(process.execPath, [path.join(__dirname, '..', 'server', 'index.js')], {
-  env: { ...process.env, PORT, SKETCH_TEST_ANSWER: '1', SKETCH_REVEAL_MS: '300' },
-  stdio: ['ignore', 'pipe', 'inherit'],
-});
-
-const emit = (s, ev, data) => new Promise((res) => s.emit(ev, data, res));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const last = new Map(); // сокет → останній стан
 const chats = new Map(); // сокет → отримані повідомлення чату
 const draws = new Map(); // сокет → отримані штрихи
-const nextState = (s, pred = () => true) =>
-  new Promise((res) => {
-    if (last.has(s) && pred(last.get(s))) return res(last.get(s));
-    const h = (st) => { if (pred(st)) { s.off('state', h); res(st); } };
-    s.on('state', h);
-  });
 function bot(lang) {
   const s = io(GAME, lang ? { auth: { lang } } : undefined);
   chats.set(s, []);
@@ -43,7 +27,7 @@ function bot(lang) {
 const typo = (w) => w.slice(0, -1) + (w.slice(-1) === 'о' ? 'а' : 'о');
 
 async function main() {
-  await new Promise((res) => server.stdout.on('data', (d) => d.toString().includes('запущено') && res()));
+  await ready;
 
   const games = await (await fetch(`${URL}/api/games`)).json();
   assert.ok(games.some((g) => g.id === 'sketch' && g.title === 'Тактичний ескіз' && !g.solo), 'гра є в каталозі, лише з друзями');
@@ -224,9 +208,4 @@ async function main() {
   console.log('УСІ ПЕРЕВІРКИ «ТАКТИЧНОГО ЕСКІЗУ» ПРОЙШЛИ');
 }
 
-main()
-  .catch((e) => {
-    console.error('✗', e);
-    process.exitCode = 1;
-  })
-  .finally(() => server.kill());
+run(main);

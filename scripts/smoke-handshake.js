@@ -3,31 +3,11 @@
 // кімната (чужий ланцюжок — лише кількість ланок, першому найкоротшим +10), англійська.
 // Запуск: npm test (сервер піднімається сам на випадковому порту).
 
-const { spawn } = require('child_process');
-const path = require('path');
 const assert = require('assert');
+const { smoke } = require('./lib/smoke');
 const { io } = require('socket.io-client');
 
-const PORT = 4000 + Math.floor(Math.random() * 1000);
-const URL = `http://localhost:${PORT}`;
-const GAME = `${URL}/handshake`;
-
-const server = spawn(process.execPath, [path.join(__dirname, '..', 'server', 'index.js')], {
-  env: { ...process.env, PORT, HANDSHAKE_TEST_ANSWER: '1', HANDSHAKE_REVEAL_MS: '400' },
-  stdio: ['ignore', 'pipe', 'inherit'],
-});
-
-const emit = (s, ev, data) => new Promise((res) => s.emit(ev, data, res));
-const nextState = (s, pred = () => true) =>
-  new Promise((res) => {
-    const h = (st) => { if (pred(st)) { s.off('state', h); res(st); } };
-    s.on('state', h);
-  });
-async function act(s, ev, data, pred) {
-  const st = nextState(s, pred);
-  const res = await emit(s, ev, data);
-  return { res, st: await st };
-}
+const { GAME, ready, emit, nextState, run, act, URL } = smoke('handshake', { HANDSHAKE_TEST_ANSWER: '1', HANDSHAKE_REVEAL_MS: '400' });
 
 // останній отриманий стан (без очікування нового)
 const lastState = new WeakMap();
@@ -54,7 +34,7 @@ async function main() {
   }
   console.log('✓ граф:', g.links.size, 'гравців; Мессі — Неймар:', g.linkOf('lionel-messi', 'neymar').years);
 
-  await new Promise((res) => server.stdout.on('data', (d) => d.toString().includes('запущено') && res()));
+  await ready;
   const games = await (await fetch(`${URL}/api/games`)).json();
   assert.ok(games.some((x) => x.id === 'handshake'), 'гра є в каталозі');
   assert.strictEqual((await fetch(`${URL}/handshake/`)).status, 200);
@@ -195,6 +175,4 @@ async function main() {
   console.log('\nУСІ ПЕРЕВІРКИ «ПРАВИЛА РУКОСТИСКАНЬ» ПРОЙШЛИ');
 }
 
-main()
-  .then(() => { server.kill(); process.exit(0); })
-  .catch((e) => { console.error('✗', e); server.kill(); process.exit(1); });
+run(main);

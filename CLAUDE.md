@@ -105,7 +105,7 @@ Node 18+, Express + Socket.IO, клієнт — чистий HTML/CSS/JS без 
   `manual-positions.js` — позиція, якою гравця знають: замість поточної з Transfermarkt (Неймар, Стерлінг) і для легенд без даних TM (усі до рівня «Фанат»)).
   `banned.js` — гравців росії й білорусі в базі немає (`isBanned`: збірна рф/рб, або без іншої збірної громадянство з `citizenship.json` —
   `npm run build-citizenship`; українців не чіпає; винятки `ALLOW`/`BAN`); у підказках вони сірі з випадковою принизливою приміткою —
-  `Players.shame(query)` у `shared/players.js`, нова гра додає його в `renderSuggestions` (див. guess).
+  `Players.shame(query)` у `shared/players.js` — уже вбудовано в `Players.attach`.
   Тег `UPL0014` — грав у чемпіонаті України 2000–2014 (у «Шляху» дає український бонус до відомості).
 - `public/index.html` + `hub.css` + `hub.js` — головна-альбом наліпок Panini: картки з `/api/games` у двох групах — «можна самому» (`meta.solo`) і «тільки з друзями»;
   на наліпці значки «🎮 Соло» і «👥 З друзями · `meta.friends`»; стиль наліпки — клас `s-<id>` у hub.css + малюнок `ART[id]` у hub.js (немає — біла наліпка з emoji).
@@ -118,7 +118,7 @@ Node 18+, Express + Socket.IO, клієнт — чистий HTML/CSS/JS без 
 - `server/core/feedback.js` — відгуки гравців (`POST /api/feedback`) → GitHub Issues з міткою `feedback` + `feedback-like|idea|bug`; клієнт — `public/shared/feedback.js`
   (підписана кнопка «💬 Відгук про гру» внизу ліворуч — `.fb-fab`, ставиться сама; підключати одразу після i18n.js; гравець у кімнаті (`?room=`) шле код і токен — сервер додає в задачу згорнутий знімок кімнати: `server/core/snapshot.js` обходить поля кімнати (`findRoom` з room-server), без таймерів, токенів і великих службових полів `SKIP`). Запити до GitHub (і для звітів «Фотоархіву») — `server/core/github.js`.
 - `public/shared/` — спільне для сторінок ігор: `theme.css` (базові токени й фон, які гра перевизначає — див. «Оформлення гри»; `.home-link` — закріплена табличка «‹ Футбольні ігри» на головну, у кожній `index.html` перед екранами), `ui.css` (кнопки, поля, чипи, вікна,
-  підказки пошуку, тост, звук, чат), `players.js` (`window.Players.search` — автодоповнення імен), `sounds.js` (`window.Sound`),
+  підказки пошуку, тост, звук, чат), `players.js` (`window.Players.search` — пошук імен; `Players.attach(input, { choose, used, extra, limit, scrollOnFocus })` — поле з підказками: стрілки, Enter, Escape, «уже був», сірі росіяни; повертає `{ render, clear }`), `sounds.js` (`window.Sound`),
   `room-client.js` (`RoomClient.create` — уся спільна логіка клієнта кімнатних ігор).
 - `public/<id>/` — сторінка гри (`crossroads/app.js` — ~1100 рядків, читати частинами через Grep).
 - `scripts/smoke-test.js` (Перехрестя), `scripts/smoke-path.js` (Шлях), `scripts/smoke-guess.js` (Вгадай гравця), `scripts/smoke-spy.js` (Шпигун), `scripts/smoke-top.js` (Топ-10), `scripts/smoke-duel.js` (Один на один), `scripts/smoke-lineup.js` (Склад матчу), `scripts/smoke-archive.js` (Фотоархів), `scripts/smoke-sketch.js` (Тактичний ескіз), `scripts/smoke-fours.js` (Чотири четвірки), `scripts/smoke-handshake.js` (Правило рукостискань), `scripts/smoke-allin.js` (All in), `scripts/smoke-window.js` (Трансферне вікно) — автотести ботами через справжній сервер.
@@ -165,7 +165,7 @@ easy/normal/hard = верхні 30% / наступні 40% / решта (меж�
    `solo: true` — гра є в групі «Можна грати самому» на головній; `friends` — скільки гравців у кімнаті ('2–8').
 2. Додати в `server/games/index.js`.
 3. `public/<id>/` — `index.html`, `app.js` на `RoomClient` (див. «Клієнт нової гри»), `style.css` зі своїм світом (див. «Оформлення гри»).
-4. `scripts/smoke-<id>.js` — скопіювати `smoke-top.js` або `smoke-spy.js`, додати в `npm test` (package.json).
+4. `scripts/smoke-<id>.js` — скопіювати `smoke-top.js` або `smoke-spy.js` (шапка — `scripts/lib/smoke.js`, своєї не писати), додати в `npm test` (package.json).
 5. Коротко описати гру в «Карті» вище (1–4 рядки: файли, фази, бали, що приватне).
 6. Наліпка на головній: клас `s-<id>` у `hub.css` + `ART[id]` у `hub.js`; сценарій у `scripts/ui-check.js`.
 
@@ -218,7 +218,7 @@ easy/normal/hard = верхні 30% / наступні 40% / решта (меж�
 - `index.html` — скопіювати `public/top/index.html` (або `guess`) і замінити налаштування й `#screen-game`; скрипти: socket.io, `/shared/players.js`,
   `/shared/sounds.js`, `/shared/room-client.js`, `/<id>/app.js` (і `/shared/feedback.js` після i18n.js). Без `#solo-btn` — гра лише для кімнати (як `spy`).
 - `app.js` — за зразком `public/guess/app.js` (~240 рядків, найкоротший) або `public/spy/app.js` (кімната з ролями/чергою/голосуванням;
-  `#stage` перемальовується лише коли змінився ключ етапу — щоб не збивати введення). Автодоповнення гравця — функції `renderSuggestions/choose` з guess/top.
+  `#stage` перемальовується лише коли змінився ключ етапу — щоб не збивати введення). Поле вводу гравця — `window.Players.attach` (приклад — guess; свої рядки перед гравцями — `extra`, як тренери в lineup); свого списку підказок не писати.
 - Стилі: `/shared/theme.css`, `/shared/ui.css`, `/path/style.css` (лобі, таблиця, поле відповіді, `.answer-card`, підсумок) + свій `/<id>/style.css` (токени світу — «Оформлення гри»).
   Готові класи в `spy/style.css` (`.stage-box`, `.vote-grid`, `.vote-results`, `.turn-order`) і `top/style.css` (`.slot`, `.topic-list`, `.misses`).
 - «Перехрестя» (`public/crossroads/app.js`) — старий окремий клієнт без room-client, не брати за зразок.
@@ -246,7 +246,7 @@ actions: { start, guess, ... : (room, seat, payload) => ({ ok } | { error }) }, 
 `window.Sound.play('win'|'miss'|'pop'|'whistle')`; плейсхолдер імені (випадкова легенда) ставить `shared/players.js` сам.
 Таймер — `state.deadline` і `g.serverNow()`.
 
-**Тести:** `scripts/smoke-<id>.js`: сервер на випадковому порту з `<ID>_TEST_ANSWER=1`; боти через `bot()` + `last` (останній стан кожного) і
+**Тести:** `scripts/smoke-<id>.js` на `scripts/lib/smoke.js`: `const { GAME, URL, ready, emit, nextState, bot, act, run } = smoke('<id>', { <ID>_TEST_ANSWER: '1' })` — сервер на випадковому порту; `run(main, таймаут?)` — код виходу й зупинка сервера; боти через `bot()` + `last` (останній стан кожного) і
 `nextState(s, pred)` — спершу перевіряє вже отриманий стан (без гонок). Під час розробки запускати лише свій файл (`node scripts/smoke-<id>.js > файл`, ~10 с; у Bash не через `| tail` — на Windows конвеєр зависає),
 повний `npm test` (~3 хв) — один раз перед комітом, у фоні.
 

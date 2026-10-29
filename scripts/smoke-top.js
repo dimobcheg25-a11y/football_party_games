@@ -2,40 +2,19 @@
 // кімната «кожен свій топ» (чужих відповідей не видно), кімната «по черзі» (хід, життя, пас, кінець раунду).
 // Запуск: npm test (сервер піднімається сам на випадковому порту).
 
-const { spawn } = require('child_process');
-const path = require('path');
 const assert = require('assert');
+const { smoke } = require('./lib/smoke');
 const { io } = require('socket.io-client');
 const { playerById } = require('../server/data');
 
-const PORT = 4000 + Math.floor(Math.random() * 1000);
-const URL = `http://localhost:${PORT}`;
-const GAME = `${URL}/top`;
+const { GAME, ready, emit, nextState, run, bot, last, URL } = smoke('top', { TOP_TEST_ANSWER: '1' });
 
-const server = spawn(process.execPath, [path.join(__dirname, '..', 'server', 'index.js')], {
-  env: { ...process.env, PORT, TOP_TEST_ANSWER: '1' },
-  stdio: ['ignore', 'pipe', 'inherit'],
-});
-
-const emit = (s, ev, data) => new Promise((res) => s.emit(ev, data, res));
-const last = new Map();
-const nextState = (s, pred = () => true) =>
-  new Promise((res) => {
-    if (last.has(s) && pred(last.get(s))) return res(last.get(s));
-    const h = (st) => { if (pred(st)) { s.off('state', h); res(st); } };
-    s.on('state', h);
-  });
-function bot() {
-  const s = io(GAME);
-  s.on('state', (st) => last.set(s, st));
-  return s;
-}
 // Відомі гравці, яких точно немає в топі.
 const notIn = (st, n) => ['lionel-messi', 'andriy-shevchenko', 'zinedine-zidane', 'thierry-henry', 'kaka', 'luka-modric', 'wayne-rooney', 'neymar', 'kylian-mbappe']
   .filter((id) => playerById.has(id) && !st.testAnswer.includes(id)).slice(0, n);
 
 async function main() {
-  await new Promise((res) => server.stdout.on('data', (d) => d.toString().includes('запущено') && res()));
+  await ready;
 
   const games = await (await fetch(`${URL}/api/games`)).json();
   assert.ok(games.some((g) => g.id === 'top'), 'гра є в каталозі');
@@ -210,6 +189,4 @@ async function main() {
   console.log('\nУСІ ПЕРЕВІРКИ «ТОП-10» ПРОЙШЛИ');
 }
 
-main()
-  .then(() => { server.kill(); process.exit(0); })
-  .catch((e) => { console.error('✗', e); server.kill(); process.exit(1); });
+run(main);

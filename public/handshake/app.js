@@ -97,7 +97,7 @@
     $('#answer-box').classList.toggle('hidden', over);
     const input = $('#link-input');
     input.disabled = over;
-    if (over) { input.value = ''; renderSuggestions(); }
+    if (over) picker.clear();
     const lastName = pname(chain[chain.length - 1].player);
     input.placeholder = L(`Хто грав разом з ним? (${lastName})`, `Who played with him? (${lastName})`); // імена не відмінюємо
     const max = s.options.mistakes;
@@ -154,39 +154,9 @@
 
   // ── вибір гравця
   const input = $('#link-input');
-  let suggestions = [];
-  let active = 0;
-
-  function renderSuggestions() {
-    const list = $('#suggestions');
-    if (!input.value.trim() || input.disabled) { list.innerHTML = ''; suggestions = []; return; }
-    suggestions = window.Players.search(input.value);
-    const used = new Set((state?.myChain || []).map((x) => x.player.id));
-    const shamed = window.Players.shame(input.value); // росіяни — сірі, вибрати не можна
-    list.innerHTML = (suggestions.length
-      ? suggestions.map((p, i) => `<li data-i="${i}" class="${i === active ? 'active' : ''} ${used.has(p.id) ? 'used' : ''}">
-          <span class="s-avatar">${p.thumb ? `<img src="${p.thumb}" alt="" loading="lazy" />` : escapeHtml(initials(p.name))}</span>
-          <span class="s-text"><span class="s-main">${escapeHtml(pname(p))}</span><span class="s-sub">${EN ? (p.born || '') : `${escapeHtml(p.name)}${p.born ? ` · ${p.born}` : ''}`}</span></span>
-          ${used.has(p.id) ? `<span class="s-flag">${L('уже в ланцюжку', 'already in the chain')}</span>` : ''}</li>`).join('')
-      : shamed ? '' : `<li class="empty">${L('Нікого не знайдено', 'No one found')}</li>`) + shamed;
-  }
-
-  input.addEventListener('input', () => { active = 0; renderSuggestions(); });
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowDown') { active = Math.min(active + 1, suggestions.length - 1); renderSuggestions(); e.preventDefault(); }
-    if (e.key === 'ArrowUp') { active = Math.max(active - 1, 0); renderSuggestions(); e.preventDefault(); }
-    if (e.key === 'Enter' && suggestions[active]) { choose(suggestions[active]); e.preventDefault(); }
-    if (e.key === 'Escape') { input.value = ''; renderSuggestions(); }
-  });
-  $('#suggestions').addEventListener('click', (e) => {
-    const li = e.target.closest('li[data-i]');
-    if (li) choose(suggestions[Number(li.dataset.i)]);
-  });
+  const picker = window.Players.attach(input, { choose, used: (p) => ((state?.myChain || []).some((x) => x.player.id === p.id) ? L('уже в ланцюжку', 'already in the chain') : '') });
 
   async function choose(p) {
-    if (!p) return;
-    input.value = '';
-    renderSuggestions();
     const last = state.myChain[state.myChain.length - 1].player;
     const res = await emit('add', { playerId: p.id });
     if (res.error) return toast(res.error, 'bad');

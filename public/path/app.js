@@ -99,7 +99,7 @@
     const input = $('#guess-input');
     input.disabled = !!solved || done;
     $('#pass-btn').disabled = !!solved || done;
-    if (input.disabled) { input.value = ''; renderSuggestions(); }
+    if (input.disabled) picker.clear();
     $('#answer-hint').textContent = solved
       ? L(`✓ Вгадав на ${solved.stage + 1}-му клубі: +${solved.points}. Чекаємо інших…`, `✓ Got it at club ${solved.stage + 1}: +${solved.points}. Waiting for the others…`)
       : done ? L('Спробу на цей клуб уже використано — чекай наступного.', 'You’ve used your guess for this club — wait for the next one.') : '';
@@ -202,41 +202,9 @@
 
   // ── вибір гравця
   const input = $('#guess-input');
-  let suggestions = [];
-  let active = 0;
-
-  function renderSuggestions() {
-    const list = $('#suggestions');
-    if (!input.value.trim() || input.disabled) { list.innerHTML = ''; suggestions = []; return; }
-    suggestions = window.Players.search(input.value);
-    const wrong = new Set(state.myGuesses.filter((g) => !g.correct).map((g) => g.player.id));
-    const shamed = window.Players.shame(input.value); // росіяни — сірі, вибрати не можна
-    list.innerHTML = (suggestions.length
-      ? suggestions.map((p, i) => `<li data-i="${i}" class="${i === active ? 'active' : ''} ${wrong.has(p.id) ? 'used' : ''}">
-          <span class="s-avatar">${p.thumb ? `<img src="${p.thumb}" alt="" loading="lazy" />` : escapeHtml(initials(p.name))}</span>
-          <span class="s-text"><span class="s-main">${escapeHtml(pname(p))}</span><span class="s-sub">${window.I18n.lang === 'en' ? (p.born || '') : `${escapeHtml(p.name)}${p.born ? ` · ${p.born}` : ''}`}</span></span>
-          ${wrong.has(p.id) ? `<span class="s-flag">${L('уже був', 'already tried')}</span>` : ''}</li>`).join('')
-      : shamed ? '' : `<li class="empty">${L('Нікого не знайдено', 'No one found')}</li>`) + shamed;
-  }
-
-  input.addEventListener('input', () => { active = 0; renderSuggestions(); });
-  // список підказок відкривається вниз — піднімаємо поле вгору екрана, щоб його було видно цілком (і над клавіатурою)
-  input.addEventListener('focus', () => setTimeout(() => input.scrollIntoView({ block: 'start', behavior: 'smooth' }), 250));
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowDown') { active = Math.min(active + 1, suggestions.length - 1); renderSuggestions(); e.preventDefault(); }
-    if (e.key === 'ArrowUp') { active = Math.max(active - 1, 0); renderSuggestions(); e.preventDefault(); }
-    if (e.key === 'Enter' && suggestions[active]) { choose(suggestions[active]); e.preventDefault(); }
-    if (e.key === 'Escape') { input.value = ''; renderSuggestions(); }
-  });
-  $('#suggestions').addEventListener('click', (e) => {
-    const li = e.target.closest('li[data-i]');
-    if (li) choose(suggestions[Number(li.dataset.i)]);
-  });
+  const picker = window.Players.attach(input, { choose, used: (p) => (state.myGuesses.some((g) => !g.correct && g.player.id === p.id) ? L('уже був', 'already tried') : ''), scrollOnFocus: true });
 
   async function choose(p) {
-    if (!p) return;
-    input.value = '';
-    renderSuggestions();
     const res = await emit('guess', { playerId: p.id });
     if (res.error) return toast(res.error, 'bad');
     if (!res.correct) {

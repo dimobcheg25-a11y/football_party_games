@@ -228,7 +228,7 @@
     const can = canAnswer(turns);
     const input = $('#guess-input');
     input.disabled = !can;
-    if (!can) { input.value = ''; renderSuggestions(); }
+    if (!can) picker.clear();
     $('#pass-btn').classList.toggle('hidden', !turns);
     $('#pass-btn').disabled = !can;
     $('#giveup-btn').classList.toggle('hidden', turns);
@@ -381,37 +381,9 @@
 
   // ── вибір гравця
   const input = $('#guess-input');
-  let suggestions = [];
-  let active = 0;
-
-  function renderSuggestions() {
-    const list = $('#suggestions');
-    if (!input.value.trim() || input.disabled) { list.innerHTML = ''; suggestions = []; return; }
-    suggestions = window.Players.search(input.value);
-    const shamed = window.Players.shame(input.value); // росіяни — сірі, вибрати не можна
-    list.innerHTML = (suggestions.length
-      ? suggestions.map((p, i) => `<li data-i="${i}" class="${i === active ? 'active' : ''}">
-          <span class="s-avatar">${p.thumb ? `<img src="${p.thumb}" alt="" loading="lazy" />` : escapeHtml(initials(p.name))}</span>
-          <span class="s-text"><span class="s-main">${escapeHtml(pname(p))}</span><span class="s-sub">${window.I18n.lang === 'en' ? (p.born || '') : `${escapeHtml(p.name)}${p.born ? ` · ${p.born}` : ''}`}</span></span></li>`).join('')
-      : shamed ? '' : `<li class="empty">${L('Нікого не знайдено', 'No one found')}</li>`) + shamed;
-  }
-
-  input.addEventListener('input', () => { active = 0; renderSuggestions(); });
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowDown') { active = Math.min(active + 1, suggestions.length - 1); renderSuggestions(); e.preventDefault(); }
-    if (e.key === 'ArrowUp') { active = Math.max(active - 1, 0); renderSuggestions(); e.preventDefault(); }
-    if (e.key === 'Enter' && suggestions[active]) { choose(suggestions[active]); e.preventDefault(); }
-    if (e.key === 'Escape') { input.value = ''; renderSuggestions(); }
-  });
-  $('#suggestions').addEventListener('click', (e) => {
-    const li = e.target.closest('li[data-i]');
-    if (li) choose(suggestions[Number(li.dataset.i)]);
-  });
+  const picker = window.Players.attach(input, { choose });
 
   async function choose(p) {
-    if (!p) return;
-    input.value = '';
-    renderSuggestions();
     const res = await emit('guess', { playerId: p.id });
     if (res.error) return toast(res.error, 'bad');
     if (res.correct) {

@@ -3,31 +3,12 @@
 // кімната (чужий прогрес — лише кольори, перший розв'язав +10, кінець раунду, коли всі закінчили), англійська.
 // Запуск: npm test (сервер піднімається сам на випадковому порту).
 
-const { spawn } = require('child_process');
-const path = require('path');
 const assert = require('assert');
+const { smoke } = require('./lib/smoke');
 const { io } = require('socket.io-client');
 
-const PORT = 4000 + Math.floor(Math.random() * 1000);
-const URL = `http://localhost:${PORT}`;
-const GAME = `${URL}/fours`;
+const { GAME, ready, emit, nextState, run, act, URL } = smoke('fours', { FOURS_TEST_ANSWER: '1', FOURS_REVEAL_MS: '400' });
 
-const server = spawn(process.execPath, [path.join(__dirname, '..', 'server', 'index.js')], {
-  env: { ...process.env, PORT, FOURS_TEST_ANSWER: '1', FOURS_REVEAL_MS: '400' },
-  stdio: ['ignore', 'pipe', 'inherit'],
-});
-
-const emit = (s, ev, data) => new Promise((res) => s.emit(ev, data, res));
-const nextState = (s, pred = () => true) =>
-  new Promise((res) => {
-    const h = (st) => { if (pred(st)) { s.off('state', h); res(st); } };
-    s.on('state', h);
-  });
-async function act(s, ev, data, pred) {
-  const st = nextState(s, pred);
-  const res = await emit(s, ev, data);
-  return { res, st: await st };
-}
 // Помилкова четвірка: троє з групи k + один з іншої («майже»), або по двоє з двох груп.
 const oneAway = (st, k) => [...st.testAnswer[k].slice(0, 3), st.testAnswer[(k + 1) % 4][0]];
 const twoTwo = (st, k) => [...st.testAnswer[k].slice(0, 2), ...st.testAnswer[(k + 1) % 4].slice(0, 2)];
@@ -55,7 +36,7 @@ async function main() {
   assert.deepStrictEqual(d1.board.map((p) => p.id), d2.board.map((p) => p.id), 'з тим самим насінням — та сама головоломка');
   console.log('✓ генерація: 75 головоломок, розклад один; приклад —', d1.groups.map((g) => g.label.uk).join(' | '));
 
-  await new Promise((res) => server.stdout.on('data', (d) => d.toString().includes('запущено') && res()));
+  await ready;
   const games = await (await fetch(`${URL}/api/games`)).json();
   assert.ok(games.some((g) => g.id === 'fours'), 'гра є в каталозі');
   assert.strictEqual((await fetch(`${URL}/fours/`)).status, 200);
@@ -194,6 +175,4 @@ async function main() {
   console.log('\nУСІ ПЕРЕВІРКИ «ЧОТИРИ ЧЕТВІРКИ» ПРОЙШЛИ');
 }
 
-main()
-  .then(() => { server.kill(); process.exit(0); })
-  .catch((e) => { console.error('✗', e); server.kill(); process.exit(1); });
+run(main);

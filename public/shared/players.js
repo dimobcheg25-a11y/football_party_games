@@ -74,7 +74,66 @@ window.Players = (() => {
     }).join('');
   }
 
-  return { ready, search, shame, normalize };
+  const initials = (name) => {
+    const parts = String(name).split(/\s+/).filter(Boolean);
+    return (parts.length > 1 ? parts[0][0] + parts[parts.length - 1][0] : String(name).slice(0, 2)).toUpperCase();
+  };
+
+  // Поле «назви гравця» з підказками — однакове в усіх іграх: стрілки, Enter, Escape, клік, сірі росіяни.
+  // opts: list — <ul> підказок (типово #suggestions); choose(p) — гравця вибрано (поле вже очищене);
+  //   used(p) — текст позначки «уже був» або порожньо; extra(q) — свої рядки перед гравцями ({ name, thumb, sub, … }, як тренери
+  //   в «Складі матчу»); limit — скільки гравців; scrollOnFocus — підняти поле вгору екрана (щоб список було видно над клавіатурою).
+  // Повертає { render, clear }: clear() — очистити поле (наприклад, коли відповідати вже не можна).
+  function attach(input, { list = document.getElementById('suggestions'), choose, used = () => '', extra = () => [], limit = 8, scrollOnFocus = false } = {}) {
+    const L = (uk, en) => (window.I18n?.lang === 'en' ? en : uk);
+    let items = [];
+    let active = 0;
+
+    function render() {
+      const q = input.value.trim();
+      if (!q || input.disabled) { list.innerHTML = ''; items = []; return; }
+      items = [...extra(q), ...search(q, limit)];
+      const en = window.I18n?.lang === 'en';
+      const shamed = shame(q);
+      list.innerHTML = (items.length
+        ? items.map((p, i) => {
+          const flag = p.sub == null ? used(p) : '';
+          const sub = p.sub ?? (en ? (p.born || '') : `${esc(p.name)}${p.born ? ` · ${p.born}` : ''}`);
+          return `<li data-i="${i}" class="${i === active ? 'active' : ''} ${flag ? 'used' : ''}">
+            <span class="s-avatar">${p.thumb ? `<img src="${p.thumb}" alt="" loading="lazy" />` : esc(initials(p.name))}</span>
+            <span class="s-text"><span class="s-main">${esc(p.sub == null ? window.I18n.name(p) : p.name)}</span><span class="s-sub">${sub}</span></span>
+            ${flag ? `<span class="s-flag">${esc(flag)}</span>` : ''}</li>`;
+        }).join('')
+        : shamed ? '' : `<li class="empty">${L('Нікого не знайдено', 'No one found')}</li>`) + shamed;
+    }
+
+    function clear() {
+      input.value = '';
+      render();
+    }
+
+    function pick(p) {
+      if (!p) return;
+      clear();
+      choose(p);
+    }
+
+    input.addEventListener('input', () => { active = 0; render(); });
+    if (scrollOnFocus) input.addEventListener('focus', () => setTimeout(() => input.scrollIntoView({ block: 'start', behavior: 'smooth' }), 250));
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowDown') { active = Math.min(active + 1, items.length - 1); render(); e.preventDefault(); }
+      if (e.key === 'ArrowUp') { active = Math.max(active - 1, 0); render(); e.preventDefault(); }
+      if (e.key === 'Enter' && items[active]) { pick(items[active]); e.preventDefault(); }
+      if (e.key === 'Escape') clear();
+    });
+    list.addEventListener('click', (e) => {
+      const li = e.target.closest('li[data-i]');
+      if (li) pick(items[Number(li.dataset.i)]);
+    });
+    return { render, clear };
+  }
+
+  return { ready, search, shame, normalize, attach };
 })();
 
 // Приклад імені в полі «Твоє ім'я» — щоразу інша легенда (щоб друзі не писали всі одне й те саме ім'я з прикладу 🙂).

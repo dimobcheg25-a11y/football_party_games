@@ -415,6 +415,8 @@ const scenarios = {
     await choosePlayer(p, '#guess-input', 'мессі');
     await p.waitForSelector('#board .g-row:not(.g-head)');
     await shot(p, 'guess-round');
+    await p.fill('#guess-input', 'мессі'); // уже названий — позначка в підказках (Players.attach, used)
+    await p.waitForSelector('#suggestions li.used .s-flag');
     await p.fill('#guess-input', 'аршав'); // росіянин — сірий рядок з приміткою, вибрати не можна
     await p.waitForSelector('#suggestions li.shamed');
     await shot(p, 'guess-shame');

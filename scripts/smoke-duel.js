@@ -3,36 +3,13 @@
 // бонус найшвидшому, таймер, чужий вибір прихований), англійська.
 // Запуск: npm test (сервер піднімається сам на випадковому порту).
 
-const { spawn } = require('child_process');
-const path = require('path');
 const assert = require('assert');
-const { io } = require('socket.io-client');
+const { smoke } = require('./lib/smoke');
 
-const PORT = 4000 + Math.floor(Math.random() * 1000);
-const URL = `http://localhost:${PORT}`;
-const GAME = `${URL}/duel`;
-
-const server = spawn(process.execPath, [path.join(__dirname, '..', 'server', 'index.js')], {
-  env: { ...process.env, PORT, DUEL_TEST_ANSWER: '1', DUEL_REVEAL_MS: '1500' },
-  stdio: ['ignore', 'pipe', 'inherit'],
-});
-
-const emit = (s, ev, data) => new Promise((res) => s.emit(ev, data, res));
-const last = new Map();
-const nextState = (s, pred = () => true) =>
-  new Promise((res) => {
-    if (last.has(s) && pred(last.get(s))) return res(last.get(s));
-    const h = (st) => { if (pred(st)) { s.off('state', h); res(st); } };
-    s.on('state', h);
-  });
-function bot(lang) {
-  const s = io(GAME, lang ? { auth: { lang } } : undefined);
-  s.on('state', (st) => last.set(s, st));
-  return s;
-}
+const { GAME, ready, emit, nextState, run, bot, URL } = smoke('duel', { DUEL_TEST_ANSWER: '1', DUEL_REVEAL_MS: '1500' });
 
 async function main() {
-  await new Promise((res) => server.stdout.on('data', (d) => d.toString().includes('запущено') && res()));
+  await ready;
 
   const games = await (await fetch(`${URL}/api/games`)).json();
   const meta = games.find((g) => g.id === 'duel');
@@ -192,6 +169,4 @@ async function main() {
   console.log('\nУСІ ПЕРЕВІРКИ «ОДИН НА ОДИН» ПРОЙШЛИ');
 }
 
-main()
-  .then(() => { server.kill(); process.exit(0); })
-  .catch((e) => { console.error('✗', e); server.kill(); process.exit(1); });
+run(main);
