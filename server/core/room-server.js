@@ -24,9 +24,14 @@ function cleanName(name, lang) {
   return String(name || '').trim().slice(0, 20) || (lang === 'en' ? 'Player' : 'Гравець');
 }
 
+// Кімнати всіх ігор (гра → код → кімната) — щоб відгук гравця міг додати знімок його гри (server/core/feedback.js).
+const registry = new Map();
+const findRoom = (game, code) => registry.get(game)?.get(String(code || '').toUpperCase()) || null;
+
 function createRoomServer({ app, io, id, createRoom, actions, streams = {}, roomInfo = () => ({}) }) {
   const nsp = io.of(`/${id}`);
   const rooms = new Map();
+  registry.set(id, rooms);
 
   // Короткий опис кімнати для екрана запрошення (до входу): хто вже там і які налаштування.
   app.get(`/api/${id}/room/:code`, (req, res) => {
@@ -205,4 +210,4 @@ function createRoomServer({ app, io, id, createRoom, actions, streams = {}, room
   return { rooms };
 }
 
-module.exports = { createRoomServer, cleanName };
+module.exports = { createRoomServer, cleanName, findRoom };

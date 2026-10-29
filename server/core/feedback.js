@@ -3,6 +3,8 @@
 const express = require('express');
 const { gh, hasToken } = require('./github');
 const { T, localize, langOf } = require('./i18n');
+const { findRoom } = require('./room-server');
+const { roomSnapshot } = require('./snapshot');
 
 const KINDS = { like: '👍 Подобається', idea: '💡 Ідея', bug: '🐞 Щось не так' };
 
@@ -14,7 +16,7 @@ function setupFeedback(app, games) {
   app.post('/api/feedback', express.json({ limit: '8kb' }), (req, res) => {
     const lang = langOf(req.query.lang);
     const fail = (uk, en) => res.json(localize({ error: T(uk, en) }, lang));
-    const { game, kind, text, contact } = req.body || {};
+    const { game, kind, text, contact, room: code, token } = req.body || {};
     const body = String(text || '').trim().slice(0, 2000);
     if (!titles[game] || !KINDS[kind]) return fail('Невідомий відгук', 'Unknown feedback');
     if (body.length < 3) return fail('Напиши кілька слів', 'Write a few words');
@@ -25,6 +27,12 @@ function setupFeedback(app, games) {
     recent.set(ip, [...times, now]);
 
     const who = String(contact || '').trim().slice(0, 100);
+    // гравець у кімнаті — знімок його гри: раунд, що загадано, хто що назвав (щоб легше знайти баг)
+    const room = code ? findRoom(game, code) : null;
+    let snapshot = '';
+    try {
+      if (room) snapshot = roomSnapshot(room, token ? room.seatOf(String(token)) : -1);
+    } catch (e) { snapshot = `не вдалося зняти: ${e.message}`; }
     const first = body.split('\n')[0];
     const issue = {
       title: `${KINDS[kind].split(' ')[0]} ${titles[game]}: ${first.length > 70 ? first.slice(0, 70) + '…' : first}`,
@@ -33,6 +41,7 @@ function setupFeedback(app, games) {
         '',
         body.split('\n').map((l) => `> ${l}`).join('\n'),
         '',
+        ...(snapshot ? [`<details><summary>Стан гри (кімната ${room.code})</summary>`, '', '```json', snapshot, '```', '</details>', ''] : []),
         `<sub>${String(req.headers['user-agent'] || '').slice(0, 200)}</sub>`,
       ].join('\n'),
       labels: ['feedback', `feedback-${kind}`],

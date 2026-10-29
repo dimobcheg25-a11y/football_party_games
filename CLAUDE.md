@@ -116,7 +116,7 @@ Node 18+, Express + Socket.IO, клієнт — чистий HTML/CSS/JS без 
   сам Umami; події `window.Track(назва, дані)`: `game_start`/`game_finish`/`game_leave` і `hint`/`give_up` (дії з `TRACKED_ACTIONS`) — у room-client.js для всіх ігор,
   `feedback` — у feedback.js, «Перехрестя» — у своєму app.js. Дані: `{ game, mode: solo|room, players, device: pc|phone|tablet }`. Нова сторінка — підключити одразу після `/shared/presence.js`.
 - `server/core/feedback.js` — відгуки гравців (`POST /api/feedback`) → GitHub Issues з міткою `feedback` + `feedback-like|idea|bug`; клієнт — `public/shared/feedback.js`
-  (підписана кнопка «💬 Відгук про гру» внизу ліворуч — `.fb-fab`, ставиться сама; підключати одразу після i18n.js). Запити до GitHub (і для звітів «Фотоархіву») — `server/core/github.js`.
+  (підписана кнопка «💬 Відгук про гру» внизу ліворуч — `.fb-fab`, ставиться сама; підключати одразу після i18n.js; гравець у кімнаті (`?room=`) шле код і токен — сервер додає в задачу згорнутий знімок кімнати: `server/core/snapshot.js` обходить поля кімнати (`findRoom` з room-server), без таймерів, токенів і великих службових полів `SKIP`). Запити до GitHub (і для звітів «Фотоархіву») — `server/core/github.js`.
 - `public/shared/` — спільне для сторінок ігор: `theme.css` (базові токени й фон, які гра перевизначає — див. «Оформлення гри»; `.home-link` — закріплена табличка «‹ Футбольні ігри» на головну, у кожній `index.html` перед екранами), `ui.css` (кнопки, поля, чипи, вікна,
   підказки пошуку, тост, звук, чат), `players.js` (`window.Players.search` — автодоповнення імен), `sounds.js` (`window.Sound`),
   `room-client.js` (`RoomClient.create` — уся спільна логіка клієнта кімнатних ігор).

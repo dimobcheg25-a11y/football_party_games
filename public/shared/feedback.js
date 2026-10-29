@@ -4,6 +4,16 @@
 window.Feedback = (() => {
   const { L } = window.I18n;
   const game = location.pathname.split('/')[1];
+  // гравець у кімнаті (?room= в адресі) — шлемо код і свій токен: сервер додасть до відгуку знімок цієї гри
+  function currentRoom() {
+    try {
+      const room = new URLSearchParams(location.search).get('room');
+      if (!room) return {};
+      const session = JSON.parse(localStorage.getItem(`${game}:session`) || 'null'); // room-client
+      const token = session?.code === room ? session.token : localStorage.getItem(`g9:token:${room}`); // «Перехрестя»
+      return { room, token: token || undefined };
+    } catch { return {}; }
+  }
   const KINDS = [
     ['like', L('👍 Подобається', '👍 I like it')],
     ['idea', L('💡 Ідея', '💡 Idea')],
@@ -64,7 +74,7 @@ window.Feedback = (() => {
         const r = await fetch(`/api/feedback?lang=${window.I18n.lang}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ game, kind, text: $('#fb-text').value, contact: $('#fb-contact').value }),
+          body: JSON.stringify({ game, kind, text: $('#fb-text').value, contact: $('#fb-contact').value, ...currentRoom() }),
         });
         const res = await r.json();
         if (res.error) throw new Error(res.error);

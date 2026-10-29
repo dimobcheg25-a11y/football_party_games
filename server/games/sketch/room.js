@@ -74,10 +74,11 @@ function judge(text, word) {
   }
   return close ? 'close' : 'miss';
 }
-// Чи є відповідь у тексті (художник не може її написати; від 4 літер, щоб «гол» не блокував «голова»).
+// Чи є відповідь у тексті (художник не може її написати). Лише цілим словом — тож «гол» не блокує «голова».
 function mentions(text, word) {
   const t = ` ${norm(text)} `;
-  return word.variants.some((v) => v.replace(/ /g, '').length >= 4 && t.includes(` ${v} `));
+  // будь-якої довжини: раніше лише від 4 літер, і художник міг написати «ПСЖ», «VAR», «Гол»
+  return word.variants.some((v) => v.replace(/ /g, '').length >= 2 && t.includes(` ${v} `));
 }
 
 class SketchRoom extends BaseRoom {
