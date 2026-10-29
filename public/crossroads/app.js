@@ -242,6 +242,7 @@
 
   function leaveRoom() {
     const code = session.code;
+    if (state?.status === 'playing') window.Track?.('game_leave', { game: 'crossroads', mode: 'room', players: state.seats.filter(Boolean).length });
     socket.emit('leave', null, () => {});
     if (code) {
       store.del(`g9:token:${code}`);
@@ -265,6 +266,10 @@
     mySeat = s.you;
     clockOffset = s.serverNow - Date.now();
     usedIds = new Set(s.usedIds);
+    // статистика (/shared/analytics.js): старт з лобі або реванш, кінець гри; перепідключення посеред гри — не старт
+    const track = (name) => window.Track?.(name, { game: 'crossroads', mode: 'room', players: s.seats.filter(Boolean).length });
+    if (prev && s.status === 'playing' && prev.status !== 'playing') track('game_start');
+    if (prev?.status === 'playing' && s.status === 'finished') track('game_finish');
     playStateSounds(prev, s);
     render();
   });

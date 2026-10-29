@@ -86,10 +86,20 @@ window.RoomClient = (() => {
     });
   }
 
+  const TRACKED_ACTIONS = { hint: 'hint', giveUp: 'give_up' }; // дії гри, які рахуємо в статистиці
+
   function create(cfg) {
     const { id } = cfg;
     const socket = io(`/${id}`, { auth: { lang: window.I18n.lang, vid: window.Presence?.vid } }); // vid — «зараз на сайті» (/shared/presence.js)
-    const emit = (event, data) => new Promise((res) => socket.emit(event, data, (r) => res(r || {})));
+    const emit = (event, data) => {
+      if (TRACKED_ACTIONS[event]) track(TRACKED_ACTIONS[event]); // підказки й «Здатися» — у статистику (/shared/analytics.js)
+      return new Promise((res) => socket.emit(event, data, (r) => res(r || {})));
+    };
+    // дані ігрової події: яка гра, соло чи кімната, скільки гравців
+    const track = (name, extra = {}) => window.Track?.(name, {
+      game: id, mode: g.state?.solo ? 'solo' : 'room', players: (g.state?.seats || []).filter(Boolean).length, ...extra,
+    });
+    let fresh = false; // щойно створив кімнату чи зайшов за запрошенням — перший стан «playing» рахуємо як старт (перепідключення — ні)
 
     let setup = { ...cfg.defaults };
     try { setup = { ...cfg.defaults, ...JSON.parse(store.get(`${id}:setup`) || '{}') }; } catch { /* ignore */ }
@@ -213,6 +223,7 @@ window.RoomClient = (() => {
     async function createRoom(solo, extra = {}) {
       const name = requireName();
       if (!name) return;
+      fresh = true;
       onEntered(await emit('create', { ...cfg.createOptions(setup), ...extra, solo, name }));
     }
     g.createRoom = createRoom;
@@ -223,6 +234,7 @@ window.RoomClient = (() => {
       const name = requireName();
       if (!name) return;
       const token = session?.code === inviteCode ? session.token : undefined;
+      fresh = true;
       onEntered(await emit('join', { code: inviteCode, name, token }));
     });
 
@@ -287,6 +299,9 @@ window.RoomClient = (() => {
       g.state = s;
       g.mySeat = s.you;
       g.clockOffset = s.serverNow ? s.serverNow - Date.now() : 0;
+      if (s.status === 'playing' && (prev ? prev.status !== 'playing' : fresh)) track('game_start');
+      if (s.status === 'finished' && prev?.status === 'playing') track('game_finish');
+      fresh = false;
       cfg.onState?.(s, prev);
       render();
     });
@@ -349,6 +364,7 @@ window.RoomClient = (() => {
     async function leave() {
       if (g.state?.status === 'playing' && !g.state.solo
         && !(await ask(L('Вийти з гри?', 'Leave the game?'), { note: L('Твої очки пропадуть.', 'Your points will be lost.'), ok: L('Вийти', 'Leave'), danger: true }))) return;
+      if (g.state?.status === 'playing') track('game_leave');
       await emit('leave');
       g.state = null;
       forgetSession();

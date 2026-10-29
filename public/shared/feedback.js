@@ -68,6 +68,7 @@ window.Feedback = (() => {
         });
         const res = await r.json();
         if (res.error) throw new Error(res.error);
+        window.Track?.('feedback', { game, kind });
       } catch (x) {
         err.textContent = x.message && !/fetch|JSON/i.test(x.message) ? x.message : L('Не вдалося надіслати. Спробуй ще раз.', 'Couldn’t send it. Please try again.');
         err.classList.remove('hidden');
