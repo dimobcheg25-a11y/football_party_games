@@ -555,12 +555,27 @@ const yearFactor = (t) => {
   const age = new Date().getFullYear() - Number(t.id.split(':')[1]);
   return Math.max(YEAR_MIN, Math.min(1, 1 - (age - YEAR_FRESH) * YEAR_FADE));
 };
+// Наскільки сам показник запам'ятовується: гравці бувають зірками, але хто з них отримав найбільше жовтих
+// або хто найвищий у клубі, мало хто знає. Голи, трансфери, трофеї, «Золотий м'яч» — без знижки.
+const MEMORABLE = {
+  cards: 0.6, height: 0.6, // картки й зріст майже ніхто не пам'ятає
+  'assists/player': 0.7, // хто асистував зірці — треба знати всіх її партнерів
+  'assists/season': 0.75, // рекорд асистів за сезон
+  assists: 0.8, // асисти взагалі пам'ятають гірше за голи
+  'transfers/club': 0.85, 'apps/club': 0.85, // продажі й матчі окремого клубу — знають здебільшого його фанати
+};
+const memorable = (t) => MEMORABLE[`${t.category}/${t.kind}`] ?? MEMORABLE[t.category] ?? 1;
+const raw = new Map();
 for (const t of topics) {
   const head = t.entries.slice(0, 10);
-  t.score = Math.round((head.reduce((s, e) => s + rec(e.p), 0) / head.length) * yearFactor(t));
+  raw.set(t, head.reduce((s, e) => s + rec(e.p), 0) / head.length);
+  t.score = Math.round(raw.get(t) * yearFactor(t) * memorable(t));
 }
-const byScore = [...topics].sort((a, b) => b.score - a.score);
-byScore.forEach((t, i) => (t.level = i < byScore.length * 0.3 ? 'easy' : i < byScore.length * 0.7 ? 'normal' : 'hard'));
+// межі рівнів — за балами без знижок: знижка лише опускає свою тему, а не піднімає інші на звільнені місця
+const rawSorted = [...raw.values()].sort((a, b) => b - a);
+const EASY_MIN = rawSorted[Math.floor(rawSorted.length * 0.3)];
+const NORMAL_MIN = rawSorted[Math.floor(rawSorted.length * 0.7)];
+for (const t of topics) t.level = t.score > EASY_MIN ? 'easy' : t.score > NORMAL_MIN ? 'normal' : 'hard';
 
 const topicById = new Map(topics.map((t) => [t.id, t]));
 
