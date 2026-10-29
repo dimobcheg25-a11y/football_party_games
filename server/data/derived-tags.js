@@ -6,6 +6,7 @@
 //   H190 / H170 — зріст 190+ / до 170 см (facts.json: Wikidata, де немає — Transfermarkt)
 //   BDO3 / BDO10 — хоч раз у трійці / десятці рейтингу «Золотого м'яча» (ballon.json); 1-е місце — ще й BALLON (нові переможці — без build-players)
 //   W11 — хоч раз у символічній збірній FIFPRO (awards.json); GBOY — переможці Golden Boy (awards.json + список з build-players)
+//   AC_* — «вихованець» прибирається, якщо до приходу в клуб (academy.json) гравець уже грав дорослим за інший клуб
 //   AS_* — віддав зірці гольову передачу (assists.json, Transfermarkt з ~2012); фото категорії — фото зірки
 const load = (file) => {
   try {
@@ -18,6 +19,7 @@ const load = (file) => {
 const JOURNEY_CLUBS = 10;
 const TALL = 190;
 const SHORT = 170;
+const ADULT_GAMES = 10; // стільки матчів за дорослий клуб до приходу в академію — уже не вихованець
 
 // Клуби, де гравець не зіграв жодного матчу (підписав, але не грав; оренда без матчів) — це не етап кар'єри.
 // Лишаємо лише поточний клуб (ще без матчів). Той самий об'єкт careers.json бачать усі ігри (кеш require), тож чистимо один раз.
@@ -69,6 +71,7 @@ function addDerivedTags(players) {
   const ballon = load('./ballon.json') || {};
   const awards = load('./awards.json') || {};
   const assists = load('./assists.json');
+  const academy = load('./academy.json') || {};
   cleanCareers(careers);
   const byId = new Map(players.map((p) => [p.id, p]));
   const byTm = new Map(players.filter((p) => transfers[p.id]?.tm).map((p) => [transfers[p.id].tm, p]));
@@ -101,6 +104,20 @@ function addDerivedTags(players) {
   }
   for (const team of Object.values(awards.fifpro || {})) for (const [id] of team) if (id) byId.get(id)?.tags.add('W11');
   for (const [id] of Object.values(awards.goldenBoy || {})) if (id) byId.get(id)?.tags.add('GBOY');
+  // «вихованець»: build-players ставить його всім, хто грав за дубль, — і дорослим новачкам (Облак прийшов у Бенфіку з «Олімпії»).
+  // Прибираємо, якщо раніше за перший рік у клубі чи його дублі гравець зіграв ADULT_GAMES+ за інший дорослий клуб (не оренда).
+  // Ручний тег (manual-tags) лишається: вихованці, що пішли підлітками й повернулися (Піке, Бельєрін).
+  const manual = require('./manual-tags');
+  const { categories: cats } = require('./categories');
+  for (const c of cats.filter((x) => x.type === 'academy')) {
+    for (const p of players) {
+      const from = academy[p.qid]?.[c.id];
+      const career = careers?.careers?.[p.qid];
+      if (!p.tags.has(c.id) || from == null || !career || (manual[p.name] || manual[p.wiki])?.includes(c.id)) continue;
+      const adult = career.clubs.some((x) => !x.loan && x.t !== c.clubQid && !careers.teams[x.t]?.national && x.a >= ADULT_GAMES && x.s < from);
+      if (adult) p.tags.delete(c.id);
+    }
+  }
   // «асистенти зірки»: категорії з partnerOf (categories.js)
   const { categories } = require('./categories');
   for (const c of categories.filter((x) => x.partnerOf)) {
