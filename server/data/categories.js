@@ -117,7 +117,7 @@ const stats = [
   { id: 'T80', level: 'normal', label: 'Трансфер за €80+ млн', short: 'Трансфер 80+ млн', icon: '💶' },
   { id: 'UCL30', level: 'normal', label: '30+ голів у Лізі чемпіонів', short: '30+ голів у ЛЧ', icon: '⭐' },
   { id: 'JOURNEY', level: 'fan', label: 'Мандрівник: 10+ клубів', short: 'Мандрівник 10+ клубів', icon: '🧳' },
-  { id: 'H190', level: 'normal', label: 'Зріст 190+ см', icon: '📏' },
+  { id: 'H190', level: 'fan', label: 'Зріст 190+ см', icon: '📏' }, // зріст мало хто пам'ятає — лише для фанатів
   { id: 'H170', level: 'fan', label: 'Зріст до 170 см', icon: '📐' },
 ].map((c) => ({ ...c, type: 'stat', colors: ['#5ad1b8', '#1d6b5c'] }));
 

@@ -18,8 +18,8 @@ for (const c of categories) {
 }
 setTier(0, ['BALLON', 'WC']);
 setTier(1, ['UCL', 'EURO', 'APL', 'CH_IT', 'CH_ES', 'CH_DE', 'CAPS100', 'G300', 'BDO3']);
-setTier(2, ['COPA', 'UEL', 'BOOT', 'T80', 'T100', 'UCL30', 'G50N', 'A100', 'CO_LUE', 'CO_LOB', 'BDO10', 'W11', 'H190']);
-setTier(3, ['TS_EPL', 'TS_SA', 'TS_LL', 'TS_BL', 'TS_L1', 'GBOY', 'JOURNEY', 'H170']);
+setTier(2, ['COPA', 'UEL', 'BOOT', 'T80', 'T100', 'UCL30', 'G50N', 'A100', 'CO_LUE', 'CO_LOB', 'BDO10', 'W11']);
+setTier(3, ['TS_EPL', 'TS_SA', 'TS_LL', 'TS_BL', 'TS_L1', 'GBOY', 'JOURNEY', 'H190', 'H170']); // зріст мало хто пам'ятає
 const BORN_TIER = 2; // рік народження — складна
 const NAME_TIER = 3; // тезки — підступна
 
