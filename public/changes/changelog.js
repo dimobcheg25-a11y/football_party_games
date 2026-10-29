@@ -3,6 +3,12 @@
 // Після кожного помітного для гравців коміту — дописати сюди пункт (дата — день деплою).
 window.CHANGELOG = [
   {
+    date: '2026-10-29',
+    items: [
+      { game: 'top', uk: 'Підказки в «Топ-10»: на кожному відкритому місці є кнопка «💡» — вона показує першу літеру прізвища. Ціна — половина очок за це місце (на 10-му місці −5, на 1-му −1), її видно на кнопці, знімається одразу. Вгадаєш — отримаєш повні очки за місце. Після раунду видно, скільки хто віддав за підказки.', en: 'Hints in “Top 10”: every open place has a “💡” button that shows the first letter of the surname. It costs half the points for that place (−5 at #10, −1 at #1) — the price is on the button and is taken right away. Guess it and you still get the full points for the place. After the round you can see how much everyone spent on hints.' },
+    ],
+  },
+  {
     date: '2026-10-28',
     items: [
       { game: null, uk: '«Золотий м’яч» 2026 уже в базі: Гаррі Кейн тепер серед володарів трофея (у «Перехресті», «Четвірках» і всюди), а весь рейтинг 2026 — у «Топ-10», «Один на один», «All in» і в силі гравців «Трансферного вікна».', en: 'The 2026 Ballon d’Or is in: Harry Kane is now a Ballon d’Or winner (in “Crossroads”, “Four Fours” and everywhere else), and the full 2026 ranking is in “Top 10”, “One on One”, “All in” and in player strength for “Transfer Window”.' },

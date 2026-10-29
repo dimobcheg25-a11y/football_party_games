@@ -32,6 +32,7 @@ function register({ app, io }) {
       start: (room, seat) => room.start(seat),
       pickTopic: (room, seat, { topicId } = {}) => room.pickTopic(seat, topicId),
       guess: (room, seat, { playerId } = {}) => room.guess(seat, playerId),
+      hint: (room, seat, { place } = {}) => room.hint(seat, place),
       pass: (room, seat) => room.pass(seat),
       giveUp: (room, seat) => room.giveUp(seat),
       skipTopic: (room, seat) => room.skipTopic(seat),

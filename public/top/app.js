@@ -248,14 +248,48 @@
         ? L(`Твій топ закрито: ${found} з ${s.slots.length}. Чекаємо інших…`, `Your top is closed: ${found} of ${s.slots.length}. Waiting for others…`)
         : found ? L(`Знайдено ${found} з ${s.slots.length}`, `Found ${found} of ${s.slots.length}`) : '';
     }
+    const spent = s.hintSpent?.[mySeat] || 0;
+    $('#round-sum').innerHTML = spent ? roundSum(mySeat)
+      : canHint() ? L('💡 Не знаєш когось? «💡 −N» на місці — перша літера прізвища. Очки знімаються одразу, нижче місце — дорожча підказка.',
+        '💡 Stuck? «💡 −N» on a place shows the first letter of the surname. Points are taken right away; lower places cost more.') : '';
   }
+
+  const signed = (n) => (n < 0 ? `−${-n}` : `+${n}`);
+  // «За раунд: +7 = 12 за гравців − 5 за підказки»
+  function roundSum(seat) {
+    const net = state.roundPoints[seat] || 0;
+    const spent = state.hintSpent?.[seat] || 0;
+    const head = `${L('За раунд', 'This round')}: <b>${signed(net)}</b>`;
+    return spent ? `${head} = ${L(`${net + spent} за гравців − ${spent} за підказки`, `${net + spent} for players − ${spent} for hints`)}` : head;
+  }
+
+  // Підказку можна взяти, поки сам граєш у раунді (свій топ не закрито / є життя в черзі).
+  function canHint() {
+    const s = state;
+    if (s.phase !== 'guess') return false;
+    if (s.options.mode === 'turns') return s.order.includes(mySeat) && s.lives[mySeat] > 0;
+    return !(s.mine?.done);
+  }
+  const ptsWord = (n) => pl(n, ['очко', 'очки', 'очок'], ['point', 'points']);
 
   function slotHtml(slot, i, extra = '') {
     const by = slot.by?.length && !state.solo
       ? `<span class="by">${slot.by.map((x) => `<i class="dot-p" style="${seatStyle(x)}" title="${escapeHtml(seatName(x))}"></i>`).join('')}</span>` : '';
     const miss = slot.missing ? `<small class="miss-note">${L('немає в базі — відкрито', 'not in our database — revealed')}</small>` : '';
     if (!slot.player) {
-      return `<li class="slot empty-slot ${extra}"><span class="place">${i + 1}</span><span class="blank">?</span><span class="pts">+${slot.points}</span></li>`;
+      // порожнє місце: своя підказка — літера; ні — кнопка з ціною саме цього місця
+      const letter = myHints.get(i);
+      const blank = letter
+        ? `<span class="blank hinted" title="${L('Перша літера прізвища', 'First letter of the surname')}">${escapeHtml(letter)}…</span>`
+        : '<span class="blank">?</span>';
+      let hint = '';
+      if (letter) hint = `<small class="hint-paid">${L(`💡 −${slot.hintCost} сплачено`, `💡 −${slot.hintCost} paid`)}</small>`;
+      else if (slot.hintCost && canHint()) {
+        const title = L(`Перша літера прізвища за ${slot.hintCost} ${ptsWord(slot.hintCost)}. Вгадаєш — однаково +${slot.points}, разом +${slot.points - slot.hintCost}.`,
+          `First letter of the surname for ${slot.hintCost} ${ptsWord(slot.hintCost)}. Guess it and you still get +${slot.points}, +${slot.points - slot.hintCost} in total.`);
+        hint = `<button type="button" class="slot-hint" data-hint="${i}" title="${escapeHtml(title)}">💡 −${slot.hintCost}</button>`;
+      }
+      return `<li class="slot empty-slot ${extra}"><span class="place">${i + 1}</span>${blank}${hint}<span class="pts">+${slot.points}</span></li>`;
     }
     const p = slot.player;
     return `<li class="slot ${extra}"><span class="place">${i + 1}</span>
@@ -265,8 +299,10 @@
   }
 
   let lastFound = new Set();
+  let myHints = new Map(); // місце → літера
   function renderBoard(turns) {
     const s = state;
+    myHints = new Map((s.myHints || []).map((h) => [h.i, h.letter]));
     const reveal = s.phase === 'reveal';
     const mineFound = new Map((s.mine?.found || []).map((f) => [f.i, f]));
     const nowFound = new Set();
@@ -299,8 +335,9 @@
     if (s.phase !== 'reveal') return;
     const seats = s.seats.map((x, i) => (x ? i : -1)).filter((i) => i >= 0).sort((a, b) => (s.roundPoints[b] || 0) - (s.roundPoints[a] || 0));
     const iVoted = s.nextVotes.includes(mySeat);
-    bar.innerHTML = `${s.solo ? `<p class="verdict">${L('За раунд', 'This round')}: <b>+${s.roundPoints[mySeat] || 0}</b></p>`
-      : `<ul class="round-results">${seats.map((i) => `<li style="${seatStyle(i)}"><span class="dot-p"></span>${escapeHtml(seatName(i))}<b>+${s.roundPoints[i] || 0}</b></li>`).join('')}</ul>`}
+    const spentNote = (i) => (s.hintSpent?.[i] ? `<small class="hint-paid">${(s.roundPoints[i] || 0) + s.hintSpent[i]} − ${s.hintSpent[i]} ${L('за 💡', 'for 💡')}</small>` : '');
+    bar.innerHTML = `${s.solo ? `<p class="verdict">${roundSum(mySeat)}</p>`
+      : `<ul class="round-results">${seats.map((i) => `<li style="${seatStyle(i)}"><span class="dot-p"></span>${escapeHtml(seatName(i))}${spentNote(i)}<b>${signed(s.roundPoints[i] || 0)}</b></li>`).join('')}</ul>`}
       <div class="reveal-actions"><button id="next-btn" class="btn btn-primary btn-lg" ${iVoted ? 'disabled' : ''}>${s.round >= s.rounds ? L('Підсумки', 'Results') : L('Наступна тема →', 'Next topic →')}</button></div>`;
     $('#next-btn').addEventListener('click', () => emit('next'));
   }
@@ -386,6 +423,21 @@
     if (!input.disabled) input.focus();
   }
 
+  $('#board').addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-hint]');
+    if (!b) return;
+    const i = Number(b.dataset.hint);
+    const slot = state.slots[i];
+    const ok = await ask(L(`Підказка на ${i + 1}-е місце?`, `Hint for #${i + 1}?`), {
+      note: L(`Побачиш першу літеру прізвища. Зараз знімемо ${slot.hintCost} ${ptsWord(slot.hintCost)}; вгадаєш — отримаєш +${slot.points}, разом +${slot.points - slot.hintCost}.`,
+        `You’ll see the first letter of the surname. ${slot.hintCost} ${ptsWord(slot.hintCost)} taken now; guess it and you get +${slot.points}, +${slot.points - slot.hintCost} in total.`),
+      ok: `💡 −${slot.hintCost}`,
+    });
+    if (!ok) return;
+    const res = await emit('hint', { place: i });
+    if (res.error) return toast(res.error, 'bad');
+    window.Sound.play('pop');
+  });
   $('#skip-topic-btn').addEventListener('click', () => g.act('skipTopic'));
   $('#pass-btn').addEventListener('click', async () => {
     if (await ask(L('Пас?', 'Pass?'), { note: L('Це забере одне життя.', 'It costs one life.'), ok: L('Пас', 'Pass') })) emit('pass');
@@ -417,7 +469,10 @@
       $('#final-standings').innerHTML = seats.map((i, k) => `<li style="${seatStyle(i)}" class="${s.scores[i] === top ? 'win' : ''}">
         <span class="place">${k + 1}</span><span class="nm">${escapeHtml(seatName(i))}</span><span class="val">${s.scores[i]} ${pl(s.scores[i], ['очко', 'очки', 'очок'], ['point', 'points'])}</span></li>`).join('');
     }
-    $('#final-history').innerHTML = s.history.map((h) => `<li><span class="nm">${escapeHtml(h.title)}</span><span class="val">+${h.results[mySeat] || 0}</span></li>`).join('');
+    $('#final-history').innerHTML = s.history.map((h) => {
+      const spent = h.hints?.[mySeat] ? ` <small class="hint-paid">(💡 −${h.hints[mySeat]})</small>` : '';
+      return `<li><span class="nm">${escapeHtml(h.title)}</span><span class="val">${signed(h.results[mySeat] || 0)}${spent}</span></li>`;
+    }).join('');
     const isHost = mySeat === s.host;
     $('#again-btn').classList.toggle('hidden', !isHost);
     const host = s.seats[s.host]?.name || L('Господар', 'The host');

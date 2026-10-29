@@ -78,6 +78,18 @@
 .empty-slot { grid-template-columns: 40px minmax(0, 1fr) auto; min-height: 50px; background: var(--surface); }
 .empty-slot .place { background: color-mix(in srgb, var(--accent) 70%, var(--bg)); }
 .empty-slot .blank { color: var(--muted); opacity: .5; font-family: var(--display); padding-left: 6px; }
+/* підказка — кнопка з ціною місця; узята — літера неоном */
+.empty-slot { grid-template-columns: 40px minmax(0, 1fr) auto auto; }
+.empty-slot .blank.hinted { color: var(--neon-cyan); opacity: 1; font-size: 22px; text-shadow: 0 0 10px rgba(34, 211, 255, .6); }
+.slot-hint {
+  font: 800 13px/1 var(--font, "Manrope"), sans-serif; color: var(--gold); cursor: pointer; white-space: nowrap;
+  padding: 7px 10px; border-radius: 8px; background: color-mix(in srgb, var(--accent) 10%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.slot-hint:hover { background: color-mix(in srgb, var(--accent) 22%, transparent); border-color: var(--accent); }
+.hint-paid { color: var(--muted); font-size: 12px; font-weight: 700; white-space: nowrap; }
+.round-sum:empty { display: none; }
+.round-sum b { color: var(--gold); }
+.round-results .hint-paid { margin-left: 6px; }
 /* відкрита плашка — неоновий градієнт студії */
 .slot:not(.empty-slot):not(.missing):not(.missed) { background: linear-gradient(180deg, rgba(255,255,255,0.12), transparent 55%), linear-gradient(90deg, #c92684, #5f27cc); }
 .slot.missed { opacity: .6; }
@@ -142,7 +154,8 @@
   :root { --skew: 8px; }
   .slot { grid-template-columns: 30px 50px minmax(0, 1fr) auto; gap: 8px; min-height: 60px; }
   .slot .place { font-size: 16px; }
-  .empty-slot { grid-template-columns: 30px minmax(0, 1fr) auto; min-height: 44px; }
+  .empty-slot { grid-template-columns: 30px minmax(0, 1fr) auto auto; min-height: 44px; }
+  .slot-hint { padding: 6px 8px; font-size: 12px; }
   .slot .by, .slot:not(.empty-slot) .pts { display: none; }
   .g-photo { width: 50px; height: 50px; }
   .s-avatar { width: 52px; height: 52px; }

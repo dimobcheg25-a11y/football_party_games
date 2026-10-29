@@ -16,6 +16,11 @@ const ALLOWED_ROUNDS = [3, 5, 10];
 
 // Очки за місце: перше — 1, останнє — 10, між ними рівномірно.
 const pointsFor = (i, size) => (size === 1 ? 10 : 1 + Math.round((9 * i) / (size - 1)));
+// Підказка «перша літера прізвища» на конкретне місце: платиш одразу половину очок за місце (угору) —
+// нижче місце дорожче, бо й дає більше. Вгадаєш — отримаєш повні очки за місце.
+const hintCostFor = (i, size) => Math.ceil(pointsFor(i, size) / 2);
+// прізвище — усе після першого слова (як у «Правилі рукостискань»): «Кевін Де Брейне» → Д
+const initial = (name) => { const w = String(name || '').trim().split(/\s+/); return (w.length > 1 ? w.slice(1).join(' ') : w[0]).charAt(0).toUpperCase(); };
 
 function publicPlayer(p) {
   return { id: p.id, name: p.name, uk: p.uk, photo: p.photo };
@@ -56,6 +61,8 @@ class TopRoom extends BaseRoom {
     this.slots = [];
     this.missing = new Set(); // місця гравців, яких немає в базі: відкриті одразу, без очок
     this.roundPoints = {};
+    this.hints = new Map(); // seat → Set(місце), де взяв підказку (бачить лише сам)
+    this.hintSpent = {}; // seat → скільки очок віддав за підказки в раунді
     this.nextVotes = new Set();
     this.deadline = null;
     // own: свій топ кожного
@@ -159,7 +166,7 @@ class TopRoom extends BaseRoom {
 
   canSkip() {
     if (this.status !== 'playing' || this.phase !== 'guess') return false;
-    return !this.wrong.length && ![...this.boards.values()].some((b) => b.found.size || b.wrong.length || b.done);
+    return !this.wrong.length && !this.hints.size && ![...this.boards.values()].some((b) => b.found.size || b.wrong.length || b.done);
   }
 
   // Пропустити тему (не хочеться її грати): замість неї — інша, номер раунду той самий.
@@ -229,6 +236,33 @@ class TopRoom extends BaseRoom {
     this.scores[seat] += pts;
     this.roundPoints[seat] = (this.roundPoints[seat] || 0) + pts;
     return pts;
+  }
+
+  // Підказка на місце i: перша літера прізвища, ціна знімається одразу.
+  hint(seat, i) {
+    if (this.status !== 'playing' || this.phase !== 'guess') return { error: T('Зараз не можна', 'Not right now') };
+    i = Number(i);
+    const e = this.slots[i];
+    if (!e || !e.p) return { error: T('Для цього місця підказки немає', 'No hint for this place') };
+    if (this.options.mode === 'turns') {
+      if (!this.order.includes(seat) || !(this.lives.get(seat) > 0)) return { error: T('Ти зараз не граєш у цьому раунді', 'You’re not playing this round') };
+      if (this.found.has(i)) return { error: T('Це місце вже відкрито', 'This place is already revealed') };
+    } else {
+      const b = this.board(seat);
+      if (b.done) return { error: T('Твій топ у цьому раунді вже закрито', 'Your top is already closed this round') };
+      if (b.found.has(i)) return { error: T('Це місце ти вже відкрив', 'You already found this place') };
+    }
+    const mine = this.hints.get(seat) || new Set();
+    if (mine.has(i)) return { error: T('Підказка для цього місця вже є', 'You already have a hint for this place') };
+    mine.add(i);
+    this.hints.set(seat, mine);
+    const cost = hintCostFor(i, this.slots.length);
+    this.scores[seat] -= cost;
+    this.roundPoints[seat] = (this.roundPoints[seat] || 0) - cost;
+    this.hintSpent[seat] = (this.hintSpent[seat] || 0) + cost;
+    this.touch();
+    this.changed();
+    return { ok: true, cost };
   }
 
   // ── відповідь
@@ -349,7 +383,7 @@ class TopRoom extends BaseRoom {
     clearTimeout(this.timer);
     this.phase = 'reveal';
     this.deadline = null;
-    this.history.push({ title: this.topic.title, results: { ...this.roundPoints } });
+    this.history.push({ title: this.topic.title, results: { ...this.roundPoints }, hints: { ...this.hintSpent } });
     this.changed();
   }
 
@@ -377,7 +411,7 @@ class TopRoom extends BaseRoom {
       }
       if (this.missing.has(i)) return { ...this.slotFull(i), by: [] };
       if (turns && this.found.has(i)) return { ...this.slotFull(i), by: [this.found.get(i)] };
-      return { points: pointsFor(i, this.slots.length) };
+      return { points: pointsFor(i, this.slots.length), hintCost: hintCostFor(i, this.slots.length) };
     });
     const progress = {};
     if (!turns) {
@@ -406,6 +440,7 @@ class TopRoom extends BaseRoom {
       lives: Object.fromEntries(this.lives),
       wrong: turns ? this.wrong.map((w) => ({ seat: w.seat, player: w.playerId ? publicPlayer(playerById.get(w.playerId)) : null })) : [],
       roundPoints: this.roundPoints,
+      hintSpent: this.hintSpent, // скільки хто віддав за підказки — для розкладу раунду
       canSkip: this.canSkip(), // тему ще можна пропустити (ніхто нічого не назвав)
       nextVotes: [...this.nextVotes],
       scores: this.scores,
@@ -419,9 +454,15 @@ class TopRoom extends BaseRoom {
 
   // own: свої знайдені й помилки бачить лише сам гравець.
   privateState(seat) {
-    if (this.options.mode !== 'own' || !this.boards.has(seat)) return { mine: null };
+    // свої підказки: місце → перша літера прізвища
+    const myHints = [...(this.hints.get(seat) || [])].map((i) => {
+      const p = this.slots[i]?.p;
+      return { i, letter: p ? T(initial(p.uk || p.name), initial(p.name)) : '' };
+    });
+    if (this.options.mode !== 'own' || !this.boards.has(seat)) return { mine: null, myHints };
     const b = this.boards.get(seat);
     return {
+      myHints,
       mine: {
         found: [...b.found].map((i) => ({ i, ...this.slotFull(i) })),
         wrong: b.wrong.map((id) => publicPlayer(playerById.get(id))),
@@ -432,4 +473,4 @@ class TopRoom extends BaseRoom {
   }
 }
 
-module.exports = { TopRoom, pointsFor, ALLOWED_LIVES, ALLOWED_ROUND_SECONDS, ALLOWED_TURN_SECONDS, ALLOWED_ROUNDS };
+module.exports = { TopRoom, pointsFor, hintCostFor, ALLOWED_LIVES, ALLOWED_ROUND_SECONDS, ALLOWED_TURN_SECONDS, ALLOWED_ROUNDS };

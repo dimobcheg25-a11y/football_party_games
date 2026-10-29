@@ -199,6 +199,13 @@ const scenarios = {
     await p.click('#topic-list [data-id^="buys:"]');
     await p.waitForSelector('#round-box:not(.hidden) #board li');
     await shot(p, 'top-round');
+    // підказка на останнє місце: ціна на кнопці, підтвердження, літера замість «?»
+    await p.click('#board li:last-child .slot-hint');
+    await p.waitForSelector('.ask-sheet');
+    await shot(p, 'top-hint-ask');
+    await p.click('.ask-sheet [data-ask="1"]');
+    await p.waitForSelector('#board .blank.hinted');
+    await shot(p, 'top-hint');
     await p.click('#giveup-btn');
     await p.waitForSelector('.ask-sheet');
     await shot(p, 'top-ask'); // підтвердження — у вікні в стилі гри

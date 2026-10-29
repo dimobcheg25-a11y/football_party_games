@@ -133,11 +133,27 @@ async function main() {
   await emit(a, 'guess', { playerId: answer });
   const bView = await nextState(b, (x) => x.progress[0]?.found >= 1);
   assert.ok(!JSON.stringify(bView.slots).includes(answer) && !bView.mine?.found?.length, 'чужих відповідей не видно');
+  // підказка на 4-е місце: ціна — половина очок за місце, знімається одразу; літеру бачить лише сам
+  assert.deepStrictEqual(bView.slots.map((x) => x.hintCost), [1, 2, 3, 4, 5], 'ціна підказки росте з місцем');
+  res = await emit(b, 'hint', { place: 3 });
+  assert.ok(res.ok && res.cost === 4);
+  assert.ok((await emit(b, 'hint', { place: 3 })).error, 'двічі на те саме місце не можна');
+  assert.ok((await emit(b, 'hint', { place: 99 })).error);
+  st = await nextState(b, (x) => x.myHints?.length === 1);
+  assert.strictEqual(st.scores[1], -4);
+  assert.strictEqual(st.hintSpent[1], 4);
+  assert.ok(/^\S$/.test(st.myHints[0].letter), 'перша літера прізвища');
+  assert.ok(!(await nextState(a, (x) => x.hintSpent?.[1] === 4)).myHints?.length, 'чужих підказок не видно');
+  res = await emit(b, 'guess', { playerId: st.testAnswer[3] });
+  assert.ok(res.correct);
+  st = await nextState(b, (x) => x.mine?.found.length);
+  assert.strictEqual(st.roundPoints[1], res.points - 4, 'вгадав після підказки — повні очки мінус ціна');
+  console.log(`✓ підказка: 4-е місце −4, вгадав +${res.points}, за раунд ${st.roundPoints[1]}`);
   await emit(a, 'giveUp');
   await emit(b, 'giveUp');
   st = await nextState(a, (x) => x.phase === 'reveal');
   assert.ok(st.slots[2].by.includes(0) && !st.slots[2].by.includes(1));
-  assert.ok(st.roundPoints[0] > 0 && !st.roundPoints[1]);
+  assert.ok(st.roundPoints[0] > 0 && st.roundPoints[1] === st.slots.filter((x) => x.by.includes(1)).reduce((t, x) => t + x.points, 0) - 4);
   console.log('✓ кімната «кожен свій топ»: свої відповіді приховані, після раунду видно, хто кого знайшов');
   a.close();
   b.close();
