@@ -114,7 +114,7 @@ Node 18+, Express + Socket.IO, клієнт — чистий HTML/CSS/JS без 
   головна й «Що нового» — `Presence.show()` (сокет `/presence`, подія `online`), ігри передають `vid` в auth свого сокета. Нова сторінка — підключити `/shared/presence.js`.
 - `public/shared/analytics.js` — статистика сайту в Umami Cloud (без cookies; лише на football-party-games.onrender.com, локально й у тестах вимкнено): відвідування й час —
   сам Umami; події `window.Track(назва, дані)`: `game_start`/`game_finish`/`game_leave` і `hint`/`give_up` (дії з `TRACKED_ACTIONS`) — у room-client.js для всіх ігор,
-  `feedback` — у feedback.js, «Перехрестя» — у своєму app.js. Дані: `{ game, mode: solo|room, players }`. Нова сторінка — підключити одразу після `/shared/presence.js`.
+  `feedback` — у feedback.js, «Перехрестя» — у своєму app.js. Дані: `{ game, mode: solo|room, players, device: pc|phone|tablet }`. Нова сторінка — підключити одразу після `/shared/presence.js`.
 - `server/core/feedback.js` — відгуки гравців (`POST /api/feedback`) → GitHub Issues з міткою `feedback` + `feedback-like|idea|bug`; клієнт — `public/shared/feedback.js`
   (підписана кнопка «💬 Відгук про гру» внизу ліворуч — `.fb-fab`, ставиться сама; підключати одразу після i18n.js). Запити до GitHub (і для звітів «Фотоархіву») — `server/core/github.js`.
 - `public/shared/` — спільне для сторінок ігор: `theme.css` (базові токени й фон, які гра перевизначає — див. «Оформлення гри»; `.home-link` — закріплена табличка «‹ Футбольні ігри» на головну, у кожній `index.html` перед екранами), `ui.css` (кнопки, поля, чипи, вікна,

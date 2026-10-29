@@ -12,7 +12,14 @@
     s.dataset.domains = HOST;
     document.head.appendChild(s);
   }
+  // пристрій — у кожну подію, щоб бачити «в яку гру грають з телефона»: сенсорний екран без миші — телефон/планшет
+  const device = () => {
+    try {
+      if (!matchMedia('(pointer: coarse)').matches) return 'pc';
+      return Math.min(screen.width, screen.height) >= 600 ? 'tablet' : 'phone';
+    } catch { return 'unknown'; }
+  };
   window.Track = (name, data) => {
-    try { if (live) window.umami?.track(name, data); } catch { /* статистика ніколи не ламає гру */ }
+    try { if (live) window.umami?.track(name, { ...data, device: device() }); } catch { /* статистика ніколи не ламає гру */ }
   };
 })();
