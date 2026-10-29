@@ -68,7 +68,6 @@ class AllinRoom extends BaseRoom {
     const present = this.presentSeats();
     return present.find((i) => this.seats[i].connected) ?? present[0] ?? -1;
   }
-  online() { return this.presentSeats().filter((i) => this.seats[i].connected); }
 
   // ── вхід/вихід
   join(token, name) {
@@ -94,15 +93,6 @@ class AllinRoom extends BaseRoom {
     this.bets.delete(seat);
     this.ready.delete(seat);
     this.nextVotes.delete(seat);
-    this.touch();
-    if (this.status === 'playing') this.checkProgress();
-    this.changed();
-  }
-
-  setConnected(token, connected) {
-    const seat = this.seatOf(token);
-    if (seat === -1) return;
-    Object.assign(this.seats[seat], { connected, offlineSince: connected ? null : Date.now() });
     this.touch();
     if (this.status === 'playing') this.checkProgress();
     this.changed();
@@ -246,12 +236,8 @@ class AllinRoom extends BaseRoom {
     return { ok: true };
   }
 
-  next(seat) {
-    if (this.status !== 'playing' || this.phase !== 'reveal') return { error: T('Раунд ще триває', 'The round is still on') };
-    this.nextVotes.add(seat);
-    this.checkProgress();
-    if (this.phase === 'reveal') this.changed();
-    return { ok: true };
+  busyText() {
+    return T('Раунд ще триває', 'The round is still on');
   }
 
   checkProgress() {
@@ -262,7 +248,7 @@ class AllinRoom extends BaseRoom {
     } else if (this.phase === 'bet') {
       if (online.every((i) => this.ready.has(i))) this.reveal();
     } else if (this.phase === 'reveal') {
-      if (online.every((i) => this.nextVotes.has(i))) this.nextRound();
+      if (this.allVotedNext()) this.nextRound();
     }
   }
 
@@ -299,14 +285,6 @@ class AllinRoom extends BaseRoom {
       this.deadline = Date.now() + REVEAL_MS;
       this.timer = setTimeout(() => this.nextRound(), REVEAL_MS);
     }
-    this.changed();
-  }
-
-  finish() {
-    clearTimeout(this.timer);
-    this.status = 'finished';
-    this.phase = null;
-    this.deadline = null;
     this.changed();
   }
 

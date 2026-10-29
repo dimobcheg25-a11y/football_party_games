@@ -81,10 +81,6 @@ class SpyRoom extends BaseRoom {
     return this.presentSeats()[0] ?? -1;
   }
 
-  online(list) {
-    return list.filter((i) => this.seats[i]?.connected);
-  }
-
   // ── вхід/вихід
   join(token, name) {
     let seat = this.rejoin(token, name);
@@ -109,15 +105,6 @@ class SpyRoom extends BaseRoom {
       else if (early && this.players.filter((i) => this.seats[i]).length < MIN_PLAYERS) this.cancelMatch(T('Замало гравців — матч скасовано', 'Not enough players — match cancelled'));
       else this.checkProgress();
     }
-    this.changed();
-  }
-
-  setConnected(token, connected) {
-    const seat = this.seatOf(token);
-    if (seat === -1) return;
-    Object.assign(this.seats[seat], { connected, offlineSince: connected ? null : Date.now() });
-    this.touch();
-    this.checkProgress();
     this.changed();
   }
 
@@ -347,13 +334,9 @@ class SpyRoom extends BaseRoom {
     });
   }
 
-  // Після матчу: усі онлайн натиснули «далі» — наступний матч або фінал.
-  next(seat) {
-    if (this.phase !== 'reveal') return { error: T('Матч ще йде', 'The match is still on') };
-    this.nextVotes.add(seat);
-    this.checkProgress();
-    if (this.phase === 'reveal') this.changed();
-    return { ok: true };
+  // Після матчу кожен тисне «далі» (BaseRoom.next); коли натиснули всі онлайн — наступний матч або фінал (checkProgress).
+  busyText() {
+    return T('Матч ще йде', 'The match is still on');
   }
 
   leaders() {
@@ -393,8 +376,7 @@ class SpyRoom extends BaseRoom {
       this.toReveal();
     }
     if (this.phase === 'reveal') {
-      const everyone = this.online(this.presentSeats());
-      if (everyone.length && everyone.every((i) => this.nextVotes.has(i))) this.afterReveal();
+      if (this.allVotedNext()) this.afterReveal();
     }
   }
 

@@ -98,15 +98,6 @@ class DuelRoom extends BaseRoom {
     this.changed();
   }
 
-  setConnected(token, connected) {
-    const seat = this.seatOf(token);
-    if (seat === -1) return;
-    Object.assign(this.seats[seat], { connected, offlineSince: connected ? null : Date.now() });
-    this.touch();
-    if (this.status === 'playing') this.checkProgress();
-    this.changed();
-  }
-
   // ── серія
   start(seat) {
     if (this.status === 'playing') return { error: T('Гра вже йде', 'The game is already on') };
@@ -188,21 +179,17 @@ class DuelRoom extends BaseRoom {
     return { ok: true, correct: side === this.winner };
   }
 
-  next(seat) {
-    if (this.status !== 'playing' || this.phase !== 'reveal') return { error: T('Пара ще триває', 'The pair is still on') };
-    this.nextVotes.add(seat);
-    this.checkProgress();
-    if (this.phase === 'reveal') this.changed();
-    return { ok: true };
+  busyText() {
+    return T('Пара ще триває', 'The pair is still on');
   }
 
   checkProgress() {
-    const online = this.presentSeats().filter((i) => this.seats[i].connected);
+    const online = this.online();
     if (!online.length) return;
     if (this.phase === 'guess') {
       if (online.every((i) => this.picks.has(i))) this.reveal();
     } else if (this.phase === 'reveal') {
-      if (online.every((i) => this.nextVotes.has(i))) this.nextPair();
+      if (this.allVotedNext()) this.nextPair();
     }
   }
 
@@ -240,14 +227,6 @@ class DuelRoom extends BaseRoom {
       this.deadline = Date.now() + REVEAL_MS;
       this.timer = setTimeout(() => this.nextPair(), REVEAL_MS);
     }
-    this.changed();
-  }
-
-  finish() {
-    clearTimeout(this.timer);
-    this.status = 'finished';
-    this.phase = null;
-    this.deadline = null;
     this.changed();
   }
 

@@ -102,7 +102,6 @@ class WindowRoom extends BaseRoom {
     const present = this.presentSeats();
     return present.find((i) => this.seats[i].connected) ?? present[0] ?? -1;
   }
-  online() { return this.presentSeats().filter((i) => this.seats[i].connected); }
 
   // ── вхід/вихід: посеред вікна нових не беремо — склад не встигне зібратись
   join(token, name) {
@@ -128,15 +127,6 @@ class WindowRoom extends BaseRoom {
       else if (this.phase === 'pick' && this.pick.order[this.pick.idx] === seat) this.startPick();
       else this.checkProgress();
     }
-    this.changed();
-  }
-
-  setConnected(token, connected) {
-    const seat = this.seatOf(token);
-    if (seat === -1) return;
-    Object.assign(this.seats[seat], { connected, offlineSince: connected ? null : Date.now() });
-    this.touch();
-    if (this.status === 'playing') this.checkProgress();
     this.changed();
   }
 

@@ -1,5 +1,8 @@
-// Спільне для кімнат усіх ігор: місця гравців (за токеном), онлайн/офлайн, чат, активність.
+// Спільне для кімнат усіх ігор: місця гравців (за токеном), онлайн/офлайн, чат, активність, голосування «далі», кінець гри.
 // Гра наслідує BaseRoom і сама вирішує, що робити при вході/виході (join/leave) і що показувати (publicState).
+// Хід гри — у грі: checkProgress() (якщо є) викликається, коли хтось зник чи повернувся, — офлайн не тримає гру.
+const { T } = require('./i18n');
+
 class BaseRoom {
   constructor(code, onChange, capacity) {
     this.code = code;
@@ -42,11 +45,17 @@ class BaseRoom {
     return seat;
   }
 
+  // Онлайн серед місць (типово — серед усіх зайнятих).
+  online(list = this.presentSeats()) {
+    return list.filter((i) => this.seats[i]?.connected);
+  }
+
   setConnected(token, connected) {
     const seat = this.seatOf(token);
     if (seat === -1) return;
     Object.assign(this.seats[seat], { connected, offlineSince: connected ? null : Date.now() });
     this.touch();
+    if (this.status === 'playing') this.checkProgress?.();
     this.changed();
   }
 
@@ -75,6 +84,30 @@ class BaseRoom {
   keepChat(msg) {
     this.chat.push(msg);
     if (this.chat.length > 100) this.chat.shift();
+  }
+
+  // ── раунди: після раунду (phase 'reveal') кожен тисне «далі» (this.nextVotes — Set, гра очищує на новому раунді);
+  // коли натиснули всі онлайн (allVotedNext) — гра в checkProgress переходить далі.
+  next(seat) {
+    if (this.status !== 'playing' || this.phase !== 'reveal') return { error: this.busyText?.() || T('Раунд ще йде', 'The round is still on') };
+    this.nextVotes.add(seat);
+    this.checkProgress();
+    if (this.phase === 'reveal') this.changed();
+    return { ok: true };
+  }
+
+  allVotedNext(list) {
+    const online = this.online(list);
+    return online.length > 0 && online.every((i) => this.nextVotes.has(i));
+  }
+
+  // Кінець серії (гра з підсумком на кшталт «Трансферного вікна» перевизначає).
+  finish() {
+    clearTimeout(this.timer);
+    this.status = 'finished';
+    this.phase = null;
+    this.deadline = null;
+    this.changed();
   }
 
   // ── сервісне

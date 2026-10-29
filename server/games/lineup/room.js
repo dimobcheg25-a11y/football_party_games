@@ -96,15 +96,6 @@ class LineupRoom extends BaseRoom {
     this.changed();
   }
 
-  setConnected(token, connected) {
-    const seat = this.seatOf(token);
-    if (seat === -1) return;
-    Object.assign(this.seats[seat], { connected, offlineSince: connected ? null : Date.now() });
-    this.touch();
-    if (this.status === 'playing') this.checkProgress();
-    this.changed();
-  }
-
   // ── серія
   pool() {
     const fit = matchesFor(this.options.categories);
@@ -292,22 +283,14 @@ class LineupRoom extends BaseRoom {
     return { ok: true };
   }
 
-  next(seat) {
-    if (this.status !== 'playing' || this.phase !== 'reveal') return { error: T('Раунд ще йде', 'The round is still on') };
-    this.nextVotes.add(seat);
-    this.checkProgress();
-    if (this.phase === 'reveal') this.changed();
-    return { ok: true };
-  }
-
   checkProgress() {
-    const online = this.presentSeats().filter((i) => this.seats[i].connected);
+    const online = this.online();
     if (!online.length) return;
     if (this.phase === 'guess') {
       if (online.every((i) => this.finishVotes.has(i) || (this.options.mode === 'own' && this.board(i).done))) this.endRound();
       else if (this.options.mode === 'turns' && !this.seats[this.order[this.turn]]?.connected) this.nextTurn();
     } else if (this.phase === 'reveal') {
-      if (online.every((i) => this.nextVotes.has(i))) this.nextRound();
+      if (this.allVotedNext()) this.nextRound();
     }
   }
 
@@ -317,14 +300,6 @@ class LineupRoom extends BaseRoom {
     this.phase = 'reveal';
     this.deadline = null;
     this.history.push({ title: this.match.title, results: { ...this.roundPoints } });
-    this.changed();
-  }
-
-  finish() {
-    clearTimeout(this.timer);
-    this.status = 'finished';
-    this.phase = null;
-    this.deadline = null;
     this.changed();
   }
 

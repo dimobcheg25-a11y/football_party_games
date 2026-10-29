@@ -231,11 +231,13 @@ actions: { start, guess, ... : (room, seat, payload) => ({ ok } | { error }) }, 
 
 **Сервер, `room.js`** (`class XRoom extends BaseRoom`, `super(code, onChange, solo ? 1 : 8)`; приклади: `guess/room.js` 270 рядків — найкоротший):
 - обов'язково: `join(token, name)` → `{ seat } | { error }` (спершу `this.rejoin`, потім `this.takeSeat`; соло — одразу старт),
-  `leave(seat)` (`this.seats[seat] = null`), `publicState()`; за потреби `privateState(seat)`, `setConnected` (оновити місце + `checkProgress()` + `changed()`).
-- з BaseRoom: `seats[]` ({ token, name, connected }), `presentSeats()`, `publicSeats()`, `touch()`, `changed()` (розсилає стан),
+  `leave(seat)` (`this.seats[seat] = null`), `publicState()`, `checkProgress()` (хід гри: кінець раунду, перехід далі); за потреби `privateState(seat)`.
+- з BaseRoom: `seats[]` ({ token, name, connected }), `presentSeats()`, `online(list?)`, `publicSeats()`, `touch()`, `changed()` (розсилає стан),
+  `setConnected` (сам кличе `checkProgress()` під час гри), дія `next` (голос «далі» в `this.nextVotes`; свій текст «ще йде» — `busyText()`),
+  `allVotedNext()` (усі онлайн натиснули «далі»), `finish()` (кінець серії; перевизначати, лише якщо є свій підсумок),
   `this.timer` (чиститься в `destroy`). Господар — `presentSeats()[0]` (у top — перший онлайн, щоб офлайн-господар не тримав гру).
 - статус `waiting | playing | finished`; раунди: `phase` `guess | reveal`; кінець раунду — у `checkProgress()`, коли всі онлайн закінчили
-  (офлайн не тримає гру); далі — `nextVotes` (усі онлайн натиснули «далі») або пауза `REVEAL_MS`.
+  (офлайн не тримає гру); далі — `if (this.allVotedNext()) this.nextRound()` у `checkProgress()` або пауза `REVEAL_MS`. Свого `next`/`finish`/`setConnected`/`online` не писати.
   Відповідь не відправляти в `publicState`, доки `phase !== 'reveal'`; для тестів — `process.env.<ID>_TEST_ANSWER === '1'` → `state.testAnswer`.
 - дані гравця: `require('../../data')` → `players`, `playerById`, `normalize` (p.tags — Set, p.qid, p.born, p.fame, p.uk, p.photo);
   кар'єри/пул «хто загадується» за епохою × складністю — `require('../path/careers')` (`poolFor`, `careerOf`, `team`, `teams`, `POSITIONS`, `ERAS`, `DIFFICULTIES`);

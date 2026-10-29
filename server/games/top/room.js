@@ -110,15 +110,6 @@ class TopRoom extends BaseRoom {
     this.changed();
   }
 
-  setConnected(token, connected) {
-    const seat = this.seatOf(token);
-    if (seat === -1) return;
-    Object.assign(this.seats[seat], { connected, offlineSince: connected ? null : Date.now() });
-    this.touch();
-    if (this.status === 'playing') this.checkProgress();
-    this.changed();
-  }
-
   // ── серія
   start(seat) {
     if (this.status === 'playing') return { error: T('Гра вже йде', 'The game is already on') };
@@ -357,16 +348,8 @@ class TopRoom extends BaseRoom {
     return { ok: true };
   }
 
-  next(seat) {
-    if (this.status !== 'playing' || this.phase !== 'reveal') return { error: T('Раунд ще йде', 'The round is still on') };
-    this.nextVotes.add(seat);
-    this.checkProgress();
-    if (this.phase === 'reveal') this.changed();
-    return { ok: true };
-  }
-
   checkProgress() {
-    const online = this.presentSeats().filter((i) => this.seats[i].connected);
+    const online = this.online();
     if (this.phase === 'guess') {
       if (this.options.mode === 'own') {
         if (online.length && online.every((i) => this.board(i).done)) this.endRound();
@@ -374,7 +357,7 @@ class TopRoom extends BaseRoom {
         this.nextTurn();
       }
     } else if (this.phase === 'reveal') {
-      if (online.length && online.every((i) => this.nextVotes.has(i))) this.nextRound();
+      if (this.allVotedNext()) this.nextRound();
     }
   }
 
@@ -384,14 +367,6 @@ class TopRoom extends BaseRoom {
     this.phase = 'reveal';
     this.deadline = null;
     this.history.push({ title: this.topic.title, results: { ...this.roundPoints }, hints: { ...this.hintSpent } });
-    this.changed();
-  }
-
-  finish() {
-    clearTimeout(this.timer);
-    this.status = 'finished';
-    this.phase = null;
-    this.deadline = null;
     this.changed();
   }
 

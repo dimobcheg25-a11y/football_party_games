@@ -85,11 +85,6 @@ class HandshakeRoom extends BaseRoom {
     this.changed();
   }
 
-  setConnected(token, connected) {
-    super.setConnected(token, connected);
-    if (this.status === 'playing') this.checkProgress();
-  }
-
   // ── серія
   start(seat) {
     if (this.status === 'playing') return { error: T('Гра вже йде', 'The game is already on') };
@@ -237,21 +232,13 @@ class HandshakeRoom extends BaseRoom {
     return { ok: true };
   }
 
-  next(seat) {
-    if (this.status !== 'playing' || this.phase !== 'reveal') return { error: T('Раунд ще йде', 'The round is still on') };
-    this.nextVotes.add(seat);
-    this.checkProgress();
-    if (this.phase === 'reveal') this.changed();
-    return { ok: true };
-  }
-
   // ── хід раунду: кінець, коли всі онлайн закінчили
   checkProgress() {
-    const online = this.presentSeats().filter((i) => this.seats[i].connected);
+    const online = this.online();
     if (this.phase === 'guess') {
       if (online.length && online.every((i) => this.done(i))) this.endRound();
     } else if (this.phase === 'reveal') {
-      if (online.every((i) => this.nextVotes.has(i))) this.nextRound();
+      if (this.allVotedNext()) this.nextRound();
     }
   }
 
@@ -266,14 +253,6 @@ class HandshakeRoom extends BaseRoom {
       this.deadline = Date.now() + REVEAL_MS;
       this.timer = setTimeout(() => this.nextRound(), REVEAL_MS);
     }
-    this.changed();
-  }
-
-  finish() {
-    clearTimeout(this.timer);
-    this.status = 'finished';
-    this.phase = null;
-    this.deadline = null;
     this.changed();
   }
 

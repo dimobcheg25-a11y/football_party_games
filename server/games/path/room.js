@@ -101,12 +101,6 @@ class PathRoom extends BaseRoom {
     this.changed();
   }
 
-  setConnected(token, connected) {
-    super.setConnected(token, connected);
-    // той, хто зник, не тримає етап — чекаємо лише тих, хто онлайн
-    if (this.status === 'playing') this.checkProgress();
-  }
-
   // ── серія
   start(seat) {
     if (this.status === 'playing') return { error: T('Гра вже йде', 'The game is already on') };
@@ -216,11 +210,11 @@ class PathRoom extends BaseRoom {
 
   checkProgress() {
     if (this.phase === 'guess') {
-      const online = this.presentSeats().filter((i) => this.seats[i].connected);
+      const online = this.online();
       if (online.length && online.every((i) => this.solved.has(i))) return this.endRound();
       if (this.waitingFor(this.stageDone).length === 0) this.advanceStage();
     } else if (this.phase === 'reveal') {
-      if (this.presentSeats().filter((i) => this.seats[i].connected).every((i) => this.nextVotes.has(i))) this.nextRound();
+      if (this.allVotedNext()) this.nextRound();
     }
   }
 
@@ -243,14 +237,6 @@ class PathRoom extends BaseRoom {
       this.deadline = Date.now() + REVEAL_MS;
       this.timer = setTimeout(() => this.nextRound(), REVEAL_MS);
     }
-    this.changed();
-  }
-
-  finish() {
-    clearTimeout(this.timer);
-    this.status = 'finished';
-    this.phase = null;
-    this.deadline = null;
     this.changed();
   }
 

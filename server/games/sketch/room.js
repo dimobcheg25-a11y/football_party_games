@@ -115,10 +115,6 @@ class SketchRoom extends BaseRoom {
     return this.presentSeats()[0] ?? -1;
   }
 
-  online() {
-    return this.presentSeats().filter((i) => this.seats[i].connected);
-  }
-
   // ── вхід/вихід
   join(token, name) {
     let seat = this.rejoin(token, name);
@@ -143,11 +139,6 @@ class SketchRoom extends BaseRoom {
       this.checkProgress();
     }
     this.changed();
-  }
-
-  setConnected(token, connected) {
-    super.setConnected(token, connected);
-    if (this.status === 'playing') this.checkProgress();
   }
 
   // ── партія
